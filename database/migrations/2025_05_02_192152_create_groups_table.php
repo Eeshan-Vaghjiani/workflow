@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('assignment_user', function (Blueprint $table) {
+        Schema::create('groups', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('assignment_id')->constrained();
-            $table->foreignId('user_id')->constrained();
-            $table->timestamp('created_at')->nullable();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->foreignId('created_by')->constrained('users');
+            $table->timestamps();
             $table->softDeletes();
-            $table->boolean('is_deleted')->default(false);
         });
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('assignment_user');
+        Schema::dropIfExists('groups');
     }
-}; 
+};

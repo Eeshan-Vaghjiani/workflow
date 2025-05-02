@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('study_plans', function (Blueprint $table) {
+        Schema::create('group_user', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained();
-            $table->string('title');
-            $table->text('description');
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->foreignId('group_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->boolean('is_leader')->default(false);
             $table->timestamps();
-            $table->softDeletes();
-            $table->boolean('is_deleted')->default(false);
+            
+            $table->unique(['group_id', 'user_id']);
         });
     }
 
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('study_plans');
+        Schema::dropIfExists('group_user');
     }
-}; 
+};

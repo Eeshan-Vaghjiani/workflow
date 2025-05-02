@@ -45,4 +45,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the groups that the user belongs to.
+     */
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id')
+            ->withPivot('is_leader')
+            ->withTimestamps();
+    }
 }

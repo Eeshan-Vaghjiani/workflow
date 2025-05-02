@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('chat_user', function (Blueprint $table) {
+        Schema::create('task_attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('chat_id')->constrained();
-            $table->foreignId('user_id')->constrained();
-            $table->timestamp('joined_at')->nullable();
+            $table->foreignId('task_id')->constrained('group_tasks')->onDelete('cascade');
+            $table->string('file_path');
+            $table->foreignId('uploaded_by')->constrained('users');
+            $table->timestamps();
             $table->softDeletes();
-            $table->boolean('is_deleted')->default(false);
         });
     }
 
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('chat_user');
+        Schema::dropIfExists('task_attachments');
     }
-}; 
+};

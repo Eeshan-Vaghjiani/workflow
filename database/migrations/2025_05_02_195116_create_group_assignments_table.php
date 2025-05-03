@@ -11,19 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tasks', function (Blueprint $table) {
+        Schema::create('group_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('assignment_id')->constrained();
+            $table->foreignId('group_id')->constrained()->onDelete('cascade');
             $table->string('title');
-            $table->text('description');
-            $table->date('start_date');
-            $table->date('end_date');
+            $table->string('unit_name');
             $table->enum('priority', ['low', 'medium', 'high'])->default('medium');
-            $table->integer('sequence_order');
-            $table->foreignId('assigned_to')->nullable()->constrained('users');
+            $table->date('due_date');
+            $table->text('description')->nullable();
+            $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
             $table->softDeletes();
-            $table->boolean('is_deleted')->default(false);
         });
     }
 
@@ -32,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tasks');
+        Schema::dropIfExists('group_assignments');
     }
-}; 
+};

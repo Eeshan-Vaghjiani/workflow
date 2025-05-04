@@ -1,12 +1,20 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Gantt, Task, ViewMode } from 'gantt-task-react';
-import "gantt-task-react/dist/index.css";
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Import ViewMode as a value
+import { ViewMode } from '@rsagiev/gantt-task-react-19';
+import type { Task } from '@rsagiev/gantt-task-react-19';
+
+// Lazy load the Gantt component and its styles
+const GanttComponent = lazy(() => Promise.all([
+    import('@rsagiev/gantt-task-react-19').then(module => ({ default: module.Gantt })),
+    import('@rsagiev/gantt-task-react-19/dist/index.css').then(() => ({}))
+]).then(([moduleExport]) => moduleExport));
 
 interface GanttTask {
     id: string;
@@ -56,6 +64,7 @@ export default function GanttView({ tasks }: Props) {
     const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
     const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
     const [columnWidth, setColumnWidth] = useState(300);
+    const [error, setError] = useState<Error | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Calculate column width based on container width and view mode
@@ -119,6 +128,22 @@ export default function GanttView({ tasks }: Props) {
         setSelectedTask(prev => prev?.id === originalTask?.id ? null : originalTask || null);
     }, [tasks]);
 
+    if (error) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Gantt Chart" />
+                <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                    <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700">
+                        <div className="text-center text-red-500">
+                            <h2 className="text-xl font-bold">Error Loading Gantt Chart</h2>
+                            <p>{error.message}</p>
+                        </div>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Gantt Chart" />
@@ -149,8 +174,12 @@ export default function GanttView({ tasks }: Props) {
                         <div className="gantt-container-wrapper" ref={containerRef}>
                             <div className="gantt-container">
                                 {ganttTasks.length > 0 ? (
-                                    <>
-                                        <Gantt
+                                    <Suspense fallback={
+                                        <div className="flex items-center justify-center h-64">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                        </div>
+                                    }>
+                                        <GanttComponent
                                             tasks={ganttTasks}
                                             viewMode={viewMode}
                                             onSelect={handleTaskClick}
@@ -185,7 +214,7 @@ export default function GanttView({ tasks }: Props) {
                                                 </Button>
                                             </div>
                                         )}
-                                    </>
+                                    </Suspense>
                                 ) : (
                                     <p className="text-center py-10 dark:text-white">No tasks available to display in Gantt chart.</p>
                                 )}

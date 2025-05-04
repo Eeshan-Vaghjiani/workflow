@@ -70,6 +70,17 @@ class GroupAssignmentController extends Controller
             'created_by' => auth()->id(),
         ]);
 
+        // Create notifications for all group members
+        $notificationService = new \App\Services\NotificationService();
+        $groupMembers = $group->members;
+        
+        foreach ($groupMembers as $member) {
+            // Don't notify the creator
+            if ($member->id != auth()->id()) {
+                $notificationService->createNewAssignment($member, $assignment, auth()->user());
+            }
+        }
+
         return redirect()->route('group-assignments.show', $assignment);
     }
 

@@ -71,7 +71,10 @@ class GroupController extends Controller
 
         return Inertia::render('Groups/Show', [
             'group' => $group,
-            'isLeader' => $isLeader
+            'isLeader' => $isLeader,
+            'auth' => [
+                'user' => auth()->user()->only('id', 'name')
+            ]
         ]);
     }
 
@@ -187,6 +190,11 @@ class GroupController extends Controller
         $group->members()->attach($userId, [
             'is_leader' => $validated['is_leader'] ?? false,
         ]);
+
+        // Create notification for the invited user
+        $notificationService = new \App\Services\NotificationService();
+        $invitedUser = \App\Models\User::find($userId);
+        $notificationService->createGroupInvitation($invitedUser, $group, auth()->user());
 
         return redirect()->route('groups.show', $group);
     }

@@ -55,4 +55,9 @@ class User extends Authenticatable
             ->withPivot('is_leader')
             ->withTimestamps();
     }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

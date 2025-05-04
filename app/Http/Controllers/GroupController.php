@@ -188,6 +188,11 @@ class GroupController extends Controller
             'is_leader' => $validated['is_leader'] ?? false,
         ]);
 
+        // Create notification for the invited user
+        $notificationService = new \App\Services\NotificationService();
+        $invitedUser = \App\Models\User::find($userId);
+        $notificationService->createGroupInvitation($invitedUser, $group, auth()->user());
+
         return redirect()->route('groups.show', $group);
     }
 

@@ -71,7 +71,10 @@ class GroupController extends Controller
 
         return Inertia::render('Groups/Show', [
             'group' => $group,
-            'isLeader' => $isLeader
+            'isLeader' => $isLeader,
+            'auth' => [
+                'user' => auth()->user()->only('id', 'name')
+            ]
         ]);
     }
 

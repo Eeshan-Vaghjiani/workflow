@@ -2,6 +2,10 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Plus, Settings, MessageCircle } from 'lucide-react';
+import ChatBox from '@/components/Chat/ChatBox';
 
 interface User {
     id: number;
@@ -37,13 +41,19 @@ interface Group {
 interface Props {
     group: Group;
     isLeader: boolean;
+    auth: {
+        user: {
+            id: number;
+        };
+    };
     errors?: Record<string, string>;
 }
 
 type TabType = 'assignments' | 'members';
 
-export default function GroupShow({ group, isLeader, errors }: Props) {
+export default function GroupShow({ group, isLeader, auth, errors }: Props) {
     const [activeTab, setActiveTab] = useState<TabType>('assignments');
+    const [showChat, setShowChat] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -64,138 +74,120 @@ export default function GroupShow({ group, isLeader, errors }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={group.name} />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex justify-between items-center mb-4">
+            <Head title={`Group - ${group.name}`} />
+            <div className="flex flex-col gap-4 p-4">
+                <div className="flex justify-between items-start">
                     <div>
                         <h1 className="text-2xl font-bold">{group.name}</h1>
-                        <p className="text-gray-500">{group.description}</p>
+                        {group.description && (
+                            <p className="mt-2 text-gray-600 dark:text-gray-300">{group.description}</p>
+                        )}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex gap-2">
+                        <Button
+                            variant={showChat ? "default" : "outline"}
+                            onClick={() => setShowChat(!showChat)}
+                        >
+                            <MessageCircle className="w-4 h-4 mr-2" />
+                            {showChat ? 'Hide Chat' : 'Show Chat'}
+                        </Button>
                         {isLeader && (
                             <>
-                                <Link
-                                    href={route('groups.edit', group.id)}
-                                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
-                                >
-                                    Edit Group
+                                <Link href={route('groups.members.invite', group.id)}>
+                                    <Button>
+                                        <Users className="w-4 h-4 mr-2" />
+                                        Invite Members
+                                    </Button>
+                                </Link>
+                                <Link href={route('groups.edit', group.id)}>
+                                    <Button variant="outline">
+                                        <Settings className="w-4 h-4 mr-2" />
+                                        Edit Group
+                                    </Button>
                                 </Link>
                             </>
                         )}
-                        <Link
-                            href={route('group-assignments.create', { group_id: group.id })}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
-                        >
-                            New Assignment
-                        </Link>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
-                    {/* Tabs */}
-                    <div className="border-b border-neutral-200 dark:border-neutral-700">
-                        <nav className="flex space-x-8 px-6">
-                            <button
-                                onClick={() => setActiveTab('assignments')}
-                                className={`${activeTab === 'assignments'
-                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300'
-                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                            >
-                                Assignments
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('members')}
-                                className={`${activeTab === 'members'
-                                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300'
-                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-                            >
-                                Members
-                            </button>
-                        </nav>
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="p-6">
-                        {activeTab === 'assignments' && (
-                            <div className="space-y-4">
-                                {group.assignments?.length > 0 ? (
-                                    group.assignments.map((assignment) => (
-                                        <div
-                                            key={assignment.id}
-                                            className="border dark:border-neutral-700 rounded-lg p-4 hover:shadow-md transition-shadow"
-                                        >
-                                            <Link href={route('group-assignments.show', assignment.id)}>
-                                                <h3 className="text-lg font-semibold mb-2">
-                                                    {assignment.title}
-                                                </h3>
-                                            </Link>
-                                            <p className="text-gray-600 dark:text-gray-300 mb-2">
-                                                {assignment.description}
-                                            </p>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                    Unit: {assignment.unit_name}
-                                                </span>
-                                                <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                    Due: {new Date(assignment.due_date).toLocaleDateString()}
-                                                </span>
-                                            </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* Left Column - Members */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Members</CardTitle>
+                            <CardDescription>Group members and their roles</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                {group.members.map((member) => (
+                                    <div
+                                        key={member.id}
+                                        className="flex justify-between items-center p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md"
+                                    >
+                                        <div>
+                                            <div className="font-medium">{member.name}</div>
+                                            <div className="text-sm text-gray-500">{member.email}</div>
                                         </div>
-                                    ))
-                                ) : (
-                                    <p className="text-gray-500 dark:text-gray-400">No assignments yet</p>
+                                        <div className="flex items-center gap-2">
+                                            {member.pivot.is_leader && (
+                                                <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300 rounded-full">
+                                                    Leader
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Middle Column - Assignments */}
+                    <Card>
+                        <CardHeader>
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <CardTitle>Assignments</CardTitle>
+                                    <CardDescription>Group assignments and tasks</CardDescription>
+                                </div>
+                                {isLeader && (
+                                    <Link href={route('group-assignments.create')}>
+                                        <Button size="sm">
+                                            <Plus className="w-4 h-4 mr-2" />
+                                            New Assignment
+                                        </Button>
+                                    </Link>
                                 )}
                             </div>
-                        )}
-
-                        {activeTab === 'members' && (
-                            <div>
-                                {isLeader && (
-                                    <div className="mb-4">
+                        </CardHeader>
+                        <CardContent>
+                            {group.assignments.length === 0 ? (
+                                <p className="text-center text-gray-500 py-4">No assignments yet</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {group.assignments.map((assignment) => (
                                         <Link
-                                            href={route('groups.members.invite', group.id)}
-                                            className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
+                                            key={assignment.id}
+                                            href={route('group-assignments.show', assignment.id)}
                                         >
-                                            Invite Member
+                                            <div className="p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md cursor-pointer">
+                                                <div className="font-medium">{assignment.title}</div>
+                                                <div className="text-sm text-gray-500">
+                                                    Due: {new Date(assignment.due_date).toLocaleDateString()}
+                                                </div>
+                                            </div>
                                         </Link>
-                                    </div>
-                                )}
-                                <div className="space-y-4">
-                                    {group.members?.map((member) => (
-                                        <div
-                                            key={member.id}
-                                            className="flex items-center justify-between p-4 border dark:border-neutral-700 rounded-lg"
-                                        >
-                                            <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                                    {member.name.charAt(0)}
-                                                </div>
-                                                <div className="ml-4">
-                                                    <p className="font-medium">{member.name}</p>
-                                                    <p className="text-sm text-gray-500 dark:text-gray-400">{member.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center space-x-2">
-                                                <span className={`px-2 py-1 rounded-full text-xs ${member.pivot.is_leader ? 'bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-800/20 dark:text-gray-300'}`}>
-                                                    {member.pivot.is_leader ? 'Leader' : 'Member'}
-                                                </span>
-                                                {isLeader && !member.pivot.is_leader && (
-                                                    <button
-                                                        onClick={() => handleDeleteMember(member.id)}
-                                                        className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                                                    >
-                                                        Remove
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Right Column - Chat */}
+                    {showChat && (
+                        <div className="lg:col-span-1">
+                            <ChatBox groupId={group.id} currentUserId={auth.user.id} />
+                        </div>
+                    )}
                 </div>
             </div>
         </AppLayout>

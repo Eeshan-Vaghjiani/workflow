@@ -68,6 +68,7 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+
     *,
     ::after,
     ::before,
@@ -156,4 +157,329 @@
     body {
         @apply bg-background text-foreground;
     }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Gantt chart base styles */
+.gantt-container {
+    background-color: var(--background);
+    color: var(--foreground);
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+}
+
+.gantt-container .grid-background {
+    background-color: var(--background);
+}
+
+.gantt-container .grid-row {
+    background-color: var(--background);
+}
+
+.gantt-container .lower-text,
+.gantt-container .upper-text {
+    color: var(--foreground);
+    background-color: var(--background);
+}
+
+/* Calendar and header styles */
+.gantt-container .calendar,
+.gantt-container .calendar-header,
+.gantt-container .header {
+    background-color: var(--background);
+    color: var(--foreground);
+    border-color: var(--border);
+}
+
+/* Table styles */
+.gantt-container .table {
+    background-color: var(--background);
+}
+
+.gantt-container .table-row {
+    border-bottom-color: var(--border);
+    background-color: var(--background);
+}
+
+.gantt-container .table-cell {
+    color: var(--foreground);
+    background-color: var(--background);
+}
+
+/* Override any default link colors in table cells */
+.gantt-container .table-cell a,
+.gantt-container .table-cell span,
+.gantt-container .table-cell div {
+    color: var(--foreground) !important;
+    text-decoration: none;
+}
+
+/* Ensure proper contrast for alternating rows */
+.gantt-container .table-row:nth-child(even) {
+    background-color: var(--accent);
+}
+
+.dark .gantt-container .table-row:nth-child(even) {
+    background-color: var(--secondary);
+}
+
+/* Task list header styles */
+.gantt-container .gantt-task-list-header {
+    background-color: var(--background);
+    border-bottom: 1px solid var(--border);
+}
+
+.gantt-container .gantt-task-list-header .gantt-list-header-label {
+    color: var(--foreground);
+}
+
+/* Task list cell styles */
+.gantt-container .gantt-task-list-wrapper {
+    background-color: var(--background);
+}
+
+.gantt-container .gantt-task-list-wrapper .gantt-task-row {
+    background-color: var(--background);
+}
+
+.gantt-container .gantt-task-list-wrapper .gantt-task-row:nth-child(even) {
+    background-color: var(--accent);
+}
+
+.dark .gantt-container .gantt-task-list-wrapper .gantt-task-row:nth-child(even) {
+    background-color: var(--secondary);
+}
+
+/* Override any default text colors */
+.gantt-container .gantt-task-list-wrapper * {
+    color: var(--foreground) !important;
+}
+
+/* Table header styles */
+.gantt-container .gantt-table-header {
+    background-color: var(--background);
+    border-bottom: 1px solid var(--border);
+}
+
+.gantt-container .gantt-table-header th {
+    color: var(--foreground);
+    font-weight: 600;
+}
+
+/* Fix any remaining blue text */
+.gantt-container .gantt-table a,
+.gantt-container .gantt-table span,
+.gantt-container .gantt-table div {
+    color: var(--foreground) !important;
+}
+
+/* Weekend column styles */
+.gantt-container .weekend {
+    background-color: var(--muted);
+}
+
+.dark .gantt-container .weekend {
+    background-color: hsl(240, 10%, 15%);
+}
+
+/* Override any remaining white backgrounds */
+.dark .gantt-container svg {
+    background-color: var(--background);
+}
+
+.dark .gantt-container .gantt-table {
+    background-color: var(--background);
+}
+
+.dark .gantt-container .calendar-header {
+    background-color: var(--background);
+}
+
+.dark .gantt-container .row-line {
+    border-color: var(--border);
+}
+
+.dark .gantt-container .vertical-line {
+    border-color: var(--border);
+}
+
+/* Ensure the task list area is also dark */
+.dark .gantt-container .gantt-task-list {
+    background-color: var(--background);
+}
+
+.dark .gantt-container .gantt-task-list-header {
+    background-color: var(--background);
+}
+
+/* Light mode task styles */
+.gantt-container .bar {
+    background-color: var(--chart-1);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+}
+
+.gantt-container .bar .bar-progress {
+    background-color: var(--chart-2);
+    border-radius: var(--radius-sm);
+}
+
+/* Dark mode specific styles */
+.dark .gantt-container {
+    background-color: var(--background);
+}
+
+.dark .gantt-container .bar {
+    background-color: hsl(246, 83%, 55%);
+    /* More saturated purple */
+}
+
+.dark .gantt-container .bar .bar-progress {
+    background-color: hsl(246, 83%, 65%);
+    /* Lighter saturated purple */
+}
+
+.dark .gantt-container .grid-line {
+    border-color: var(--border);
+}
+
+/* Text colors */
+.gantt-container .header-title {
+    color: var(--foreground);
+}
+
+/* Task dependency lines and relationships */
+.gantt-container .arrow {
+    stroke: var(--foreground);
+    opacity: 0.7;
+}
+
+.dark .gantt-container .arrow {
+    stroke: var(--foreground);
+    opacity: 0.9;
+}
+
+.gantt-container .arrow path {
+    stroke: var(--foreground);
+    fill: none;
+}
+
+.dark .gantt-container .arrow path {
+    stroke: var(--foreground);
+    stroke-width: 1.5px;
+}
+
+/* Task dependency lines */
+.gantt-container .dependency-lines-area path {
+    stroke: var(--foreground);
+    fill: none;
+}
+
+.dark .gantt-container .dependency-lines-area path {
+    stroke: var(--foreground);
+    stroke-width: 1.5px;
+    opacity: 0.9;
+}
+
+/* Task vertical lines */
+.gantt-container .vertical-line {
+    stroke: var(--foreground);
+    stroke-width: 1px;
+}
+
+.dark .gantt-container .vertical-line {
+    stroke: var(--foreground);
+    stroke-width: 1.5px;
+    opacity: 0.9;
+}
+
+/* Task connection lines */
+.gantt-container .connection-line {
+    stroke: var(--foreground);
+    stroke-width: 1px;
+}
+
+.dark .gantt-container .connection-line {
+    stroke: var(--foreground);
+    stroke-width: 1.5px;
+    opacity: 0.9;
+}
+
+/* SVG elements in dark mode */
+.dark .gantt-container svg line,
+.dark .gantt-container svg path {
+    stroke: var(--foreground);
+    stroke-width: 1.5px;
+    opacity: 0.9;
+}
+
+/* Calendar header dividers */
+.gantt-container .calendar-header .month-header {
+    border-color: var(--border);
+}
+
+/* View mode controls */
+.gantt-view-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.gantt-view-button {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+    transition: all 0.2s ease;
+}
+
+.gantt-view-button:hover {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+}
+
+.gantt-view-button.active {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.gantt-container-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Ensure the chart fits within the container */
+.gantt-container .gantt-wrapper {
+    max-width: 100%;
+    min-height: 300px;
+}
+
+/* Make the table header stick to the left */
+.gantt-container .gantt-table {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: var(--background);
+}
+
+/* Hover effects */
+.gantt-container .bar:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+/* Project task styles (parent tasks) */
+.gantt-container .bar.project {
+    background-color: var(--chart-3);
+}
+
+.dark .gantt-container .bar.project {
+    background-color: hsl(246, 83%, 45%);
 }

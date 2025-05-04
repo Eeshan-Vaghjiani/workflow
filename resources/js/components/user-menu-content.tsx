@@ -6,7 +6,7 @@ import { Link, router } from '@inertiajs/react';
 import { LogOut, Settings } from 'lucide-react';
 
 interface UserMenuContentProps {
-    user: User;
+    user: User | null | undefined;
 }
 
 export function UserMenuContent({ user }: UserMenuContentProps) {
@@ -16,6 +16,11 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
         cleanup();
         router.flushAll();
     };
+
+    // If user is null or undefined, don't render anything
+    if (!user) {
+        return null;
+    }
 
     return (
         <>

@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Users, ClipboardList, CheckSquare } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Users, ClipboardList, CheckSquare, Calendar, GitBranch, Bell, MessageCircle } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -28,6 +28,26 @@ const mainNavItems: NavItem[] = [
         href: '/tasks',
         icon: CheckSquare,
     },
+    {
+        title: 'Calendar',
+        href: '/dashboard/calendar',
+        icon: Calendar,
+    },
+    {
+        title: 'Gantt Chart',
+        href: '/dashboard/gantt',
+        icon: GitBranch,
+    },
+    {
+        title: 'Chat',
+        href: '/groups',
+        icon: MessageCircle,
+    },
+    {
+        title: 'Notifications',
+        href: '/notifications',
+        icon: Bell,
+    }
 ];
 
 const footerNavItems: NavItem[] = [

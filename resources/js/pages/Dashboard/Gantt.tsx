@@ -64,7 +64,7 @@ export default function GanttView({ tasks }: Props) {
     const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
     const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
     const [columnWidth, setColumnWidth] = useState(300);
-    const [error, setError] = useState<Error | null>(null);
+    const [error] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Calculate column width based on container width and view mode
@@ -136,7 +136,7 @@ export default function GanttView({ tasks }: Props) {
                     <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700">
                         <div className="text-center text-red-500">
                             <h2 className="text-xl font-bold">Error Loading Gantt Chart</h2>
-                            <p>{error.message}</p>
+                            <p>{error}</p>
                         </div>
                     </div>
                 </div>

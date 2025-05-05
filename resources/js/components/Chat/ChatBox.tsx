@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2 } from 'lucide-react';
@@ -34,7 +34,7 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const loadMessages = async () => {
+    const loadMessages = useCallback(async () => {
         try {
             const response = await axios.get(`/api/groups/${groupId}/messages`);
             setMessages(response.data.data.reverse());
@@ -44,14 +44,12 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
             console.error('Error loading messages:', error);
             setLoading(false);
         }
-    };
+    }, [groupId]);
 
     useEffect(() => {
         loadMessages();
-        // Set up polling for new messages every 5 seconds
-        const interval = setInterval(loadMessages, 5000);
-        return () => clearInterval(interval);
-    }, [groupId]);
+    }, [loadMessages]);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

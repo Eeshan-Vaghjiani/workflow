@@ -5,10 +5,11 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { useEffect, useState } from 'react';
+import { EventClickArg, EventApi } from '@fullcalendar/core';
+import { useState } from 'react';
 
 interface Event {
-    id: string | number;
+    id: string;
     title: string;
     start: string;
     end: string;
@@ -41,10 +42,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Calendar({ events }: Props) {
-    const [eventInfo, setEventInfo] = useState<Event | null>(null);
+    const [eventInfo, setEventInfo] = useState<EventApi | null>(null);
 
     // Function to handle event click
-    const handleEventClick = (info: any) => {
+    const handleEventClick = (info: EventClickArg) => {
         // Prevent default to stop navigation when we want to show the modal
         if (!info.event.url) {
             info.jsEvent.preventDefault();
@@ -52,13 +53,18 @@ export default function Calendar({ events }: Props) {
     };
 
     // Function to handle event hover
-    const handleEventMouseEnter = (info: any) => {
+    const handleEventMouseEnter = (info: { event: EventApi }) => {
         setEventInfo(info.event);
     };
 
     // Function to handle event hover out
     const handleEventMouseLeave = () => {
         setEventInfo(null);
+    };
+
+    // Helper function to safely format dates
+    const formatDate = (date: Date | null) => {
+        return date?.toLocaleDateString() ?? '';
     };
 
     return (
@@ -96,7 +102,7 @@ export default function Calendar({ events }: Props) {
                                     {eventInfo.extendedProps.status && (
                                         <p><span className="font-medium">Status:</span> {eventInfo.extendedProps.status}</p>
                                     )}
-                                    <p><span className="font-medium">Date:</span> {new Date(eventInfo.start).toLocaleDateString()} - {new Date(eventInfo.end).toLocaleDateString()}</p>
+                                    <p><span className="font-medium">Date:</span> {formatDate(eventInfo.start)} - {formatDate(eventInfo.end)}</p>
                                 </div>
                             </div>
                         )}

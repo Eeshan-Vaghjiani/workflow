@@ -1,17 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Plus, Settings, MessageCircle } from 'lucide-react';
 import ChatBox from '@/components/Chat/ChatBox';
-
-interface User {
-    id: number;
-    name: string;
-    email: string;
-}
 
 interface Member {
     id: number;
@@ -46,13 +40,9 @@ interface Props {
             id: number;
         };
     };
-    errors?: Record<string, string>;
 }
 
-type TabType = 'assignments' | 'members';
-
-export default function GroupShow({ group, isLeader, auth, errors }: Props) {
-    const [activeTab, setActiveTab] = useState<TabType>('assignments');
+export default function GroupShow({ group, isLeader, auth }: Props) {
     const [showChat, setShowChat] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -65,12 +55,6 @@ export default function GroupShow({ group, isLeader, auth, errors }: Props) {
             href: `/groups/${group.id}`,
         },
     ];
-
-    function handleDeleteMember(memberId: number) {
-        if (confirm(`Are you sure you want to remove this member from the group?`)) {
-            router.delete(route('groups.members.destroy', { group: group.id, user: memberId }));
-        }
-    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

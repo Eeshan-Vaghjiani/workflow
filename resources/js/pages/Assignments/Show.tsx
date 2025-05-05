@@ -38,10 +38,9 @@ interface Assignment {
 interface Props {
     assignment: Assignment;
     isLeader: boolean;
-    errors?: Record<string, string>;
 }
 
-export default function Show({ assignment, isLeader, errors }: Props) {
+export default function Show({ assignment, isLeader }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Assignments',

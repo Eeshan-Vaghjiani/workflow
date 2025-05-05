@@ -5,6 +5,7 @@ use App\Http\Controllers\API\GroupMemberController;
 use App\Http\Controllers\API\your_generic_secretr;
 use App\Http\Controllers\API\GroupTaskController;
 use App\Http\Controllers\API\GroupChatController;
+use App\Http\Controllers\API\GroupMessageController;
 
 /*
 |your_generic_secretyour_generic_secretyour_generic_secret--
@@ -29,9 +30,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('groups.assignments.tasks', GroupTaskController::class);
     Route::post('groups.assignments.tasks/{task}/complete', [GroupTaskController::class, 'complete']);
     Route::post('groups.assignments.tasks/{assignment}/reorder', [GroupTaskController::class, 'reorder']);
+    Route::post('/group/tasks', [GroupTaskController::class, 'store'])->name('group.tasks.store');
     
     // Chat
     Route::apiResource('groups.messages', GroupChatController::class)->only(['index', 'store']);
+    Route::get('/group/messages', [GroupMessageController::class, 'index'])->name('group.messages.index');
 });
 
 Route::middleware([

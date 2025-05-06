@@ -100,9 +100,9 @@ return [
     ],
 
     /*
-    |--------------------------------------------------------------------------
+    |---------------------------------
     | Global "From" Address
-    |--------------------------------------------------------------------------
+    |---------------------------------
     |
     | You may wish for all emails sent by your application to be sent from
     | the same address. Here you may specify a name and address that is

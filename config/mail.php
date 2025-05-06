@@ -100,9 +100,9 @@ return [
     ],
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |your_generic_secret---------
     | Global "From" Address
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |your_generic_secret---------
     |
     | You may wish for all emails sent by your application to be sent from
     | the same address. Here you may specify a name and address that is

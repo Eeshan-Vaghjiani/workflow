@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Calendar',
-        href: '/dashboard/calendar',
+        href: '/calendar',
         icon: Calendar,
     },
     {

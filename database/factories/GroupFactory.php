@@ -20,7 +20,7 @@ class GroupFactory extends Factory
         return [
             'name' => fake()->company(),
             'description' => fake()->paragraph(),
-            'created_by' => User::factory(),
+            'owner_id' => User::factory(),
         ];
     }
 }

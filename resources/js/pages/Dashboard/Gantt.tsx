@@ -5,6 +5,7 @@ import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import axios from 'axios';
 
 // Import ViewMode as a value
 import { ViewMode } from '@rsagiev/gantt-task-react-19';
@@ -64,7 +65,7 @@ export default function GanttView({ tasks }: Props) {
     const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
     const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
     const [columnWidth, setColumnWidth] = useState(300);
-    const [error] = useState('');
+    const [error, setError] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Calculate column width based on container width and view mode
@@ -128,6 +129,63 @@ export default function GanttView({ tasks }: Props) {
         setSelectedTask(prev => prev?.id === originalTask?.id ? null : originalTask || null);
     }, [tasks]);
 
+    // Handle task date change (drag and drop)
+    const handleTaskChange = useCallback(async (task: Task) => {
+        try {
+            // Skip project types (assignments), only update actual tasks
+            if (task.type === 'project') return;
+            
+            // Extract the task ID (remove the string prefix if present)
+            const taskId = task.id.toString().replace('task-', '');
+            
+            // Format dates for the API
+            const startDate = task.start.toISOString().split('T')[0];
+            const endDate = task.end.toISOString().split('T')[0];
+            
+            // Send update to the backend
+            await axios.put(`/api/tasks/${taskId}`, {
+                start_date: startDate,
+                end_date: endDate,
+                progress: task.progress
+            });
+            
+            console.log('Task updated:', task.id, startDate, endDate);
+        } catch (error) {
+            console.error('Error updating task:', error);
+            setError('Failed to update task. Please try again.');
+        }
+    }, []);
+
+    // Handle task progress change
+    const handleProgressChange = useCallback(async (task: Task) => {
+        try {
+            // Skip project types (assignments), only update actual tasks
+            if (task.type === 'project') return;
+            
+            // Extract the task ID (remove the string prefix if present)
+            const taskId = task.id.toString().replace('task-', '');
+            
+            // Calculate status based on progress
+            let status = 'not_started';
+            if (task.progress >= 100) {
+                status = 'completed';
+            } else if (task.progress > 0) {
+                status = 'in_progress';
+            }
+            
+            // Send update to the backend
+            await axios.put(`/api/tasks/${taskId}`, {
+                progress: task.progress,
+                status: status
+            });
+            
+            console.log('Task progress updated:', task.id, task.progress, status);
+        } catch (error) {
+            console.error('Error updating task progress:', error);
+            setError('Failed to update task progress. Please try again.');
+        }
+    }, []);
+
     if (error) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
@@ -183,6 +241,8 @@ export default function GanttView({ tasks }: Props) {
                                             tasks={ganttTasks}
                                             viewMode={viewMode}
                                             onSelect={handleTaskClick}
+                                            onDateChange={handleTaskChange}
+                                            onProgressChange={handleProgressChange}
                                             listCellWidth="155px"
                                             columnWidth={columnWidth}
                                             rowHeight={50}

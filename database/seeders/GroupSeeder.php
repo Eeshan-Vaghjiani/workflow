@@ -25,16 +25,16 @@ class GroupSeeder extends Seeder
             ->count(3)
             ->create()
             ->each(function ($group) use ($users) {
-                // Set the first member as leader
+                // Set the first member as owner
                 $group->members()->attach(
                     $users->first()->id,
-                    ['is_leader' => true]
+                    ['role' => 'owner']
                 );
 
-                // Add random members to each group (excluding the leader)
+                // Add random members to each group (excluding the owner)
                 $group->members()->attach(
                     $users->skip(1)->random(rand(2, 3))->pluck('id')->toArray(),
-                    ['is_leader' => false]
+                    ['role' => 'member']
                 );
 
                 // Create 2-4 assignments for each group

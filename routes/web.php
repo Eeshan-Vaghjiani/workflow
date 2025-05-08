@@ -5,6 +5,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\CalendarController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -41,6 +42,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('group-tasks', GroupTaskController::class);
     Route::post('group-assignments/{assignment}/tasks', [GroupTaskController::class, 'store'])->name('group-assignments.tasks.store');
     Route::post('group-tasks/{groupTask}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete');
+});
+
+// Calendar routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::post('/api/calendar/sync', [CalendarController::class, 'sync'])->name('calendar.sync');
 });
 
 require __DIR__.'/settings.php';

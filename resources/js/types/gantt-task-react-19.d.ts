@@ -32,6 +32,10 @@ declare module '@rsagiev/gantt-task-react-19' {
         tasks: Task[];
         viewMode?: ViewMode;
         onSelect?: (task: Task) => void;
+        onDateChange?: (task: Task) => void;
+        onProgressChange?: (task: Task) => void;
+        onDoubleClick?: (task: Task) => void;
+        onTaskDelete?: (task: Task) => void;
         listCellWidth?: string;
         columnWidth?: number;
         rowHeight?: number;

@@ -51,7 +51,7 @@ class Group extends Model
         
         return $this->members()
             ->where('user_id', $userId)
-            ->where('role', 'leader')
+            ->where('role', 'owner')
             ->exists();
     }
 

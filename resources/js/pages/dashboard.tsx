@@ -4,12 +4,22 @@ import { Head, Link } from '@inertiajs/react';
 import { Calendar, Clock, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageProps } from "@/types"
+import { ChatList } from "@/components/Chat/chat-list"
+import { ChatWindow } from "@/components/Chat/chat-window"
+import { useState } from "react"
 
 interface Group {
     id: number;
     name: string;
     members_count: number;
     assignments_count: number;
+    avatar?: string;
+    lastMessage?: {
+        content: string;
+        timestamp: string;
+    };
+    unreadCount?: number;
 }
 
 interface Assignment {
@@ -34,7 +44,25 @@ interface Task {
     };
 }
 
-interface Props {
+interface User {
+    id: number;
+    name: string;
+    avatar?: string;
+    status?: "online" | "offline" | "away";
+}
+
+interface Message {
+    id: number;
+    content: string;
+    sender: {
+        id: number;
+        name: string;
+        avatar?: string;
+    };
+    timestamp: string;
+}
+
+interface Props extends PageProps {
     groups: Group[];
     assignments: Assignment[];
     tasks: Task[];
@@ -48,7 +76,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Dashboard({ groups, assignments, tasks, your_generic_secret }: Props) {
+export default function Dashboard({ groups, assignments, tasks, your_generic_secret, auth }: Props) {
+    const [selectedChatId, setSelectedChatId] = useState<number>()
+    const [isLoading, setIsLoading] = useState(false)
+
     // Calculate upcoming tasks (due in the next 3 days)
     const today = new Date();
     const threeDaysFromNow = new Date(today);
@@ -58,6 +89,45 @@ export default function Dashboard({ groups, assignments, tasks, your_generic_sec
         const dueDate = new Date(task.end_date);
         return task.status !== 'completed' && dueDate <= threeDaysFromNow;
     });
+
+    const currentUser: User = {
+        id: auth.user.id,
+        name: auth.user.name,
+        avatar: auth.user.avatar,
+        status: "online"
+    }
+
+    const messages: Message[] = [
+        {
+            id: 1,
+            content: "Hello everyone!",
+            sender: {
+                id: 2,
+                name: "John Doe"
+            },
+            timestamp: "10:30 AM"
+        },
+        {
+            id: 2,
+            content: "Hi there!",
+            sender: {
+                id: auth.user.id,
+                name: auth.user.name
+            },
+            timestamp: "10:31 AM"
+        }
+    ]
+
+    const handleSendMessage = async (content: string) => {
+        setIsLoading(true)
+        try {
+            // TODO: Implement message sending
+            console.log("Sending message:", content)
+            await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -234,6 +304,30 @@ export default function Dashboard({ groups, assignments, tasks, your_generic_sec
                             )}
                         </CardContent>
                     </Card>
+                </div>
+            </div>
+            <div className="flex h-screen">
+                <div className="w-80 border-r">
+                    <ChatList
+                        chats={groups}
+                        selectedChatId={selectedChatId}
+                        onChatSelect={setSelectedChatId}
+                    />
+                </div>
+                <div className="flex-1">
+                    {selectedChatId ? (
+                        <ChatWindow
+                            user={currentUser}
+                            messages={messages}
+                            currentUserId={auth.user.id}
+                            onSendMessage={handleSendMessage}
+                            isLoading={isLoading}
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                            Select a chat to start messaging
+                        </div>
+                    )}
                 </div>
             </div>
         </AppLayout>

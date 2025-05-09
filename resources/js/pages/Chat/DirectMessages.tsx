@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface User {
   id: number;
@@ -19,7 +20,7 @@ interface Message {
   timestamp: string;
   date: string;
   is_from_me: boolean;
-  is_read?: boolean;
+  sender?: User;
 }
 
 interface Conversation {
@@ -46,6 +47,10 @@ export default function DirectMessages({ currentUserId }: DirectMessagesProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Load conversations
   useEffect(() => {
@@ -59,6 +64,11 @@ export default function DirectMessages({ currentUserId }: DirectMessagesProps) {
       } catch (error) {
         console.error('Error fetching conversations:', error);
         setIsLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to load conversations. Please try again.',
+          variant: 'destructive',
+        });
       }
     };
     
@@ -70,77 +80,155 @@ export default function DirectMessages({ currentUserId }: DirectMessagesProps) {
     if (selectedUser) {
       const fetchMessages = async () => {
         try {
-          // This would be a real API call in a complete implementation
-          // For this demo, we'll simulate messages
-          const mockMessages = [
-            {
-              id: 1,
-              content: "Hi there!",
-              timestamp: "10:00 AM",
-              date: "Today",
-              is_from_me: false,
-            },
-            {
-              id: 2,
-              content: "Hello! How are you?",
-              timestamp: "10:05 AM",
-              date: "Today",
-              is_from_me: true,
-            },
-            {
-              id: 3,
-              content: "I'm doing well, thanks for asking!",
-              timestamp: "10:10 AM",
-              date: "Today",
-              is_from_me: false,
-            },
-          ];
-          setMessages(mockMessages);
+          setIsLoadingMessages(true);
+          const response = await axios.get(`/chat/direct/${selectedUser.id}`);
+          setMessages(response.data.messages);
+          setIsLoadingMessages(false);
+          
+          // Update conversation to mark as read
+          setConversations(prevConversations => 
+            prevConversations.map(convo => 
+              convo.user.id === selectedUser.id 
+                ? { ...convo, unreadCount: 0 } 
+                : convo
+            )
+          );
         } catch (error) {
           console.error('Error fetching messages:', error);
+          setIsLoadingMessages(false);
+          toast({
+            title: 'Error',
+            description: 'Failed to load messages. Please try again.',
+            variant: 'destructive',
+          });
         }
       };
       
       fetchMessages();
+      
+      // Setup Pusher channel for real-time messaging
+      const channel = window.Echo.private(`chat.${currentUserId}`);
+      
+      channel.listen('.message.new', (data: Message) => {
+        if (data.sender && data.sender.id === selectedUser.id) {
+          setMessages(prevMessages => [...prevMessages, data]);
+          
+          // Update the conversation list
+          setConversations(prevConversations => 
+            prevConversations.map(convo => {
+              if (convo.user.id === selectedUser.id) {
+                return {
+                  ...convo,
+                  lastMessage: {
+                    content: data.content,
+                    timestamp: data.timestamp,
+                    date: data.date,
+                    is_read: true,
+                    is_from_me: false,
+                  },
+                  unreadCount: 0, // Mark as read since we're in the conversation
+                };
+              }
+              return convo;
+            })
+          );
+        } else if (data.sender) {
+          // Message from someone else, update their conversation unread count
+          setConversations(prevConversations => 
+            prevConversations.map(convo => {
+              if (convo.user.id === data.sender?.id) {
+                return {
+                  ...convo,
+                  lastMessage: {
+                    content: data.content,
+                    timestamp: data.timestamp,
+                    date: data.date,
+                    is_read: false,
+                    is_from_me: false,
+                  },
+                  unreadCount: convo.unreadCount + 1,
+                };
+              }
+              return convo;
+            })
+          );
+        }
+      });
+      
+      return () => {
+        channel.stopListening('.message.new');
+      };
     }
-  }, [selectedUser]);
+  }, [selectedUser, currentUserId]);
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSelectUser = (user: User) => {
     setSelectedUser(user);
+    setSearchQuery('');
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser) return;
+    if (!newMessage.trim() || !selectedUser || isSending) return;
 
     try {
+      setIsSending(true);
       const response = await axios.post(`/chat/direct/${selectedUser.id}`, {
         message: newMessage,
       });
 
       // Add the new message to the list
-      setMessages([...messages, response.data]);
+      setMessages(prevMessages => [...prevMessages, response.data]);
       setNewMessage('');
 
       // Update conversations list
-      const updatedConversations = conversations.map(convo => {
-        if (convo.user.id === selectedUser.id) {
-          return {
-            ...convo,
+      setConversations(prevConversations => {
+        const updatedConversations = prevConversations.map(convo => {
+          if (convo.user.id === selectedUser.id) {
+            return {
+              ...convo,
+              lastMessage: {
+                content: newMessage,
+                timestamp: response.data.timestamp,
+                date: response.data.date,
+                is_read: true,
+                is_from_me: true,
+              },
+            };
+          }
+          return convo;
+        });
+
+        // If this is a new conversation, add it to the list
+        if (!prevConversations.some(convo => convo.user.id === selectedUser.id)) {
+          updatedConversations.unshift({
+            user: selectedUser,
             lastMessage: {
               content: newMessage,
-              timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-              date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              timestamp: response.data.timestamp,
+              date: response.data.date,
               is_read: true,
               is_from_me: true,
             },
-          };
+            unreadCount: 0,
+          });
         }
-        return convo;
-      });
 
-      setConversations(updatedConversations);
+        return updatedConversations;
+      });
+      
+      setIsSending(false);
     } catch (error) {
       console.error('Error sending message:', error);
+      setIsSending(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -277,27 +365,45 @@ export default function DirectMessages({ currentUserId }: DirectMessagesProps) {
             
             {/* Chat messages */}
             <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.is_from_me ? 'justify-end' : 'justify-start'}`}
-                  >
+              {isLoadingMessages ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-5 w-5 animate-spin rounded-full border-t-2 border-gray-500"></div>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-sm text-gray-500 dark:text-gray-400">
+                  <p>No messages yet</p>
+                  <p>Start a conversation!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message) => (
                     <div
-                      className={`max-w-xs rounded-lg px-4 py-2 ${
-                        message.is_from_me
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
-                      }`}
+                      key={message.id}
+                      className={`flex ${message.is_from_me ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p>{message.content}</p>
-                      <span className={`mt-1 block text-xs ${message.is_from_me ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {message.timestamp}
-                      </span>
+                      {!message.is_from_me && message.sender && (
+                        <Avatar className="mr-2 h-8 w-8 self-end">
+                          <AvatarImage src={message.sender.avatar || ''} alt={message.sender.name} />
+                          <AvatarFallback>{message.sender.name.substring(0, 2)}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={`max-w-xs rounded-lg px-4 py-2 ${
+                          message.is_from_me
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100'
+                        }`}
+                      >
+                        <p>{message.content}</p>
+                        <span className={`mt-1 block text-xs ${message.is_from_me ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {message.timestamp}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </ScrollArea>
             
             {/* Message input */}
@@ -308,13 +414,22 @@ export default function DirectMessages({ currentUserId }: DirectMessagesProps) {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
                       handleSendMessage();
                     }
                   }}
+                  disabled={isSending}
                   className="flex-1"
                 />
-                <Button onClick={handleSendMessage}>Send</Button>
+                <Button 
+                  onClick={handleSendMessage} 
+                  disabled={isSending || !newMessage.trim()}
+                >
+                  {isSending ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : 'Send'}
+                </Button>
               </div>
             </div>
           </div>

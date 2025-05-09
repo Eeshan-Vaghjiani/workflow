@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users } from 'lucide-react';
+import { Users, Search } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface User {
   id: number;
@@ -33,7 +34,9 @@ interface Group {
     content: string;
     timestamp: string;
     date: string;
+    sender?: string;
   };
+  memberCount?: number;
 }
 
 interface GroupChatsProps {
@@ -47,54 +50,27 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch user's groups
   useEffect(() => {
     const fetchGroups = async () => {
       try {
         setIsLoading(true);
-        // This would be a real API call in a complete implementation
-        // For now, let's use mock data
-        const mockGroups: Group[] = [
-          {
-            id: 1,
-            name: 'Marketing Team',
-            description: 'Planning and execution of marketing campaigns',
-            members: [
-              { id: 1, name: 'Eva Ghjiani', role: 'owner' },
-              { id: 2, name: 'John Doe', role: 'member' },
-              { id: 3, name: 'Jane Smith', role: 'member' },
-            ],
-            unreadCount: 3,
-            lastMessage: {
-              content: 'Let\'s discuss the new campaign',
-              timestamp: '10:45 AM',
-              date: 'Today',
-            },
-          },
-          {
-            id: 2,
-            name: 'Development Team',
-            description: 'Software development and bug fixes',
-            members: [
-              { id: 1, name: 'Eva Ghjiani', role: 'member' },
-              { id: 4, name: 'Michael Johnson', role: 'owner' },
-              { id: 5, name: 'Sarah Williams', role: 'member' },
-            ],
-            unreadCount: 0,
-            lastMessage: {
-              content: 'Push completed, ready for QA',
-              timestamp: '3:22 PM',
-              date: 'Yesterday',
-            },
-          },
-        ];
-        
-        setGroups(mockGroups);
+        const response = await axios.get('/chat/groups');
+        setGroups(response.data);
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching groups:', error);
         setIsLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to load groups. Please try again.',
+          variant: 'destructive',
+        });
       }
     };
     
@@ -119,30 +95,62 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
         } catch (error) {
           console.error('Error fetching group messages:', error);
           setLoadingMessages(false);
+          toast({
+            title: 'Error',
+            description: 'Failed to load group messages. Please try again.',
+            variant: 'destructive',
+          });
         }
       };
       
       fetchMessages();
+      
+      // Set up Pusher channel for real-time updates
+      const channel = window.Echo.join(`group.${selectedGroup.id}`);
+      
+      channel.listen('.group.message', (data: Message) => {
+        // Only add the message if it's not already in our list
+        if (!messages.some(msg => msg.id === data.id)) {
+          setMessages(prevMessages => [...prevMessages, data]);
+        }
+      });
+      
+      // Handle presence events
+      channel.here((users: User[]) => {
+        console.log('Users currently in the channel:', users);
+      });
+      
+      channel.joining((user: User) => {
+        console.log('User joined:', user);
+      });
+      
+      channel.leaving((user: User) => {
+        console.log('User left:', user);
+      });
+      
+      return () => {
+        channel.stopListening('.group.message');
+        // Clean up any additional listeners
+        window.Echo.leave(`group.${selectedGroup.id}`);
+      };
     }
   }, [selectedGroup?.id]);
 
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const handleSelectGroup = (group: Group) => {
     setSelectedGroup(group);
-    
-    // Mark group as read by setting unreadCount to 0
-    setGroups(prevGroups => 
-      prevGroups.map(g => 
-        g.id === group.id 
-          ? { ...g, unreadCount: 0 } 
-          : g
-      )
-    );
+    setSearchQuery('');
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedGroup) return;
+    if (!newMessage.trim() || !selectedGroup || isSending) return;
 
     try {
+      setIsSending(true);
       const response = await axios.post(`/chat/group/${selectedGroup.id}`, {
         message: newMessage,
       });
@@ -159,17 +167,32 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
                 ...group,
                 lastMessage: {
                   content: newMessage,
-                  timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-                  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                  timestamp: response.data.timestamp,
+                  date: response.data.date,
+                  sender: 'You',
                 },
               }
             : group
         )
       );
+      
+      setIsSending(false);
     } catch (error) {
       console.error('Error sending message:', error);
+      setIsSending(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to send message. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
+  
+  const filteredGroups = searchQuery
+    ? groups.filter(group => 
+        group.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : groups;
 
   return (
     <div className="flex h-full flex-col md:flex-row">
@@ -177,7 +200,15 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
       <div className="h-1/3 w-full border-b border-r border-gray-200 md:h-full md:w-80 md:flex-shrink-0 dark:border-gray-700">
         <div className="flex h-full flex-col">
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="font-semibold text-lg">Group Chats</h3>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Input
+                placeholder="Search groups..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
           
           <ScrollArea className="flex-1">
@@ -185,14 +216,14 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
               <div className="flex items-center justify-center py-8">
                 <div className="h-5 w-5 animate-spin rounded-full border-t-2 border-gray-500"></div>
               </div>
-            ) : groups.length === 0 ? (
+            ) : filteredGroups.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 <p>You're not in any groups yet</p>
                 <p>Join or create a group to start chatting</p>
               </div>
             ) : (
               <div className="p-2 space-y-1">
-                {groups.map((group) => (
+                {filteredGroups.map((group) => (
                   <button
                     key={group.id}
                     className={`flex w-full items-center gap-2 rounded-md p-2 ${
@@ -228,6 +259,7 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
                       <div className="flex w-full justify-between">
                         {group.lastMessage && (
                           <span className="truncate text-sm text-gray-500 dark:text-gray-400">
+                            {group.lastMessage.sender ? `${group.lastMessage.sender}: ` : ''}
                             {group.lastMessage.content}
                           </span>
                         )}
@@ -266,12 +298,9 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
                 <div className="ml-3">
                   <h3 className="font-semibold">{selectedGroup.name}</h3>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {selectedGroup.members?.length || 0} members
+                    {selectedGroup.members?.length || selectedGroup.memberCount || 0} members
                   </p>
                 </div>
-              </div>
-              <div className="flex">
-                {/* Add buttons for group actions here if needed */}
               </div>
             </div>
             
@@ -335,6 +364,7 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
                       )}
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </ScrollArea>
@@ -347,13 +377,22 @@ export default function GroupChats({ currentUserId }: GroupChatsProps) {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
                       handleSendMessage();
                     }
                   }}
+                  disabled={isSending}
                   className="flex-1"
                 />
-                <Button onClick={handleSendMessage}>Send</Button>
+                <Button 
+                  onClick={handleSendMessage}
+                  disabled={isSending || !newMessage.trim()}
+                >
+                  {isSending ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  ) : 'Send'}
+                </Button>
               </div>
             </div>
           </div>

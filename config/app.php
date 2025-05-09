@@ -123,4 +123,21 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'providers' => [
+        // ... other providers ...
+        
+        /*
+         * Package Service Providers...
+         */
+
+        /*
+         * Application Service Providers...
+         */
+        App\Providers\AppServiceProvider::class,
+        // App\Providers\AuthServiceProvider::class, // Commented out as it doesn't exist
+        App\Providers\BroadcastServiceProvider::class,
+        // App\Providers\EventServiceProvider::class, // Commented out as it doesn't exist
+        // App\Providers\RouteServiceProvider::class, // Commented out as it doesn't exist
+    ],
+
 ];

@@ -8,6 +8,8 @@ use App\Models\GroupChatMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Events\NewDirectMessage;
+use App\Events\NewGroupMessage;
 
 class ChatController extends Controller
 {
@@ -73,6 +75,54 @@ class ChatController extends Controller
     }
     
     /**
+     * Get messages for a direct message conversation with a specific user.
+     */
+    public function getDirectMessages(Request $request, User $user)
+    {
+        $currentUser = auth()->user();
+        
+        $messages = DirectMessage::where(function ($query) use ($currentUser, $user) {
+                $query->where('sender_id', $currentUser->id)
+                    ->where('receiver_id', $user->id);
+            })
+            ->orWhere(function ($query) use ($currentUser, $user) {
+                $query->where('sender_id', $user->id)
+                    ->where('receiver_id', $currentUser->id);
+            })
+            ->with('sender:id,name,avatar')
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->map(function ($message) use ($currentUser) {
+                return [
+                    'id' => $message->id,
+                    'content' => $message->message,
+                    'timestamp' => $message->created_at->format('g:i A'),
+                    'date' => $message->created_at->format('M j, Y'),
+                    'is_from_me' => $message->sender_id == $currentUser->id,
+                    'sender' => $message->sender,
+                ];
+            });
+        
+        // Mark all messages from this user as read
+        DirectMessage::where('sender_id', $user->id)
+            ->where('receiver_id', $currentUser->id)
+            ->where('read', false)
+            ->update(['read' => true]);
+        
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'avatar' => $user->avatar,
+            'status' => $user->status ?? 'offline',
+        ];
+        
+        return response()->json([
+            'user' => $userData,
+            'messages' => $messages,
+        ]);
+    }
+    
+    /**
      * Display group chat view.
      */
     public function groupChat(Group $group)
@@ -132,13 +182,21 @@ class ChatController extends Controller
             'read' => false,
         ]);
         
-        return response()->json([
+        $message->load('sender:id,name,avatar');
+        
+        $messageData = [
             'id' => $message->id,
             'content' => $message->message,
             'timestamp' => $message->created_at->format('g:i A'),
             'date' => $message->created_at->format('M j, Y'),
             'is_from_me' => true,
-        ]);
+            'sender' => $message->sender,
+        ];
+        
+        // Broadcast the message
+        broadcast(new NewDirectMessage($message, $messageData))->toOthers();
+        
+        return response()->json($messageData);
     }
     
     /**
@@ -165,14 +223,19 @@ class ChatController extends Controller
         // Load the user relationship
         $message->load('user:id,name,avatar');
         
-        return response()->json([
+        $messageData = [
             'id' => $message->id,
             'content' => $message->message,
             'sender' => $message->user,
             'timestamp' => $message->created_at->format('g:i A'),
             'date' => $message->created_at->format('M j, Y'),
             'is_system_message' => false,
-        ]);
+        ];
+        
+        // Broadcast the message
+        broadcast(new NewGroupMessage($group->id, $messageData))->toOthers();
+        
+        return response()->json($messageData);
     }
     
     /**
@@ -184,5 +247,39 @@ class ChatController extends Controller
             ->get(['id', 'name', 'avatar', 'status']);
             
         return response()->json($users);
+    }
+    
+    /**
+     * Get all chat groups the user is a member of.
+     */
+    public function getGroups()
+    {
+        $user = auth()->user();
+        
+        $groups = $user->groups()
+            ->get()
+            ->map(function ($group) {
+                // Get the latest message for each group
+                $latestMessage = $group->chatMessages()
+                    ->with('user:id,name')
+                    ->latest()
+                    ->first();
+                
+                return [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'description' => $group->description,
+                    'avatar' => $group->avatar,
+                    'lastMessage' => $latestMessage ? [
+                        'content' => $latestMessage->message,
+                        'sender' => $latestMessage->is_system_message ? 'System' : $latestMessage->user->name,
+                        'timestamp' => $latestMessage->created_at->format('g:i A'),
+                        'date' => $latestMessage->created_at->format('M j, Y'),
+                    ] : null,
+                    'memberCount' => $group->members()->count(),
+                ];
+            });
+            
+        return response()->json($groups);
     }
 } 

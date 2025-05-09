@@ -9,6 +9,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Broadcast;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -47,10 +48,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Chat
     Route::get('/chat', [ChatController::class, 'index'])->name('chat');
     Route::get('/chat/direct', [ChatController::class, 'directMessages'])->name('chat.direct');
+    Route::get('/chat/direct/{user}', [ChatController::class, 'getDirectMessages'])->name('chat.direct.messages');
     Route::get('/chat/group/{group}', [ChatController::class, 'groupChat'])->name('chat.group');
     Route::post('/chat/direct/{user}', [ChatController::class, 'sendDirectMessage'])->name('chat.direct.send');
     Route::post('/chat/group/{group}', [ChatController::class, 'sendGroupMessage'])->name('chat.group.send');
     Route::get('/chat/contacts', [ChatController::class, 'getContacts'])->name('chat.contacts');
+    Route::get('/chat/groups', [ChatController::class, 'getGroups'])->name('chat.groups');
 });
 
 // Calendar routes
@@ -58,6 +61,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     Route::post('/api/calendar/sync', [CalendarController::class, 'sync'])->name('calendar.sync');
 });
+
+// Add broadcasting authentication route
+Broadcast::routes(['middleware' => ['web', 'auth']]);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

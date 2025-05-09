@@ -33,6 +33,10 @@ return [
 
     'stores' => [
 
+        'apc' => [
+            'driver' => 'apc',
+        ],
+
         'array' => [
             'driver' => 'array',
             'serialize' => false,
@@ -40,10 +44,9 @@ return [
 
         'database' => [
             'driver' => 'database',
-            'connection' => env('DB_CACHE_CONNECTION'),
-            'table' => env('DB_CACHE_TABLE', 'cache'),
-            'lock_connection' => env('your_generic_secret'),
-            'lock_table' => env('DB_CACHE_LOCK_TABLE'),
+            'table' => 'cache',
+            'connection' => null,
+            'lock_connection' => null,
         ],
 
         'file' => [
@@ -73,8 +76,8 @@ return [
 
         'redis' => [
             'driver' => 'redis',
-            'connection' => env('REDIS_CACHE_CONNECTION', 'cache'),
-            'lock_connection' => env('your_generic_secretION', 'default'),
+            'connection' => 'cache',
+            'lock_connection' => 'default',
         ],
 
         'dynamodb' => [

@@ -11,10 +11,16 @@ window.Pusher = Pusher;
 
 window.Echo = new Echo({
     broadcaster: 'pusher',
-    key: 'your_pusher_app_key',
-    cluster: 'mt1',
+    key: import.meta.env.VITE_PUSHER_APP_KEY || 'your_pusher_app_key',
+    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
     forceTLS: true,
     // Disable stats which can cause issues
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
+    authEndpoint: '/broadcasting/auth',
+    auth: {
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        }
+    }
 }); 

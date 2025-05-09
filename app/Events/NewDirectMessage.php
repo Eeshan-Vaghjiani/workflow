@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Models\DirectMessage;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -10,19 +11,19 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NewGroupMessage implements ShouldBroadcast
+class NewDirectMessage implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The group ID.
+     * The direct message instance.
      *
-     * @var int
+     * @var \App\Models\DirectMessage
      */
-    public $groupId;
-
+    public $message;
+    
     /**
-     * The message data.
+     * The formatted message data.
      *
      * @var array
      */
@@ -31,9 +32,9 @@ class NewGroupMessage implements ShouldBroadcast
     /**
      * Create a new event instance.
      */
-    public function __construct(int $groupId, array $messageData)
+    public function __construct(DirectMessage $message, array $messageData)
     {
-        $this->groupId = $groupId;
+        $this->message = $message;
         $this->messageData = $messageData;
     }
 
@@ -45,7 +46,7 @@ class NewGroupMessage implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PresenceChannel('group.'.$this->groupId),
+            new PrivateChannel('chat.'.$this->message->receiver_id),
         ];
     }
 
@@ -54,7 +55,7 @@ class NewGroupMessage implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'group.message';
+        return 'message.new';
     }
     
     /**

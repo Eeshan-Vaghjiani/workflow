@@ -27,7 +27,7 @@ export default function ChatIndex({ currentUserId }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Chat" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Chat</h1>
                 </div>
@@ -42,11 +42,11 @@ export default function ChatIndex({ currentUserId }: Props) {
                         <TabsTrigger value="groups">Group Chats</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="direct" className="h-full border rounded-md">
+                    <TabsContent value="direct" className="h-full border rounded-md overflow-hidden">
                         <DirectMessages currentUserId={currentUserId} />
                     </TabsContent>
                     
-                    <TabsContent value="groups" className="h-full border rounded-md">
+                    <TabsContent value="groups" className="h-full border rounded-md overflow-hidden">
                         <GroupChats currentUserId={currentUserId} />
                     </TabsContent>
                 </Tabs>

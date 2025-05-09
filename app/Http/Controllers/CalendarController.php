@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
+use App\Models\GroupTask;
 use App\Models\Assignment;
 use App\Models\Group;
 use App\Models\GoogleCalendar;
@@ -20,8 +20,8 @@ class CalendarController extends Controller
         $user = auth()->user();
         
         // Get all tasks for the user
-        $tasks = Task::where('user_id', $user->id)
-            ->with(['assignment', 'group'])
+        $tasks = GroupTask::where('assigned_to', $user->id)
+            ->with(['assignment'])
             ->get()
             ->map(function ($task) {
                 return [
@@ -35,8 +35,6 @@ class CalendarController extends Controller
                     'textColor' => '#ffffff',
                     'priority' => $task->priority,
                     'status' => $task->status,
-                    'progress' => $task->progress,
-                    'groupName' => $task->group?->name,
                     'assignmentTitle' => $task->assignment?->title,
                 ];
             });
@@ -87,8 +85,8 @@ class CalendarController extends Controller
         }
         
         // Get all tasks and assignments
-        $tasks = Task::where('user_id', $user->id)
-            ->with(['assignment', 'group'])
+        $tasks = GroupTask::where('assigned_to', $user->id)
+            ->with(['assignment'])
             ->get();
             
         $assignments = Assignment::whereHas('groups', function ($query) use ($user) {

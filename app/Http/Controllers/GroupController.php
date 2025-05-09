@@ -52,7 +52,7 @@ class GroupController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        $group->members()->attach(auth()->id(), ['is_leader' => true]);
+        $group->members()->attach(auth()->id(), ['role' => 'owner']);
 
         return redirect()->route('groups.show', $group);
     }
@@ -178,7 +178,7 @@ class GroupController extends Controller
 
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'is_leader' => 'boolean',
+            'role' => 'nullable|string|in:owner,admin,member',
         ]);
 
         $userId = $validated['user_id'];
@@ -189,7 +189,7 @@ class GroupController extends Controller
 
         // Add user to group
         $group->members()->attach($userId, [
-            'is_leader' => $validated['is_leader'] ?? false,
+            'role' => $validated['role'] ?? 'member',
         ]);
 
         // Create a system message in the group chat to announce the new member

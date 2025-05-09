@@ -34,7 +34,7 @@ class GroupAssignmentController extends Controller
     {
         $groups = Group::whereHas('members', function ($query) {
             $query->where('user_id', auth()->id())
-                ->where('is_leader', true);
+                ->where('role', 'owner');
         })->get();
 
         return Inertia::render('Assignments/Create', [

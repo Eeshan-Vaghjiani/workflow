@@ -6,6 +6,7 @@ use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -42,6 +43,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('group-tasks', GroupTaskController::class);
     Route::post('group-assignments/{assignment}/tasks', [GroupTaskController::class, 'store'])->name('group-assignments.tasks.store');
     Route::post('group-tasks/{groupTask}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete');
+    
+    // Chat
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat');
+    Route::get('/chat/direct', [ChatController::class, 'directMessages'])->name('chat.direct');
+    Route::get('/chat/group/{group}', [ChatController::class, 'groupChat'])->name('chat.group');
+    Route::post('/chat/direct/{user}', [ChatController::class, 'sendDirectMessage'])->name('chat.direct.send');
+    Route::post('/chat/group/{group}', [ChatController::class, 'sendGroupMessage'])->name('chat.group.send');
+    Route::get('/chat/contacts', [ChatController::class, 'getContacts'])->name('chat.contacts');
 });
 
 // Calendar routes

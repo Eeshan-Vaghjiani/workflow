@@ -137,7 +137,7 @@ return [
         // App\Providers\AuthServiceProvider::class, // Commented out as it doesn't exist
         App\Providers\your_generic_secret::class,
         // App\Providers\EventServiceProvider::class, // Commented out as it doesn't exist
-        // App\Providers\RouteServiceProvider::class, // Commented out as it doesn't exist
+        App\Providers\RouteServiceProvider::class,
     ],
 
 ];

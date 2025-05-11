@@ -18,6 +18,10 @@ class your_generic_secretroller extends Controller
      */
     public function create(Request $request): Response
     {
+        if (Auth::check()) {
+            return Inertia::location(route('dashboard'));
+        }
+
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
@@ -27,24 +31,43 @@ class your_generic_secretroller extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse|Response
     {
-        $request->authenticate();
+        try {
+            $request->authenticate();
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            if ($request->header('X-Inertia')) {
+                return Inertia::location(route('dashboard'));
+            }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            return redirect()->intended(route('dashboard'));
+        } catch (\Exception $e) {
+            if ($request->header('X-Inertia')) {
+                return back()->withErrors([
+                    'email' => 'The provided credentials do not match our records.',
+                ]);
+            }
+
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ]);
+        }
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): RedirectResponse|Response
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($request->header('X-Inertia')) {
+            return Inertia::location('/');
+        }
 
         return redirect('/');
     }

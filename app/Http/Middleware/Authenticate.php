@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class Authenticate extends Middleware
 {
@@ -12,6 +13,22 @@ class Authenticate extends Middleware
      */
     protected function redirectTo(Request $request): ?string
     {
-        return $request->expectsJson() ? null : route('login');
+        if ($request->expectsJson() || $request->header('X-Inertia')) {
+            return null;
+        }
+
+        return route('login');
+    }
+
+    /**
+     * Handle an unauthenticated user.
+     */
+    protected function unauthenticated($request, array $guards)
+    {
+        if ($request->expectsJson() || $request->header('X-Inertia')) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        return redirect()->guest(route('login'));
     }
 }

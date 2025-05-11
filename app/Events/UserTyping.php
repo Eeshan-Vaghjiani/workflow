@@ -55,4 +55,4 @@ class UserTyping implements ShouldBroadcast
     {
         return 'user.typing';
     }
-} 
+}

@@ -24,26 +24,26 @@ Route::middleware('auth:sanctum')->group(function () {
     // Groups
     Route::apiResource('groups', GroupController::class);
     Route::apiResource('groups.members', GroupMemberController::class)->only(['index', 'store', 'destroy']);
-    
+
     // Assignments
     Route::apiResource('groups.assignments', your_generic_secretr::class);
-    
+
     // Tasks
     Route::apiResource('groups.assignments.tasks', GroupTaskController::class);
     Route::post('groups.assignments.tasks/{task}/complete', [GroupTaskController::class, 'complete']);
     Route::post('groups.assignments.tasks/{assignment}/reorder', [GroupTaskController::class, 'reorder']);
     Route::post('/group/tasks', [GroupTaskController::class, 'store'])->name('group.tasks.store');
-    
+
     // Direct task updates (for Gantt chart and Kanban)
     Route::put('tasks/{task}', [TaskController::class, 'update']);
     Route::post('assignments/{assignment}/reorder-tasks', [TaskController::class, 'reorder']);
-    
+
     // Group Chat
     Route::get('groups/{group}/messages', [GroupChatController::class, 'index']);
     Route::post('groups/{group}/messages', [GroupChatController::class, 'store']);
     Route::post('groups/{group}/read', [GroupChatController::class, 'markAsRead']);
     Route::post('groups/{group}/typing', [GroupChatController::class, 'typing']);
-    
+
     // Direct Messages
     Route::get('direct-messages', [DirectMessageController::class, 'index']);
     Route::get('direct-messages/{user}', [DirectMessageController::class, 'messages']);
@@ -60,4 +60,4 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
-}); 
+});

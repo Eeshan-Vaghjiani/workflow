@@ -70,7 +70,9 @@
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [
+                "app/Providers/your_generic_secret.php"
+            ]
         }
     },
     "config": {

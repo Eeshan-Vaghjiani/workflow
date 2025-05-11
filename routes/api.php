@@ -22,19 +22,35 @@ use App\Http\Controllers\API\DirectMessageController;
 |
 */
 
+// Public API routes
 Route::middleware('auth:sanctum')->group(function () {
     // Groups
-    Route::apiResource('groups', GroupController::class);
-    Route::apiResource('groups.members', GroupMemberController::class)->only(['index', 'store', 'destroy']);
+    Route::get('groups', [GroupController::class, 'index']);
+    Route::get('groups/{group}', [GroupController::class, 'show']);
+    Route::post('groups', [GroupController::class, 'store']);
+    Route::put('groups/{group}', [GroupController::class, 'update']);
+    Route::delete('groups/{group}', [GroupController::class, 'destroy']);
 
-    // Assignments
-    Route::apiResource('groups.assignments', GroupAssignmentController::class);
+    // Group Members
+    Route::get('groups/{group}/members', [GroupMemberController::class, 'index']);
+    Route::post('groups/{group}/members', [GroupMemberController::class, 'store']);
+    Route::delete('groups/{group}/members/{user}', [GroupMemberController::class, 'destroy']);
+
+    // Group Assignments
+    Route::get('groups/{group}/assignments', [GroupAssignmentController::class, 'index']);
+    Route::post('groups/{group}/assignments', [GroupAssignmentController::class, 'store']);
+    Route::get('groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'show']);
+    Route::put('groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'update']);
+    Route::delete('groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'destroy']);
 
     // Tasks
-    Route::apiResource('groups.assignments.tasks', GroupTaskController::class);
-    Route::post('groups.assignments.tasks/{task}/complete', [GroupTaskController::class, 'complete']);
-    Route::post('groups.assignments.tasks/{assignment}/reorder', [GroupTaskController::class, 'reorder']);
-    Route::post('/group/tasks', [GroupTaskController::class, 'store'])->name('group.tasks.store');
+    Route::get('groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index']);
+    Route::post('groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'store']);
+    Route::get('groups/{group}/assignments/{assignment}/tasks/{task}', [GroupTaskController::class, 'show']);
+    Route::put('groups/{group}/assignments/{assignment}/tasks/{task}', [GroupTaskController::class, 'update']);
+    Route::delete('groups/{group}/assignments/{assignment}/tasks/{task}', [GroupTaskController::class, 'destroy']);
+    Route::post('groups/{group}/assignments/{assignment}/tasks/{task}/complete', [GroupTaskController::class, 'complete']);
+    Route::post('groups/{group}/assignments/{assignment}/tasks/reorder', [GroupTaskController::class, 'reorder']);
 
     // Direct task updates (for Gantt chart and Kanban)
     Route::put('tasks/{task}', [TaskController::class, 'update']);

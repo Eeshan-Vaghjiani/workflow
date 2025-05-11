@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DirectMessage;
@@ -14,7 +14,7 @@ class DirectMessageController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         // Get all direct message conversations
         $conversations = DirectMessage::where(function ($query) use ($user) {
             $query->where('sender_id', $user->id)
@@ -24,8 +24,8 @@ class DirectMessageController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy(function ($message) use ($user) {
-                return $message->sender_id === $user->id 
-                    ? $message->receiver_id 
+                return $message->sender_id === $user->id
+                    ? $message->receiver_id
                     : $message->sender_id;
             })
             ->map(function ($messages) use ($user) {
@@ -50,7 +50,7 @@ class DirectMessageController extends Controller
     public function messages($userId)
     {
         $currentUser = Auth::user();
-        
+
         $messages = DirectMessage::where(function ($query) use ($currentUser, $userId) {
             $query->where(function ($q) use ($currentUser, $userId) {
                 $q->where('sender_id', $currentUser->id)
@@ -92,7 +92,7 @@ class DirectMessageController extends Controller
     public function markAsRead($userId)
     {
         $currentUser = Auth::user();
-        
+
         DirectMessage::where('sender_id', $userId)
             ->where('receiver_id', $currentUser->id)
             ->where('read', false)
@@ -100,4 +100,4 @@ class DirectMessageController extends Controller
 
         return response()->json(['success' => true]);
     }
-} 
+}

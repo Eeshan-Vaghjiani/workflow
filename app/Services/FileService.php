@@ -52,4 +52,16 @@ class FileService
     {
         return Storage::disk($disk)->delete($path);
     }
-} 
+
+    /**
+     * Check if a file exists
+     *
+     * @param string $path
+     * @param string $disk
+     * @return bool
+     */
+    public function exists(string $path, string $disk = 'local')
+    {
+        return Storage::disk($disk)->exists($path);
+    }
+}

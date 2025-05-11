@@ -136,4 +136,4 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
             </form>
         </div>
     );
-} 
+}

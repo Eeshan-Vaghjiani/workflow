@@ -56,7 +56,7 @@ class NewGroupMessage implements ShouldBroadcast
     {
         return 'group.message';
     }
-    
+
     /**
      * Get the data to broadcast.
      *
@@ -66,4 +66,4 @@ class NewGroupMessage implements ShouldBroadcast
     {
         return $this->messageData;
     }
-} 
+}

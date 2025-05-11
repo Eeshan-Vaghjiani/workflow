@@ -1,6 +1,6 @@
-import { ChatHeader } from "@/components/chat/chat-header"
-import { ChatInput } from "@/components/chat/chat-input"
-import { ChatMessage } from "@/components/chat/chat-message"
+import { ChatHeader } from "@/components/Chat/chat-header"
+import { ChatInput } from "@/components/Chat/chat-input"
+import { ChatMessage } from "@/components/Chat/chat-message"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/components/ui/use-toast"
 

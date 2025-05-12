@@ -11,7 +11,6 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: async (name) => {
         const pages = import.meta.glob('./pages/**/*.tsx');
-        // Make case insensitive page resolution to handle both Dashboard.tsx and dashboard.tsx
         const normalizedName = name.charAt(0).toLowerCase() + name.slice(1);
 
         let path = `./pages/${normalizedName}.tsx`;

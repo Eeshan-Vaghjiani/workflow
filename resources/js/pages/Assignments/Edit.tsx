@@ -130,7 +130,7 @@ export default function AssignmentsEdit({ assignment, errors }: Props) {
 
                         <div className="flex justify-end">
                             <a
-                                href={route('group-assignments.show', assignment.id)}
+                                href={route('group-assignments.show', { group: assignment.group_id, assignment: assignment.id })}
                                 className="inline-flex items-center px-4 py-2 mr-3 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
                             >
                                 Cancel

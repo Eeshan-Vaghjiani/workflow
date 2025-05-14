@@ -17,6 +17,10 @@ interface Task {
     status: 'pending' | 'completed';
     priority: 'low' | 'medium' | 'high';
     assignment_id: number;
+    assignment: {
+        id: number;
+        group_id: number;
+    };
     assigned_to: number | null;
 }
 
@@ -43,7 +47,11 @@ export default function Edit({ task, group_members, errors }: Props) {
         },
         {
             title: task.title,
-            href: route('group-tasks.show', task.id),
+            href: route('group-tasks.show', {
+                group: task.assignment.group_id,
+                assignment: task.assignment_id,
+                task: task.id
+            }),
         },
         {
             title: 'Edit',
@@ -172,7 +180,11 @@ export default function Edit({ task, group_members, errors }: Props) {
 
                             <div className="flex justify-end space-x-2">
                                 <a
-                                    href={route('group-tasks.show', task.id)}
+                                    href={route('group-tasks.show', {
+                                        group: task.assignment.group_id,
+                                        assignment: task.assignment_id,
+                                        task: task.id
+                                    })}
                                     className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
                                 >
                                     Cancel

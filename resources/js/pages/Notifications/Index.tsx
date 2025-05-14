@@ -115,7 +115,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                         </p>
                         <div className="mt-2">
                             <Link
-                                href={route('group-assignments.show', data.assignment_id)}
+                                href={route('group-assignments.show', { group: data.group_id, assignment: data.assignment_id })}
                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                             >
                                 View Assignment
@@ -132,7 +132,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                         </p>
                         <div className="mt-2">
                             <Link
-                                href={route('group-assignments.show', data.assignment_id)}
+                                href={route('group-assignments.show', { group: data.group_id, assignment: data.assignment_id })}
                                 className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                             >
                                 View Assignment

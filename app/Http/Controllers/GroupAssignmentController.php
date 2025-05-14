@@ -12,18 +12,29 @@ class GroupAssignmentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Group $group = null)
     {
-        $assignments = GroupAssignment::query()
-            ->with('group:id,name')
-            ->whereHas('group.members', function ($query) {
+        $query = GroupAssignment::query()->with('group:id,name');
+        
+        // Filter by group if one is provided
+        if ($group) {
+            if (!$group->members()->where('user_id', auth()->id())->exists()) {
+                abort(403, 'You are not a member of this group');
+            }
+            
+            $query->where('group_id', $group->id);
+        } else {
+            // If no group provided, show all assignments for the user
+            $query->whereHas('group.members', function ($query) {
                 $query->where('user_id', auth()->id());
-            })
-            ->latest()
-            ->get();
+            });
+        }
+        
+        $assignments = $query->latest()->get();
 
         return Inertia::render('Assignments/Index', [
-            'assignments' => $assignments
+            'assignments' => $assignments,
+            'group' => $group
         ]);
     }
 
@@ -81,7 +92,10 @@ class GroupAssignmentController extends Controller
             }
         }
 
-        return redirect()->route('group-assignments.show', $assignment);
+        return redirect()->route('group-assignments.show', [
+            'group' => $assignment->group_id,
+            'assignment' => $assignment->id
+        ]);
     }
 
     /**
@@ -139,7 +153,10 @@ class GroupAssignmentController extends Controller
             'unit_name' => $validated['unit_name'] ?? $groupAssignment->unit_name,
         ]);
 
-        return redirect()->route('group-assignments.show', $groupAssignment);
+        return redirect()->route('group-assignments.show', [
+            'group' => $groupAssignment->group_id,
+            'assignment' => $groupAssignment->id
+        ]);
     }
 
     /**
@@ -153,6 +170,8 @@ class GroupAssignmentController extends Controller
 
         $groupAssignment->delete();
 
-        return redirect()->route('group-assignments.index');
+        return redirect()->route('group-assignments.index', [
+            'group' => $groupAssignment->group_id
+        ]);
     }
 }

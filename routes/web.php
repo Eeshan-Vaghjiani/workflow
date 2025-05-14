@@ -8,6 +8,7 @@ use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\GroupChatController;
 use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Broadcast;
@@ -35,8 +36,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     
     // Simple redirects for Dashboard links
     Route::get('/calendar', function() { return redirect('/dashboard/calendar'); });
-    Route::get('/group-assignments', function() { return redirect('/groups'); });
-    Route::get('/notifications', function() { return redirect('/dashboard'); });
+    Route::get('/group-assignments', function() { return redirect()->route('group-assignments.index', ['group' => 1]); });
+    Route::get('/assignments', function() { return redirect()->route('group-assignments.index', ['group' => 1]); });
+    Route::get('/tasks', [DashboardController::class, 'tasks'])->name('group-tasks.index');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+    Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
     
     // Groups
     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
@@ -94,6 +99,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/chat', [GroupChatController::class, 'index'])->name('chat');
     Route::get('/chat/{group}', [GroupChatController::class, 'show'])->name('chat.show');
     Route::post('/chat/{group}/messages', [GroupChatController::class, 'store'])->name('chat.messages.store');
+    Route::get('/chat/{group}/messages', [GroupChatController::class, 'getMessages'])->name('chat.messages.index');
 });
 
 // Add broadcasting authentication route

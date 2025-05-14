@@ -36,11 +36,13 @@ export default function Show({ task }: Props) {
         },
         {
             title: task.title,
-            href: route('group-tasks.show', {
-                group: task.assignment.group.id,
-                assignment: task.assignment.id,
-                task: task.id
-            }),
+            href: task.assignment && task.assignment.group 
+                ? route('group-tasks.show', {
+                    group: task.assignment.group.id,
+                    assignment: task.assignment.id,
+                    task: task.id
+                })
+                : route('group-tasks.index'),
         },
     ];
 
@@ -97,24 +99,30 @@ export default function Show({ task }: Props) {
                         <div>
                             <h2 className="text-lg font-medium mb-2">Related</h2>
                             <ul className="space-y-2">
-                                <li className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Assignment:</span>
-                                    <Link
-                                        href={route('group-assignments.show', { group: task.assignment.group.id, assignment: task.assignment.id })}
-                                        className="text-blue-600 hover:text-blue-800"
-                                    >
-                                        {task.assignment.title}
-                                    </Link>
-                                </li>
-                                <li className="flex justify-between">
-                                    <span className="text-gray-500 dark:text-gray-400">Group:</span>
-                                    <Link
-                                        href={route('groups.show', task.assignment.group.id)}
-                                        className="text-blue-600 hover:text-blue-800"
-                                    >
-                                        {task.assignment.group.name}
-                                    </Link>
-                                </li>
+                                {task.assignment && (
+                                    <li className="flex justify-between">
+                                        <span className="text-gray-500 dark:text-gray-400">Assignment:</span>
+                                        {task.assignment.group && (
+                                            <Link
+                                                href={route('group-assignments.show', { group: task.assignment.group.id, assignment: task.assignment.id })}
+                                                className="text-blue-600 hover:text-blue-800"
+                                            >
+                                                {task.assignment.title}
+                                            </Link>
+                                        )}
+                                    </li>
+                                )}
+                                {task.assignment && task.assignment.group && (
+                                    <li className="flex justify-between">
+                                        <span className="text-gray-500 dark:text-gray-400">Group:</span>
+                                        <Link
+                                            href={route('groups.show', task.assignment.group.id)}
+                                            className="text-blue-600 hover:text-blue-800"
+                                        >
+                                            {task.assignment.group.name}
+                                        </Link>
+                                    </li>
+                                )}
                             </ul>
                         </div>
                     </div>
@@ -131,7 +139,7 @@ export default function Show({ task }: Props) {
                         <div className="flex space-x-2">
                             {task.status === 'pending' && (
                                 <Link
-                                    href={route('group-tasks.complete', task.id)}
+                                    href={route('group-tasks.complete-simple', task.id)}
                                     method="post"
                                     as="button"
                                     className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
@@ -140,7 +148,7 @@ export default function Show({ task }: Props) {
                                 </Link>
                             )}
                             <Link
-                                href={route('group-tasks.edit', task.id)}
+                                href={route('group-tasks.edit-simple', task.id)}
                                 className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700"
                             >
                                 Edit Task

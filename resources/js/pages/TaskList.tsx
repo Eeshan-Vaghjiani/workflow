@@ -87,20 +87,28 @@ export default function TaskList({ tasks = [] }: Props) {
                                 </div>
 
                                 <div className="mt-4 flex space-x-2">
-                                    <Link
-                                        href={route('group-tasks.show', { 
-                                            group: task.assignment?.group?.id, 
-                                            assignment: task.assignment?.id, 
-                                            task: task.id 
-                                        })}
-                                        className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
-                                    >
-                                        View Details
-                                    </Link>
+                                    {task.assignment?.group?.id && task.assignment?.id ? (
+                                        <Link
+                                            href={route('group-tasks.show', { 
+                                                group: task.assignment.group.id, 
+                                                assignment: task.assignment.id, 
+                                                task: task.id 
+                                            })}
+                                            className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                                        >
+                                            View Details
+                                        </Link>
+                                    ) : (
+                                        <span 
+                                            className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-400 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest cursor-not-allowed"
+                                        >
+                                            View Details
+                                        </span>
+                                    )}
 
                                     {task.status === 'pending' && (
                                         <Link
-                                            href={route('group-tasks.complete', task.id)}
+                                            href={route('group-tasks.complete-simple', task.id)}
                                             method="post"
                                             as="button"
                                             className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"

@@ -44,12 +44,14 @@ class your_generic_secretroller extends Controller
             return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             if ($request->header('X-Inertia')) {
-                return back()->withErrors([
-                    'email' => 'The provided credentials do not match our records.',
+                return Inertia::render('auth/login', [
+                    'errors' => [
+                        'email' => 'The provided credentials do not match our records.',
+                    ],
                 ]);
             }
 
-            return back()->withErrors([
+            return redirect()->back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
             ]);
         }

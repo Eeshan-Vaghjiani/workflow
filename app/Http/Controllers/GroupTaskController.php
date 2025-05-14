@@ -14,13 +14,20 @@ class GroupTaskController extends Controller
      */
     public function index()
     {
-        $tasks = GroupTask::query()
-            ->with(['assignment:id,title', 'assignment.group:id,name', 'assignedUser:id,name'])
+        $tasksQuery = GroupTask::query()
+            ->with(['assignment', 'assignment.group', 'assignedUser'])
             ->whereHas('assignment.group.members', function ($query) {
                 $query->where('user_id', auth()->id());
             })
-            ->latest()
-            ->get();
+            ->latest();
+            
+        $tasks = $tasksQuery->get();
+        
+        // Filter out tasks with null relationships
+        $tasks = $tasks->filter(function ($task) {
+            return $task->assignment !== null && 
+                   $task->assignment->group !== null;
+        });
 
         return Inertia::render('tasks/Index', [
             'tasks' => $tasks
@@ -86,16 +93,21 @@ class GroupTaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(GroupTask $groupTask)
+    public function show(GroupTask $task)
     {
-        if (!$groupTask->assignment->group->members()->where('user_id', auth()->id())->exists()) {
+        // Load the task with its relationships to ensure they exist
+        $task->load(['assignment.group', 'assignedUser']);
+        
+        if (!$task->assignment || !$task->assignment->group) {
+            abort(404, 'Task, assignment or group not found');
+        }
+        
+        if (!$task->assignment->group->members()->where('user_id', auth()->id())->exists()) {
             abort(403, 'You are not a member of this group');
         }
 
-        $groupTask->load(['assignment.group', 'assignedUser']);
-
         return Inertia::render('tasks/Show', [
-            'task' => $groupTask
+            'task' => $task
         ]);
     }
 

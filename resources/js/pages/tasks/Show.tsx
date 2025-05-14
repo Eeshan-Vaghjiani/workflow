@@ -36,7 +36,11 @@ export default function Show({ task }: Props) {
         },
         {
             title: task.title,
-            href: route('group-tasks.show', task.id),
+            href: route('group-tasks.show', {
+                group: task.assignment.group.id,
+                assignment: task.assignment.id,
+                task: task.id
+            }),
         },
     ];
 
@@ -96,7 +100,7 @@ export default function Show({ task }: Props) {
                                 <li className="flex justify-between">
                                     <span className="text-gray-500 dark:text-gray-400">Assignment:</span>
                                     <Link
-                                        href={route('group-assignments.show', task.assignment.id)}
+                                        href={route('group-assignments.show', { group: task.assignment.group.id, assignment: task.assignment.id })}
                                         className="text-blue-600 hover:text-blue-800"
                                     >
                                         {task.assignment.title}

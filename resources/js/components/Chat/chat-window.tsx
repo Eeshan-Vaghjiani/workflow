@@ -40,7 +40,7 @@ export function ChatWindow({
     const handleSendMessage = (content: string) => {
         try {
             onSendMessage(content)
-        } catch (error) {
+        } catch {
             toast({
                 title: "Error",
                 description: "Failed to send message. Please try again.",

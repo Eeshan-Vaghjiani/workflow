@@ -8,13 +8,13 @@ interface AppLayoutProps {
     breadcrumbs?: BreadcrumbItem[];
 }
 
-const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-    { name: 'Tasks', href: '/tasks', icon: CheckSquareIcon },
-    { name: 'Groups', href: '/groups', icon: UsersIcon },
-    { name: 'Calendar', href: '/calendar', icon: CalendarIcon },
-    { name: 'Settings', href: '/settings', icon: SettingsIcon },
-];
+// const navigation = [
+//     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+//     { name: 'Tasks', href: '/tasks', icon: CheckSquareIcon },
+//     { name: 'Groups', href: '/groups', icon: UsersIcon },
+//     { name: 'Calendar', href: '/calendar', icon: CalendarIcon },
+//     { name: 'Settings', href: '/settings', icon: SettingsIcon },
+// ];
 
 export default ({ children, breadcrumbs, ...props }: AppLayoutProps) => (
     <AppLayoutTemplate breadcrumbs={breadcrumbs} {...props}>

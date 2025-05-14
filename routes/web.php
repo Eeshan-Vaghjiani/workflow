@@ -25,12 +25,19 @@ use Illuminate\Support\Facades\Broadcast;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
-})->name('welcome');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
+    Route::get('/dashboard/calendar', [DashboardController::class, 'calendar'])->name('dashboard.calendar');
+    Route::get('/dashboard/gantt', [DashboardController::class, 'gantt'])->name('dashboard.gantt');
+    
+    // Simple redirects for Dashboard links
+    Route::get('/calendar', function() { return redirect('/dashboard/calendar'); });
+    Route::get('/group-assignments', function() { return redirect('/groups'); });
+    Route::get('/notifications', function() { return redirect('/dashboard'); });
+    
     // Groups
     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     Route::get('/groups/create', [GroupController::class, 'create'])->name('groups.create');
@@ -56,7 +63,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'destroy'])->name('group-assignments.destroy');
 
     // Group Tasks
-    Route::get('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
+    Route::get('/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
+    Route::get('/tasks/create', [GroupTaskController::class, 'create'])->name('group-tasks.create');
+    Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-simple');
+    Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete-simple');
+    Route::get('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index-nested');
     Route::post('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'store'])->name('group-tasks.store');
     Route::get('/groups/{group}/assignments/{assignment}/tasks/{task}', [GroupTaskController::class, 'show'])->name('group-tasks.show');
     Route::get('/groups/{group}/assignments/{assignment}/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit');
@@ -83,11 +94,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/chat', [GroupChatController::class, 'index'])->name('chat');
     Route::get('/chat/{group}', [GroupChatController::class, 'show'])->name('chat.show');
     Route::post('/chat/{group}/messages', [GroupChatController::class, 'store'])->name('chat.messages.store');
-
-    // Profile
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // Add broadcasting authentication route

@@ -76,7 +76,11 @@ class GroupTaskController extends Controller
             'priority' => 'medium',
         ]);
 
-        return redirect()->route('group-tasks.show', $task);
+        return redirect()->route('group-tasks.show', [
+            'group' => $task->assignment->group_id,
+            'assignment' => $task->assignment_id,
+            'task' => $task->id
+        ]);
     }
 
     /**
@@ -137,7 +141,11 @@ class GroupTaskController extends Controller
             'status' => $validated['status'] ?? $groupTask->status,
         ]);
 
-        return redirect()->route('group-tasks.show', $groupTask);
+        return redirect()->route('group-tasks.show', [
+            'group' => $groupTask->assignment->group_id,
+            'assignment' => $groupTask->assignment_id, 
+            'task' => $groupTask->id
+        ]);
     }
 
     /**

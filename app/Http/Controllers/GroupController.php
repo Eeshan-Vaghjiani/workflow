@@ -49,7 +49,7 @@ class GroupController extends Controller
         $group = Group::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'created_by' => auth()->id(),
+            'owner_id' => auth()->id(),
         ]);
 
         $group->members()->attach(auth()->id(), ['role' => 'owner']);

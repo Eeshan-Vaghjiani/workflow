@@ -74,7 +74,11 @@ class DashboardController extends Controller
                 ],
                 'backgroundColor' => $task->priority === 'high' ? '#f87171' : ($task->priority === 'medium' ? '#fbbf24' : '#60a5fa'),
                 'borderColor' => $task->priority === 'high' ? '#ef4444' : ($task->priority === 'medium' ? '#f59e0b' : '#3b82f6'),
-                'url' => route('group-tasks.show', $task->id),
+                'url' => route('group-tasks.show', [
+                    'group' => $task->assignment->group_id,
+                    'assignment' => $task->assignment_id,
+                    'task' => $task->id
+                ]),
             ];
         });
 
@@ -98,7 +102,10 @@ class DashboardController extends Controller
                 ],
                 'backgroundColor' => '#10b981',
                 'borderColor' => '#059669',
-                'url' => route('group-assignments.show', $assignment->id),
+                'url' => route('group-assignments.show', [
+                    'group' => $assignment->group_id,
+                    'assignment' => $assignment->id
+                ]),
             ];
         });
 

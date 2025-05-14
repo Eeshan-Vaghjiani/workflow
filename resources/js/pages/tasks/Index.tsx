@@ -50,7 +50,11 @@ export default function Index({ tasks }: Props) {
                         {tasks.map((task) => (
                             <div key={task.id} className="border rounded-xl p-4 hover:border-blue-500 transition dark:border-neutral-700 bg-white dark:bg-neutral-800">
                                 <div className="flex justify-between items-center mb-2">
-                                    <Link href={route('group-tasks.show', task.id)}>
+                                    <Link href={route('group-tasks.show', {
+                                        group: task.assignment.group.id,
+                                        assignment: task.assignment.id,
+                                        task: task.id
+                                    })}>
                                         <h2 className="text-xl font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{task.title}</h2>
                                     </Link>
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -65,7 +69,7 @@ export default function Index({ tasks }: Props) {
                                 <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 dark:text-gray-400">
                                     <div>
                                         <p className="font-medium">Assignment:</p>
-                                        <Link href={route('group-assignments.show', task.assignment.id)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                        <Link href={route('group-assignments.show', { group: task.assignment.group.id, assignment: task.assignment.id })} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                                             {task.assignment.title}
                                         </Link>
                                     </div>

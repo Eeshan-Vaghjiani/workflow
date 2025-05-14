@@ -14,7 +14,8 @@ class GroupAssignmentController extends Controller
      */
     public function index(Group $group = null)
     {
-        $query = GroupAssignment::query()->with('group:id,name');
+        // Start with a query that always includes group data
+        $query = GroupAssignment::query()->with('group');
         
         // Filter by group if one is provided
         if ($group) {
@@ -31,6 +32,11 @@ class GroupAssignmentController extends Controller
         }
         
         $assignments = $query->latest()->get();
+        
+        // Filter out any assignments with null groups (shouldn't happen, but just in case)
+        $assignments = $assignments->filter(function ($assignment) {
+            return $assignment->group !== null;
+        });
 
         return Inertia::render('Assignments/Index', [
             'assignments' => $assignments,
@@ -56,17 +62,14 @@ class GroupAssignmentController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, Group $group)
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'due_date' => 'required|date',
-            'group_id' => 'required|exists:groups,id',
             'unit_name' => 'nullable|string|max:255',
         ]);
-
-        $group = Group::findOrFail($validated['group_id']);
 
         if (!$group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to create assignments for this group');
@@ -76,7 +79,7 @@ class GroupAssignmentController extends Controller
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'due_date' => $validated['due_date'],
-            'group_id' => $validated['group_id'],
+            'group_id' => $group->id,
             'unit_name' => $validated['unit_name'] ?? 'General',
             'created_by' => auth()->id(),
         ]);
@@ -93,7 +96,7 @@ class GroupAssignmentController extends Controller
         }
 
         return redirect()->route('group-assignments.show', [
-            'group' => $assignment->group_id,
+            'group' => $group->id,
             'assignment' => $assignment->id
         ]);
     }
@@ -101,17 +104,21 @@ class GroupAssignmentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(GroupAssignment $groupAssignment)
+    public function show(Group $group, GroupAssignment $assignment)
     {
-        if (!$groupAssignment->group->members()->where('user_id', auth()->id())->exists()) {
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
             abort(403, 'You are not a member of this group');
         }
 
-        $groupAssignment->load(['group', 'tasks']);
-        $isLeader = $groupAssignment->group->isLeader(auth()->id());
+        if ($assignment->group_id !== $group->id) {
+            abort(404, 'Assignment not found in this group');
+        }
+
+        $assignment->load(['group', 'tasks']);
+        $isLeader = $group->isLeader(auth()->id());
 
         return Inertia::render('Assignments/Show', [
-            'assignment' => $groupAssignment,
+            'assignment' => $assignment,
             'isLeader' => $isLeader
         ]);
     }
@@ -119,23 +126,31 @@ class GroupAssignmentController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(GroupAssignment $groupAssignment)
+    public function edit(Group $group, GroupAssignment $assignment)
     {
-        if (!$groupAssignment->group->isLeader(auth()->id())) {
+        if ($assignment->group_id !== $group->id) {
+            abort(404, 'Assignment not found in this group');
+        }
+
+        if (!$group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to edit this assignment');
         }
 
         return Inertia::render('Assignments/Edit', [
-            'assignment' => $groupAssignment
+            'assignment' => $assignment
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, GroupAssignment $groupAssignment)
+    public function update(Request $request, Group $group, GroupAssignment $assignment)
     {
-        if (!$groupAssignment->group->isLeader(auth()->id())) {
+        if ($assignment->group_id !== $group->id) {
+            abort(404, 'Assignment not found in this group');
+        }
+
+        if (!$group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to update this assignment');
         }
 
@@ -146,32 +161,36 @@ class GroupAssignmentController extends Controller
             'unit_name' => 'nullable|string|max:255',
         ]);
 
-        $groupAssignment->update([
+        $assignment->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'due_date' => $validated['due_date'],
-            'unit_name' => $validated['unit_name'] ?? $groupAssignment->unit_name,
+            'unit_name' => $validated['unit_name'] ?? $assignment->unit_name,
         ]);
 
         return redirect()->route('group-assignments.show', [
-            'group' => $groupAssignment->group_id,
-            'assignment' => $groupAssignment->id
+            'group' => $group->id,
+            'assignment' => $assignment->id
         ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(GroupAssignment $groupAssignment)
+    public function destroy(Group $group, GroupAssignment $assignment)
     {
-        if (!$groupAssignment->group->isLeader(auth()->id())) {
+        if ($assignment->group_id !== $group->id) {
+            abort(404, 'Assignment not found in this group');
+        }
+
+        if (!$group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to delete this assignment');
         }
 
-        $groupAssignment->delete();
+        $assignment->delete();
 
         return redirect()->route('group-assignments.index', [
-            'group' => $groupAssignment->group_id
+            'group' => $group->id
         ]);
     }
 }

@@ -71,6 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
     Route::get('/tasks/create', [GroupTaskController::class, 'create'])->name('group-tasks.create');
     Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-simple');
+    Route::put('/tasks/{task}', [GroupTaskController::class, 'update'])->name('group-tasks.update-simple');
     Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete-simple');
     Route::get('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index-nested');
     Route::post('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'store'])->name('group-tasks.store');

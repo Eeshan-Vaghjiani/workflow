@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2 } from 'lucide-react';
-import axios from 'axios';
 import { useForm } from '@inertiajs/react';
+import axios from 'axios';
+import { toast } from '@/components/ui/use-toast';
 
 interface Message {
     id: number;
@@ -36,8 +37,30 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
 
     const loadMessages = useCallback(async () => {
         try {
-            const response = await axios.get(`/api/groups/${groupId}/messages`);
-            setMessages(response.data.data.reverse());
+            // For now, just show static placeholder messages
+            const placeholderMessages = [
+                {
+                    id: 1,
+                    user_id: currentUserId,
+                    message: 'Hi everyone!',
+                    created_at: new Date().toISOString(),
+                    user: {
+                        id: currentUserId,
+                        name: 'You'
+                    }
+                },
+                {
+                    id: 2,
+                    user_id: currentUserId + 1,
+                    message: 'Welcome to the group chat!',
+                    created_at: new Date().toISOString(),
+                    user: {
+                        id: currentUserId + 1,
+                        name: 'Group Member'
+                    }
+                }
+            ];
+            setMessages(placeholderMessages);
             setLoading(false);
             scrollToBottom();
         } catch (error) {
@@ -57,14 +80,34 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
 
         setSending(true);
         try {
-            const response = await axios.post(`/api/groups/${groupId}/messages`, {
+            // Add message locally for now
+            const newMessage = {
+                id: Math.floor(Math.random() * 1000),
+                user_id: currentUserId,
                 message: data.message,
-            });
-            setMessages([...messages, response.data]);
+                created_at: new Date().toISOString(),
+                user: {
+                    id: currentUserId,
+                    name: 'You'
+                }
+            };
+            
+            setMessages([...messages, newMessage]);
             reset('message');
             scrollToBottom();
+            
+            // Show toast indicating that this is a demo
+            toast({
+                title: "Message sent",
+                description: "This is a demo feature. Messages aren't actually saved to the database.",
+            });
         } catch (error) {
             console.error('Error sending message:', error);
+            toast({
+                title: "Error",
+                description: "Failed to send message. This is a demo feature.",
+                variant: "destructive"
+            });
         } finally {
             setSending(false);
         }

@@ -12,20 +12,20 @@ class GroupTaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $tasksQuery = GroupTask::query()
-            ->with(['assignment', 'assignment.group', 'assignedUser'])
+            ->with(['assignment.group', 'assignedUser'])
             ->whereHas('assignment.group.members', function ($query) {
                 $query->where('user_id', auth()->id());
             })
             ->latest();
-            
+
         $tasks = $tasksQuery->get();
-        
+
         // Filter out tasks with null relationships
         $tasks = $tasks->filter(function ($task) {
-            return $task->assignment !== null && 
+            return $task->assignment !== null &&
                    $task->assignment->group !== null;
         });
 
@@ -93,21 +93,21 @@ class GroupTaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(GroupTask $task)
+    public function show(GroupTask $groupTask)
     {
         // Load the task with its relationships to ensure they exist
-        $task->load(['assignment.group', 'assignedUser']);
-        
-        if (!$task->assignment || !$task->assignment->group) {
+        $groupTask->load(['assignment.group', 'assignedUser']);
+
+        if (!$groupTask->assignment || !$groupTask->assignment->group) {
             abort(404, 'Task, assignment or group not found');
         }
-        
-        if (!$task->assignment->group->members()->where('user_id', auth()->id())->exists()) {
+
+        if (!$groupTask->assignment->group->members()->where('user_id', auth()->id())->exists()) {
             abort(403, 'You are not a member of this group');
         }
 
         return Inertia::render('tasks/Show', [
-            'task' => $task
+            'task' => $groupTask
         ]);
     }
 
@@ -155,7 +155,7 @@ class GroupTaskController extends Controller
 
         return redirect()->route('group-tasks.show', [
             'group' => $groupTask->assignment->group_id,
-            'assignment' => $groupTask->assignment_id, 
+            'assignment' => $groupTask->assignment_id,
             'task' => $groupTask->id
         ]);
     }
@@ -179,6 +179,12 @@ class GroupTaskController extends Controller
      */
     public function complete(Request $request, GroupTask $groupTask)
     {
+        $groupTask->load('assignment.group');
+
+        if ($groupTask->assignment === null || $groupTask->assignment->group === null) {
+            abort(404, 'Assignment or group not found');
+        }
+
         // Either the task is assigned to the current user or they are a group leader
         if ($groupTask->assigned_to !== auth()->id() && !$groupTask->assignment->group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to mark this task as complete');

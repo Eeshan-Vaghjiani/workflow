@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Loader2 } from 'lucide-react';
 import { useForm } from '@inertiajs/react';
-import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 
 interface Message {
@@ -22,7 +21,7 @@ interface ChatBoxProps {
     currentUserId: number;
 }
 
-export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
+export default function ChatBox({ currentUserId }: ChatBoxProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
@@ -67,11 +66,11 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
             console.error('Error loading messages:', error);
             setLoading(false);
         }
-    }, [groupId]);
+    }, [currentUserId]);
 
     useEffect(() => {
         loadMessages();
-    }, [loadMessages]);
+    }, [loadMessages, currentUserId]);
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -91,11 +90,11 @@ export default function ChatBox({ groupId, currentUserId }: ChatBoxProps) {
                     name: 'You'
                 }
             };
-            
+
             setMessages([...messages, newMessage]);
             reset('message');
             scrollToBottom();
-            
+
             // Show toast indicating that this is a demo
             toast({
                 title: "Message sent",

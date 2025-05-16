@@ -7,6 +7,9 @@ use App\Models\GroupAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+/**
+ * @property int $id
+ */
 class GroupTaskController extends Controller
 {
     /**

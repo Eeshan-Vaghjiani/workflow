@@ -69,11 +69,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Group Tasks
     Route::get('/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
-    Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete-index');
+    Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'completeSimple'])->name('group-tasks.complete-simple');
     Route::get('/tasks/create', [GroupTaskController::class, 'create'])->name('group-tasks.create');
     Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-simple');
     Route::put('/tasks/{task}', [GroupTaskController::class, 'update'])->name('group-tasks.update-simple');
-    Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete-simple');
+    
     Route::get('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index-nested');
     Route::post('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'store'])->name('group-tasks.store');
     Route::get('/groups/{group}/assignments/{assignment}/tasks/{task}', [GroupTaskController::class, 'show'])->name('group-tasks.show');

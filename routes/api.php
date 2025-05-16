@@ -10,6 +10,7 @@ use App\Http\Controllers\API\TaskController;
 use App\Http\Controllers\API\GroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
 use App\Http\Controllers\API\DirectMessageController;
+use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,4 +79,18 @@ Route::middleware([
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('api.dashboard');
+});
+
+// Tasks API
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/tasks', [TaskController::class, 'index']);
+    Route::post('/tasks', [TaskController::class, 'store']);
+    Route::put('/tasks/{id}', [TaskController::class, 'update']);
+    Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+});
+
+// Group messages API
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/groups/{group}/messages', [GroupChatControllerGroup::class, 'getMessagesAPI']);
+    Route::post('/groups/{group}/messages', [GroupChatControllerGroup::class, 'storeAPI']);
 });

@@ -16,7 +16,7 @@ class your_generic_secretroller extends Controller
     /**
      * Show the login page.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): RedirectResponse|Response
     {
         if (Auth::check()) {
             return Inertia::location(route('dashboard'));
@@ -41,6 +41,7 @@ class your_generic_secretroller extends Controller
                 return Inertia::location(route('dashboard'));
             }
 
+            // Just return a normal redirect (correct type)
             return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             if ($request->header('X-Inertia')) {
@@ -53,7 +54,7 @@ class your_generic_secretroller extends Controller
 
             return redirect()->back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
-            ]);
+            ])->withInput();
         }
     }
 
@@ -71,6 +72,7 @@ class your_generic_secretroller extends Controller
             return Inertia::location('/');
         }
 
+        // Return a proper redirect (no toResponse needed)
         return redirect('/');
     }
 }

@@ -33,7 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/calendar', [DashboardController::class, 'calendar'])->name('dashboard.calendar');
     Route::get('/dashboard/gantt', [DashboardController::class, 'gantt'])->name('dashboard.gantt');
-    
+
     // Simple redirects for Dashboard links
     Route::get('/calendar', function() { return redirect('/dashboard/calendar'); });
     Route::get('/group-assignments', function() { return redirect()->route('group-assignments.index', ['group' => 1]); });
@@ -42,7 +42,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
     Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
-    
+
     // Groups
     Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
     Route::get('/groups/create', [GroupController::class, 'create'])->name('groups.create');
@@ -69,6 +69,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Group Tasks
     Route::get('/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
+    Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'complete'])->name('group-tasks.complete-index');
     Route::get('/tasks/create', [GroupTaskController::class, 'create'])->name('group-tasks.create');
     Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-simple');
     Route::put('/tasks/{task}', [GroupTaskController::class, 'update'])->name('group-tasks.update-simple');

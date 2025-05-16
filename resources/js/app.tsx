@@ -11,21 +11,26 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: async (name) => {
         const pages = import.meta.glob('./pages/**/*.tsx');
-        const normalizedName = name.charAt(0).toLowerCase() + name.slice(1);
 
+        // Try lowercase-first version
+        const normalizedName = name.charAt(0).toLowerCase() + name.slice(1);
         let path = `./pages/${normalizedName}.tsx`;
+
         if (!pages[path]) {
-            // If normalized (e.g. welcome.tsx) isn't found, try original (e.g. Welcome.tsx)
+            // Fallback to original casing
             path = `./pages/${name}.tsx`;
         }
 
-        // If it's still not found, resolvePageComponent will throw an error as before.
+        // Debugging (optional: remove in production)
+        console.log('Resolving page:', name);
+        console.log('Available pages:', Object.keys(pages));
+        console.log('Resolved path:', path);
+
         const page = await resolvePageComponent(path, pages);
         return page;
     },
     setup({ el, App, props }) {
         const root = createRoot(el);
-
         root.render(<App {...props} />);
     },
     progress: {

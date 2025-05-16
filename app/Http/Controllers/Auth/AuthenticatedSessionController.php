@@ -16,10 +16,10 @@ class AuthenticatedSessionController extends Controller
     /**
      * Show the login page.
      */
-    public function create(Request $request): RedirectResponse|Response
+    public function create(Request $request): Response
     {
         if (Auth::check()) {
-            return Inertia::location(route('dashboard'));
+            return redirect()->intended(route('dashboard'))->toResponse($request);
         }
 
         return Inertia::render('auth/login', [
@@ -38,10 +38,9 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerate();
 
             if ($request->header('X-Inertia')) {
-                return Inertia::location(route('dashboard'));
+                return redirect()->intended(route('dashboard'))->toResponse($request);
             }
 
-            // Just return a normal redirect (correct type)
             return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             if ($request->header('X-Inertia')) {
@@ -61,18 +60,13 @@ class AuthenticatedSessionController extends Controller
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse|Response
+    public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        if ($request->header('X-Inertia')) {
-            return Inertia::location('/');
-        }
-
-        // Return a proper redirect (no toResponse needed)
         return redirect('/');
     }
-}
+} 

@@ -11,7 +11,7 @@ class TaskController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         $tasks = GroupTask::query()
             ->with(['assignment:id,title', 'assignment.group:id,name'])
             ->whereHas('assignment.group.members', function ($query) use ($user) {
@@ -24,4 +24,4 @@ class TaskController extends Controller
             'tasks' => $tasks
         ]);
     }
-} 
+}

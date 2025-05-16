@@ -134,7 +134,7 @@ export default function GroupShow({ group, isLeader, auth }: Props) {
                                     <CardDescription>Group assignments and tasks</CardDescription>
                                 </div>
                                 {isLeader && (
-                                    <Link href={route('group-assignments.create')}>
+                                    <Link href={route('group-assignments.create', { group: group.id })}>
                                         <Button size="sm">
                                             <Plus className="w-4 h-4 mr-2" />
                                             New Assignment
@@ -151,7 +151,7 @@ export default function GroupShow({ group, isLeader, auth }: Props) {
                                     {group.assignments.map((assignment) => (
                                         <Link
                                             key={assignment.id}
-                                            href={route('group-assignments.show', assignment.id)}
+                                            href={route('group-assignments.show', { group: group.id, assignment: assignment.id })}
                                         >
                                             <div className="p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md cursor-pointer">
                                                 <div className="font-medium">{assignment.title}</div>

@@ -13,6 +13,11 @@ class GroupChatMessage extends Model
         'group_id',
         'user_id',
         'message',
+        'is_system_message',
+    ];
+
+    protected $casts = [
+        'is_system_message' => 'boolean',
     ];
 
     public function group()

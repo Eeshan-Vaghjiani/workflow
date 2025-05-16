@@ -44,7 +44,20 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        post(route('group-tasks.store'));
+        if (data.assignment_id) {
+            // Find the assignment to get its group_id
+            const selectedAssignment = assignments.find(a => a.id.toString() === data.assignment_id);
+            if (selectedAssignment) {
+                post(route('group-tasks.store', {
+                    group: selectedAssignment.group.id,
+                    assignment: selectedAssignment.id
+                }));
+            } else {
+                alert('Please select a valid assignment');
+            }
+        } else {
+            alert('Please select an assignment');
+        }
     }
 
     return (

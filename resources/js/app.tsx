@@ -9,12 +9,24 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => {
+    resolve: async (name) => {
+        const pages = import.meta.glob('./pages/**/*.tsx');
+
+        // Try lowercase-first version
+        const normalizedName = name.charAt(0).toLowerCase() + name.slice(1);
+        let path = `./pages/${normalizedName}.tsx`;
+
+        if (!pages[path]) {
+            // Fallback to original casing
+            path = `./pages/${name}.tsx`;
+        }
+
+        // Debugging (optional: remove in production)
         console.log('Resolving page:', name);
-        const pages = import.meta.glob('./pages/**/*.tsx', { eager: true });
         console.log('Available pages:', Object.keys(pages));
-        const page = resolvePageComponent(`./pages/${name}.tsx`, pages);
-        console.log('Resolved page:', page);
+        console.log('Resolved path:', path);
+
+        const page = await resolvePageComponent(path, pages);
         return page;
     },
     setup({ el, App, props }) {

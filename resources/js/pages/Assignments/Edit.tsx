@@ -31,15 +31,15 @@ export default function AssignmentsEdit({ assignment, errors }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Assignments',
-            href: '/group-assignments',
+            href: route('group-assignments.index', { group: assignment.group_id }),
         },
         {
             title: assignment.title,
-            href: `/group-assignments/${assignment.id}`,
+            href: route('group-assignments.show', { group: assignment.group_id, assignment: assignment.id }),
         },
         {
             title: 'Edit',
-            href: `/group-assignments/${assignment.id}/edit`,
+            href: route('group-assignments.edit', { group: assignment.group_id, assignment: assignment.id }),
         },
     ];
 
@@ -52,7 +52,7 @@ export default function AssignmentsEdit({ assignment, errors }: Props) {
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        put(route('group-assignments.update', assignment.id));
+        put(route('group-assignments.update', { group: assignment.group_id, assignment: assignment.id }));
     }
 
     return (
@@ -130,7 +130,7 @@ export default function AssignmentsEdit({ assignment, errors }: Props) {
 
                         <div className="flex justify-end">
                             <a
-                                href={route('group-assignments.show', assignment.id)}
+                                href={route('group-assignments.show', { group: assignment.group_id, assignment: assignment.id })}
                                 className="inline-flex items-center px-4 py-2 mr-3 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
                             >
                                 Cancel

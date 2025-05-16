@@ -49,10 +49,10 @@ class GroupController extends Controller
         $group = Group::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'created_by' => auth()->id(),
+            'owner_id' => auth()->id(),
         ]);
 
-        $group->members()->attach(auth()->id(), ['is_leader' => true]);
+        $group->members()->attach(auth()->id(), ['role' => 'owner']);
 
         return redirect()->route('groups.show', $group);
     }
@@ -178,7 +178,7 @@ class GroupController extends Controller
 
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'is_leader' => 'boolean',
+            'role' => 'nullable|string|in:owner,admin,member',
         ]);
 
         $userId = $validated['user_id'];
@@ -187,13 +187,21 @@ class GroupController extends Controller
             return back()->withErrors(['user_id' => 'This user is already a member of the group']);
         }
 
+        // Add user to group
         $group->members()->attach($userId, [
-            'is_leader' => $validated['is_leader'] ?? false,
+            'role' => $validated['role'] ?? 'member',
+        ]);
+
+        // Create a system message in the group chat to announce the new member
+        $invitedUser = \App\Models\User::find($userId);
+        $group->chatMessages()->create([
+            'user_id' => auth()->id(), // Message from the person who added them
+            'message' => "Added {$invitedUser->name} to the group",
+            'is_system_message' => true,
         ]);
 
         // Create notification for the invited user
         $notificationService = new \App\Services\NotificationService();
-        $invitedUser = \App\Models\User::find($userId);
         $notificationService->createGroupInvitation($invitedUser, $group, auth()->user());
 
         return redirect()->route('groups.show', $group);

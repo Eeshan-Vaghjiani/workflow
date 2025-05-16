@@ -6,6 +6,8 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Models\Group;
 use App\Models\GroupAssignment;
+use App\Models\GroupTask;
+use Carbon\Carbon;
 
 class NotificationService
 {
@@ -77,6 +79,92 @@ class NotificationService
                 'creator_name' => $creator->name,
                 'due_date' => $assignment->due_date->format('Y-m-d'),
             ],
+            'read' => false,
+        ]);
+    }
+
+    /**
+     * Create a notification for a user when they are assigned a task.
+     */
+    public function createTaskAssignment(User $user, GroupTask $task, User $assigner): Notification
+    {
+        return Notification::create([
+            'user_id' => $user->id,
+            'type' => 'task_assignment',
+            'data' => [
+                'task_id' => $task->id,
+                'task_title' => $task->title,
+                'assigner_id' => $assigner->id,
+                'assigner_name' => $assigner->name,
+                'group_id' => $task->assignment->group_id,
+                'group_name' => $task->assignment->group->name,
+                'assignment_id' => $task->assignment_id,
+                'assignment_title' => $task->assignment->title,
+            ],
+            'read' => false,
+        ]);
+    }
+    
+    /**
+     * Create a notification for approaching task deadlines.
+     */
+    public function createDeadlineReminders(): void
+    {
+        // Find tasks that are due in the next 24 hours and have not had a reminder sent
+        $approachingTasks = GroupTask::where('end_date', '>=', Carbon::now())
+            ->where('end_date', '<=', Carbon::now()->addHours(24))
+            ->where('status', '!=', 'completed')
+            ->whereDoesntHave('notifications', function ($query) {
+                $query->where('type', 'deadline_reminder')
+                    ->where('created_at', '>=', Carbon::now()->subHours(12));
+            })
+            ->with(['assignedUser', 'assignment.group'])
+            ->get();
+        
+        foreach ($approachingTasks as $task) {
+            if (!$task->assignedUser) continue;
+            
+            Notification::create([
+                'user_id' => $task->assignedUser->id,
+                'type' => 'deadline_reminder',
+                'data' => [
+                    'task_id' => $task->id,
+                    'task_title' => $task->title,
+                    'due_date' => $task->end_date->format('Y-m-d H:i:s'),
+                    'group_id' => $task->assignment->group_id,
+                    'group_name' => $task->assignment->group->name,
+                    'assignment_id' => $task->assignment_id,
+                    'assignment_title' => $task->assignment->title,
+                ],
+                'read' => false,
+            ]);
+        }
+    }
+    
+    /**
+     * Create a notification for new chat messages.
+     */
+    public function your_generic_secretn(User $user, string $senderName, string $content, string $type, int $sourceId): Notification
+    {
+        $truncatedContent = strlen($content) > 50 
+            ? substr($content, 0, 50) . '...' 
+            : $content;
+            
+        $data = [
+            'sender_name' => $senderName,
+            'content' => $truncatedContent,
+        ];
+        
+        if ($type === 'direct') {
+            $data['sender_id'] = $sourceId;
+        } else {
+            $data['group_id'] = $sourceId;
+        }
+        
+        return Notification::create([
+            'user_id' => $user->id,
+            'type' => $type . '_message',
+            'data' => $data,
             'read' => false,
         ]);
     }

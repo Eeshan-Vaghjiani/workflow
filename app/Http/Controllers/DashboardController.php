@@ -20,11 +20,21 @@ class DashboardController extends Controller
 
         $assignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
-        })->with('group:id,name')->latest()->take(5)->get();
+        })->with('group')->latest()->take(5)->get();
+        
+        // Filter out any assignments with null groups
+        $assignments = $assignments->filter(function ($assignment) {
+            return $assignment->group !== null;
+        });
 
         $tasks = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
-        })->with('assignment:id,title')->latest()->take(5)->get();
+        })->with(['assignment', 'assignment.group'])->latest()->take(5)->get();
+        
+        // Filter out any tasks with null assignments or groups
+        $tasks = $tasks->filter(function ($task) {
+            return $task->assignment !== null && $task->assignment->group !== null;
+        });
 
         // Get unread notifications count
         $your_generic_secret = $user->notifications()->where('read', false)->count();
@@ -43,7 +53,12 @@ class DashboardController extends Controller
 
         $tasks = \App\Models\GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
-        })->with(['assignment:id,title', 'assignment.group:id,name'])->latest()->get();
+        })->with(['assignment', 'assignment.group'])->latest()->get();
+
+        // Filter out any tasks with null assignments or groups
+        $tasks = $tasks->filter(function ($task) {
+            return $task->assignment !== null && $task->assignment->group !== null;
+        });
 
         return Inertia::render('tasks/Index', [
             'tasks' => $tasks,
@@ -55,11 +70,17 @@ class DashboardController extends Controller
         $user = request()->user();
 
         // Get all tasks for the user
-        $tasks = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
+        $tasksQuery = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->with(['assignment:id,title,group_id', 'assignment.group:id,name'])
-        ->get()
+        ->with(['assignment', 'assignment.group']);
+        
+        $tasks = $tasksQuery->get();
+        
+        // Filter out tasks with null relationships
+        $tasks = $tasks->filter(function ($task) {
+            return $task->assignment !== null && $task->assignment->group !== null;
+        })
         ->map(function ($task) {
             return [
                 'id' => $task->id,
@@ -74,16 +95,26 @@ class DashboardController extends Controller
                 ],
                 'backgroundColor' => $task->priority === 'high' ? '#f87171' : ($task->priority === 'medium' ? '#fbbf24' : '#60a5fa'),
                 'borderColor' => $task->priority === 'high' ? '#ef4444' : ($task->priority === 'medium' ? '#f59e0b' : '#3b82f6'),
-                'url' => route('group-tasks.show', $task->id),
+                'url' => route('group-tasks.show', [
+                    'group' => $task->assignment->group_id,
+                    'assignment' => $task->assignment_id,
+                    'task' => $task->id
+                ]),
             ];
         });
 
         // Get all assignments for the user
-        $assignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
+        $assignmentsQuery = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->with('group:id,name')
-        ->get()
+        ->with('group');
+        
+        $assignments = $assignmentsQuery->get();
+        
+        // Filter out assignments with null relationships
+        $assignments = $assignments->filter(function ($assignment) {
+            return $assignment->group !== null;
+        })
         ->map(function ($assignment) {
             return [
                 'id' => 'assignment-' . $assignment->id,
@@ -98,7 +129,10 @@ class DashboardController extends Controller
                 ],
                 'backgroundColor' => '#10b981',
                 'borderColor' => '#059669',
-                'url' => route('group-assignments.show', $assignment->id),
+                'url' => route('group-assignments.show', [
+                    'group' => $assignment->group_id,
+                    'assignment' => $assignment->id
+                ]),
             ];
         });
 
@@ -115,11 +149,19 @@ class DashboardController extends Controller
         $user = request()->user();
 
         // Get all tasks for the user with start and end dates
-        $tasks = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
+        $tasksQuery = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->with(['assignment:id,title,group_id', 'assignment.group:id,name', 'assignedUser:id,name'])
-        ->get()
+        ->with(['assignment', 'assignment.group', 'assignedUser']);
+        
+        $tasks = $tasksQuery->get();
+        
+        // Filter out tasks with null relationships
+        $tasks = $tasks->filter(function ($task) {
+            return $task->assignment !== null && 
+                   $task->assignment->group !== null && 
+                   $task->assignedUser !== null;
+        })
         ->map(function ($task) {
             return [
                 'id' => (string) $task->id,
@@ -149,26 +191,30 @@ class DashboardController extends Controller
         $ganttTasks = collect();
         
         foreach ($tasksByAssignment as $assignmentTitle => $assignmentTasks) {
+            if ($assignmentTasks->isEmpty()) continue;
+            
             // Add the assignment as a parent task
             $firstTask = $assignmentTasks->first();
-            $ganttTasks->push([
-                'id' => 'assignment-' . $firstTask['assignmentTitle'],
-                'name' => $assignmentTitle,
-                'start' => $assignmentTasks->min('start'),
-                'end' => $assignmentTasks->max('end'),
-                'progress' => 0,
-                'type' => 'project',
-                'hideChildren' => false,
-                'displayOrder' => 0,
-                'assignedTo' => '',
-                'groupName' => $firstTask['groupName'],
-                'dependencies' => [],
-            ]);
-            
-            // Add the tasks as children
-            foreach ($assignmentTasks as $task) {
-                $task['dependencies'] = ['assignment-' . $firstTask['assignmentTitle']];
-                $ganttTasks->push($task);
+            if ($firstTask) {
+                $ganttTasks->push([
+                    'id' => 'assignment-' . $firstTask['assignmentTitle'],
+                    'name' => $assignmentTitle,
+                    'start' => $assignmentTasks->min('start'),
+                    'end' => $assignmentTasks->max('end'),
+                    'progress' => 0,
+                    'type' => 'project',
+                    'hideChildren' => false,
+                    'displayOrder' => 0,
+                    'assignedTo' => '',
+                    'groupName' => $firstTask['groupName'],
+                    'dependencies' => [],
+                ]);
+                
+                // Add the tasks as children
+                foreach ($assignmentTasks as $task) {
+                    $task['dependencies'] = ['assignment-' . $firstTask['assignmentTitle']];
+                    $ganttTasks->push($task);
+                }
             }
         }
 

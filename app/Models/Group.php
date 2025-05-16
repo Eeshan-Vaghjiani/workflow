@@ -14,24 +14,30 @@ class Group extends Model
     protected $fillable = [
         'name',
         'description',
-        'created_by',
+        'avatar',
+        'owner_id',
     ];
 
-    public function creator()
+    public function owner()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
     public function members()
     {
-        return $this->belongsToMany(User::class, 'group_user', 'group_id', 'user_id')
-            ->withPivot('is_leader')
+        return $this->belongsToMany(User::class)
+            ->withPivot('role')
             ->withTimestamps();
     }
 
     public function assignments()
     {
         return $this->hasMany(GroupAssignment::class);
+    }
+
+    public function tasks()
+    {
+        return $this->hasManyThrough(GroupTask::class, GroupAssignment::class);
     }
 
     public function chatMessages()
@@ -45,7 +51,7 @@ class Group extends Model
         
         return $this->members()
             ->where('user_id', $userId)
-            ->where('is_leader', true)
+            ->where('role', 'owner')
             ->exists();
     }
 

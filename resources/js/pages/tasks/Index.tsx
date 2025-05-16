@@ -50,9 +50,17 @@ export default function Index({ tasks }: Props) {
                         {tasks.map((task) => (
                             <div key={task.id} className="border rounded-xl p-4 hover:border-blue-500 transition dark:border-neutral-700 bg-white dark:bg-neutral-800">
                                 <div className="flex justify-between items-center mb-2">
-                                    <Link href={route('group-tasks.show', task.id)}>
-                                        <h2 className="text-xl font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{task.title}</h2>
-                                    </Link>
+                                    {task.assignment && task.assignment.group ? (
+                                        <Link href={route('group-tasks.show', {
+                                            group: task.assignment.group.id,
+                                            assignment: task.assignment.id,
+                                            task: task.id
+                                        })}>
+                                            <h2 className="text-xl font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{task.title}</h2>
+                                        </Link>
+                                    ) : (
+                                        <h2 className="text-xl font-semibold">{task.title}</h2>
+                                    )}
                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                                         task.status === 'completed'
                                             ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300'
@@ -62,20 +70,22 @@ export default function Index({ tasks }: Props) {
                                     </span>
                                 </div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{task.description || 'No description'}</p>
-                                <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                    <div>
-                                        <p className="font-medium">Assignment:</p>
-                                        <Link href={route('group-assignments.show', task.assignment.id)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                                            {task.assignment.title}
-                                        </Link>
+                                {task.assignment && task.assignment.group && (
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                        <div>
+                                            <p className="font-medium">Assignment:</p>
+                                            <Link href={route('group-assignments.show', { group: task.assignment.group.id, assignment: task.assignment.id })} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                                {task.assignment.title}
+                                            </Link>
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">Group:</p>
+                                            <Link href={route('groups.show', task.assignment.group.id)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                                {task.assignment.group.name}
+                                            </Link>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-medium">Group:</p>
-                                        <Link href={route('groups.show', task.assignment.group.id)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                                            {task.assignment.group.name}
-                                        </Link>
-                                    </div>
-                                </div>
+                                )}
                                 <div className="mt-3 text-sm">
                                     <p className="font-medium">Due:</p>
                                     <p>{new Date(task.end_date).toLocaleDateString()}</p>
@@ -83,7 +93,7 @@ export default function Index({ tasks }: Props) {
                                 {task.status === 'pending' && (
                                     <div className="mt-4">
                                         <Link
-                                            href={route('group-tasks.complete', task.id)}
+                                            href={route('group-tasks.complete-simple', task.id)}
                                             method="post"
                                             as="button"
                                             className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"

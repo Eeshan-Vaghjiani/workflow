@@ -84,8 +84,8 @@ class GroupTaskController extends Controller
         ]);
 
         return redirect()->route('group-tasks.show', [
-            'group' => $task->assignment->group_id,
-            'assignment' => $task->assignment_id,
+            'group' => $assignment->group_id,
+            'assignment' => $validated['assignment_id'],
             'task' => $task->id
         ]);
     }

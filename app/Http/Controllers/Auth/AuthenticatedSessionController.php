@@ -16,8 +16,12 @@ class AuthenticatedSessionController extends Controller
     /**
      * Show the login page.
      */
-    public function create(Request $request): Response
+    public function create(Request $request): RedirectResponse|Response
     {
+        if (Auth::check()) {
+            return Inertia::location(route('dashboard'));
+        }
+
         return Inertia::render('auth/login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => $request->session()->get('status'),
@@ -27,25 +31,48 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse|Response
     {
-        $request->authenticate();
+        try {
+            $request->authenticate();
+            $request->session()->regenerate();
 
-        $request->session()->regenerate();
+            if ($request->header('X-Inertia')) {
+                return Inertia::location(route('dashboard'));
+            }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+            // Just return a normal redirect (correct type)
+            return redirect()->intended(route('dashboard'));
+        } catch (\Exception $e) {
+            if ($request->header('X-Inertia')) {
+                return Inertia::render('auth/login', [
+                    'errors' => [
+                        'email' => 'The provided credentials do not match our records.',
+                    ],
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->withInput();
+        }
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): RedirectResponse|Response
     {
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        if ($request->header('X-Inertia')) {
+            return Inertia::location('/');
+        }
+
+        // Return a proper redirect (no toResponse needed)
         return redirect('/');
     }
 }

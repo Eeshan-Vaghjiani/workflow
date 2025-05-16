@@ -2,20 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Notification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class NotificationController extends Controller
 {
     /**
-     * Display a listing of the user's notifications.
+     * Display a listing of all notifications.
      */
     public function index()
     {
-        $notifications = auth()->user()->notifications()
-            ->latest()
-            ->get();
+        $user = auth()->user();
+        $notifications = $user->notifications()->latest()->get()->map(function ($notification) {
+            return [
+                'id' => $notification->id,
+                'type' => $notification->type,
+                'data' => $notification->data,
+                'read' => $notification->read_at !== null,
+                'created_at' => $notification->created_at,
+            ];
+        });
 
         return Inertia::render('Notifications/Index', [
             'notifications' => $notifications
@@ -25,13 +31,10 @@ class NotificationController extends Controller
     /**
      * Mark a notification as read.
      */
-    public function markAsRead(Notification $notification)
+    public function markAsRead(Request $request, $id)
     {
-        if ($notification->user_id !== auth()->id()) {
-            abort(403, 'You are not authorized to access this notification');
-        }
-
-        $notification->update(['read' => true]);
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
 
         return back();
     }
@@ -39,11 +42,9 @@ class NotificationController extends Controller
     /**
      * Mark all notifications as read.
      */
-    public function markAllAsRead()
+    public function markAllAsRead(Request $request)
     {
-        auth()->user()->notifications()
-            ->where('read', false)
-            ->update(['read' => true]);
+        auth()->user()->unreadNotifications->markAsRead();
 
         return back();
     }

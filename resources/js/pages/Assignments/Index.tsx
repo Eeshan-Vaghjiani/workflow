@@ -33,7 +33,7 @@ export default function AssignmentsIndex({ assignments }: Props) {
                 <div className="flex justify-between mb-4">
                     <h1 className="text-2xl font-bold">Assignments</h1>
                     <Link
-                        href={route('group-assignments.create')}
+                        href={route('groups.index')}
                         className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
                     >
                         Create Assignment
@@ -44,7 +44,7 @@ export default function AssignmentsIndex({ assignments }: Props) {
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {assignments.map((assignment) => (
                             <div key={assignment.id} className="border rounded-xl p-4 hover:border-blue-500 transition">
-                                <Link href={route('group-assignments.show', assignment.id)}>
+                                <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })}>
                                     <h2 className="text-xl font-semibold text-blue-600 hover:text-blue-800 mb-2">{assignment.title}</h2>
                                 </Link>
                                 <p className="text-sm text-gray-500 mb-2">{assignment.description || 'No description'}</p>
@@ -61,7 +61,7 @@ export default function AssignmentsIndex({ assignments }: Props) {
                             <h3 className="text-xl font-semibold mb-2">No Assignments Yet</h3>
                             <p className="text-gray-500 mb-4">Create an assignment to start organizing tasks.</p>
                             <Link
-                                href={route('group-assignments.create')}
+                                href={route('groups.index')}
                                 className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
                             >
                                 Create Assignment

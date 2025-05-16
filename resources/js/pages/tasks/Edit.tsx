@@ -17,6 +17,10 @@ interface Task {
     status: 'pending' | 'completed';
     priority: 'low' | 'medium' | 'high';
     assignment_id: number;
+    assignment: {
+        id: number;
+        group_id: number;
+    };
     assigned_to: number | null;
 }
 
@@ -43,17 +47,23 @@ export default function Edit({ task, group_members, errors }: Props) {
         },
         {
             title: task.title,
-            href: route('group-tasks.show', task.id),
+            href: task.assignment && task.assignment.group_id 
+                ? route('group-tasks.show', {
+                    group: task.assignment.group_id,
+                    assignment: task.assignment_id,
+                    task: task.id
+                })
+                : route('group-tasks.index'),
         },
         {
             title: 'Edit',
-            href: route('group-tasks.edit', task.id),
+            href: route('group-tasks.edit-simple', task.id),
         },
     ];
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        put(route('group-tasks.update', task.id));
+        put(route('group-tasks.update-simple', task.id));
     }
 
     return (
@@ -172,7 +182,14 @@ export default function Edit({ task, group_members, errors }: Props) {
 
                             <div className="flex justify-end space-x-2">
                                 <a
-                                    href={route('group-tasks.show', task.id)}
+                                    href={task.assignment && task.assignment.group_id 
+                                        ? route('group-tasks.show', {
+                                            group: task.assignment.group_id,
+                                            assignment: task.assignment_id,
+                                            task: task.id
+                                        })
+                                        : route('group-tasks.index')
+                                    }
                                     className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
                                 >
                                     Cancel

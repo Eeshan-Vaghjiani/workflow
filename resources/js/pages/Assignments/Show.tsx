@@ -44,17 +44,17 @@ export default function Show({ assignment, isLeader }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Assignments',
-            href: '/group-assignments',
+            href: route('group-assignments.index', { group: assignment.group.id }),
         },
         {
             title: assignment.title,
-            href: `/group-assignments/${assignment.id}`,
+            href: route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id }),
         },
     ];
 
     function handleDelete() {
         if (confirm(`Are you sure you want to delete this assignment? This will also delete all associated tasks.`)) {
-            router.delete(route('group-assignments.destroy', assignment.id));
+            router.delete(route('group-assignments.destroy', { group: assignment.group.id, assignment: assignment.id }));
         }
     }
 
@@ -71,7 +71,7 @@ export default function Show({ assignment, isLeader }: Props) {
                         {isLeader && (
                             <>
                                 <Link
-                                    href={route('group-assignments.edit', assignment.id)}
+                                    href={route('group-assignments.edit', { group: assignment.group.id, assignment: assignment.id })}
                                     className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50"
                                 >
                                     Edit
@@ -154,7 +154,11 @@ export default function Show({ assignment, isLeader }: Props) {
                                         <div className="flex items-center space-x-2">
                                             {task.status === 'pending' && (
                                                 <button
-                                                    onClick={() => router.post(route('group-tasks.complete', task.id))}
+                                                    onClick={() => router.post(route('group-tasks.complete', { 
+                                                        group: assignment.group.id, 
+                                                        assignment: assignment.id,
+                                                        task: task.id
+                                                    }))}
                                                     className="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
                                                 >
                                                     Complete

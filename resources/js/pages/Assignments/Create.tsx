@@ -41,7 +41,11 @@ export default function AssignmentsCreate({ groups, errors }: Props) {
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        post(route('group-assignments.store'));
+        if (data.group_id) {
+            post(route('group-assignments.store', { group: data.group_id }));
+        } else {
+            alert('Please select a group before creating the assignment.');
+        }
     }
 
     return (
@@ -142,7 +146,10 @@ export default function AssignmentsCreate({ groups, errors }: Props) {
 
                             <div className="flex justify-end">
                                 <a
-                                    href={route('group-assignments.index')}
+                                    href={data.group_id 
+                                        ? route('group-assignments.index', { group: data.group_id })
+                                        : '/group-assignments'
+                                    }
                                     className="inline-flex items-center px-4 py-2 mr-3 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
                                 >
                                     Cancel

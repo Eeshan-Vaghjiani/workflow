@@ -10,24 +10,49 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: async (name) => {
-        const pages = import.meta.glob('./pages/**/*.tsx');
-
-        // Try lowercase-first version
-        const normalizedName = name.charAt(0).toLowerCase() + name.slice(1);
-        let path = `./pages/${normalizedName}.tsx`;
-
-        if (!pages[path]) {
-            // Fallback to original casing
-            path = `./pages/${name}.tsx`;
-        }
-
-        // Debugging (optional: remove in production)
         console.log('Resolving page:', name);
+        
+        // Get all pages
+        const pages = import.meta.glob('./pages/**/*.tsx');
         console.log('Available pages:', Object.keys(pages));
-        console.log('Resolved path:', path);
-
-        const page = await resolvePageComponent(path, pages);
-        return page;
+        
+        // Try multiple path variations
+        const pathVariations = [
+            `./pages/${name}.tsx`,                           // Exact match (e.g., Dashboard.tsx)
+            `./pages/${name.toLowerCase()}.tsx`,             // All lowercase (e.g., dashboard.tsx)
+            `./pages/${name.charAt(0).toUpperCase() + name.slice(1)}.tsx`, // Capitalized (e.g., Dashboard.tsx from dashboard)
+        ];
+        
+        // Try to find a matching page
+        let resolvedPath = null;
+        for (const path of pathVariations) {
+            if (pages[path]) {
+                console.log('Found matching path:', path);
+                resolvedPath = path;
+                break;
+            }
+        }
+        
+        // If no direct match found, try to find a case-insensitive match
+        if (!resolvedPath) {
+            const nameLower = name.toLowerCase();
+            const possibleMatch = Object.keys(pages).find(
+                path => path.toLowerCase().includes(`/pages/${nameLower}.tsx`)
+            );
+            
+            if (possibleMatch) {
+                console.log('Found case-insensitive match:', possibleMatch);
+                resolvedPath = possibleMatch;
+            }
+        }
+        
+        if (!resolvedPath) {
+            console.error(`Could not find page: ${name}`);
+            throw new Error(`Page not found: ${name}`);
+        }
+        
+        console.log('Resolving with path:', resolvedPath);
+        return resolvePageComponent(resolvedPath, pages);
     },
     setup({ el, App, props }) {
         const root = createRoot(el);

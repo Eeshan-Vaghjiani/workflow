@@ -1,11 +1,24 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar, Clock, Calendar as CalendarIcon, Plus, Edit, ListTodo, PlusSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 // Import ViewMode as a value
 import { ViewMode } from '@rsagiev/gantt-task-react-19';
@@ -39,8 +52,22 @@ interface GanttTask {
     };
 }
 
+interface Assignment {
+    id: number;
+    title: string;
+    group_id: number;
+    group_name: string;
+}
+
+interface GroupMember {
+    id: number;
+    name: string;
+}
+
 interface Props {
     tasks: GanttTask[];
+    assignments: Assignment[];
+    groupMembers: GroupMember[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -61,12 +88,27 @@ const viewModeOptions = [
     { mode: ViewMode.Month, label: 'Month', icon: CalendarIcon },
 ];
 
-export default function GanttView({ tasks }: Props) {
+export default function GanttView({ tasks, assignments = [], groupMembers = [] }: Props) {
     const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
     const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
     const [columnWidth, setColumnWidth] = useState(300);
     const [error, setError] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    
+    // Task creation modal state
+    const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+    const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('');
+    const [newTaskTitle, setNewTaskTitle] = useState('');
+    const [newTaskDescription, setNewTaskDescription] = useState('');
+    const [newTaskStartDate, setNewTaskStartDate] = useState<Date | undefined>(new Date());
+    const [newTaskEndDate, setNewTaskEndDate] = useState<Date | undefined>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const [newTaskAssignedTo, setNewTaskAssignedTo] = useState<string>('');
+    const [newTaskPriority, setNewTaskPriority] = useState('medium');
+    const [isCreatingTask, setIsCreatingTask] = useState(false);
+    
+    // Task edit modal state
+    const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
+    const [isEditingTask, setIsEditingTask] = useState(false);
 
     // Calculate column width based on container width and view mode
     const updateColumnWidth = useCallback(() => {
@@ -185,6 +227,98 @@ export default function GanttView({ tasks }: Props) {
             setError('Failed to update task progress. Please try again.');
         }
     }, []);
+    
+    // Handle adding a new task
+    const handleAddTask = async () => {
+        if (!selectedAssignmentId || !newTaskTitle || !newTaskStartDate || !newTaskEndDate) {
+            return;
+        }
+        
+        setIsCreatingTask(true);
+        
+        try {
+            await axios.post('/api/tasks', {
+                title: newTaskTitle,
+                description: newTaskDescription,
+                start_date: newTaskStartDate.toISOString().split('T')[0],
+                end_date: newTaskEndDate.toISOString().split('T')[0],
+                assignment_id: selectedAssignmentId,
+                assigned_to: newTaskAssignedTo || null,
+                priority: newTaskPriority
+            });
+            
+            // Close modal and reset form
+            setIsAddTaskModalOpen(false);
+            resetTaskForm();
+            
+            // Refresh the page to show the new task
+            router.reload();
+        } catch (error) {
+            console.error('Error creating task:', error);
+            setError('Failed to create task. Please try again.');
+        } finally {
+            setIsCreatingTask(false);
+        }
+    };
+    
+    // Handle editing an existing task
+    const handleEditTask = async () => {
+        if (!selectedTask) return;
+        
+        setIsEditingTask(true);
+        
+        try {
+            const taskId = selectedTask.id.toString().replace('task-', '');
+            
+            await axios.put(`/api/tasks/${taskId}`, {
+                title: newTaskTitle,
+                description: newTaskDescription,
+                start_date: newTaskStartDate?.toISOString().split('T')[0],
+                end_date: newTaskEndDate?.toISOString().split('T')[0],
+                assigned_to: newTaskAssignedTo || null,
+                priority: newTaskPriority
+            });
+            
+            // Close modal and reset form
+            setIsEditTaskModalOpen(false);
+            setSelectedTask(null);
+            
+            // Refresh the page to show the updated task
+            router.reload();
+        } catch (error) {
+            console.error('Error updating task:', error);
+            setError('Failed to update task. Please try again.');
+        } finally {
+            setIsEditingTask(false);
+        }
+    };
+    
+    // Reset the task form
+    const resetTaskForm = () => {
+        setSelectedAssignmentId('');
+        setNewTaskTitle('');
+        setNewTaskDescription('');
+        setNewTaskStartDate(new Date());
+        setNewTaskEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+        setNewTaskAssignedTo('');
+        setNewTaskPriority('medium');
+    };
+    
+    // Open edit task modal with task data
+    const openEditTaskModal = (task: GanttTask) => {
+        setNewTaskTitle(task.name);
+        setNewTaskDescription(''); // Add description from task if available
+        setNewTaskStartDate(new Date(task.start));
+        setNewTaskEndDate(new Date(task.end));
+        setNewTaskAssignedTo(task.assignedTo);
+        setNewTaskPriority(task.priority || 'medium');
+        setIsEditTaskModalOpen(true);
+    };
+    
+    // Create a new assignment
+    const handleCreateAssignment = () => {
+        router.visit('/group-assignments/create');
+    };
 
     if (error) {
         return (
@@ -211,6 +345,24 @@ export default function GanttView({ tasks }: Props) {
                         <div className="flex justify-between items-center">
                             <h1 className="text-2xl font-bold dark:text-white">Gantt Chart View</h1>
                             <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => setIsAddTaskModalOpen(true)}
+                                >
+                                    <PlusSquare className="w-4 h-4" />
+                                    Add Task
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={handleCreateAssignment}
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    New Assignment
+                                </Button>
                                 {viewModeOptions.map(({ mode, label, icon: Icon }) => (
                                     <Button
                                         key={mode}
@@ -265,13 +417,24 @@ export default function GanttView({ tasks }: Props) {
                                                     <p><span className="font-medium">Progress:</span> {selectedTask.progress}%</p>
                                                     <p><span className="font-medium">Duration:</span> {new Date(selectedTask.start).toLocaleDateString()} - {new Date(selectedTask.end).toLocaleDateString()}</p>
                                                 </div>
-                                                <Button
-                                                    onClick={() => setSelectedTask(null)}
-                                                    variant="outline"
-                                                    className="mt-4 w-full"
-                                                >
-                                                    Close
-                                                </Button>
+                                                <div className="flex justify-between mt-4">
+                                                    <Button
+                                                        onClick={() => setSelectedTask(null)}
+                                                        variant="outline"
+                                                    >
+                                                        Close
+                                                    </Button>
+                                                    
+                                                    {selectedTask.type !== 'project' && (
+                                                        <Button
+                                                            onClick={() => openEditTaskModal(selectedTask)}
+                                                            variant="default"
+                                                        >
+                                                            <Edit className="w-4 h-4 mr-2" />
+                                                            Edit
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </Suspense>
@@ -283,6 +446,252 @@ export default function GanttView({ tasks }: Props) {
                     </div>
                 </div>
             </div>
+            
+            {/* Add Task Modal */}
+            <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Add New Task</DialogTitle>
+                        <DialogDescription>
+                            Create a new task for an existing assignment
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="assignment" className="text-right">
+                                Assignment
+                            </Label>
+                            <Select
+                                value={selectedAssignmentId}
+                                onValueChange={setSelectedAssignmentId}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select an assignment" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {assignments.map((assignment) => (
+                                        <SelectItem key={assignment.id} value={assignment.id.toString()}>
+                                            {assignment.title} ({assignment.group_name})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="title" className="text-right">
+                                Title
+                            </Label>
+                            <Input
+                                id="title"
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="description" className="text-right">
+                                Description
+                            </Label>
+                            <Textarea
+                                id="description"
+                                value={newTaskDescription}
+                                onChange={(e) => setNewTaskDescription(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="startDate" className="text-right">
+                                Start Date
+                            </Label>
+                            <div className="col-span-3">
+                                <DatePicker
+                                    selected={newTaskStartDate}
+                                    onSelect={setNewTaskStartDate}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="endDate" className="text-right">
+                                Due Date
+                            </Label>
+                            <div className="col-span-3">
+                                <DatePicker
+                                    selected={newTaskEndDate}
+                                    onSelect={setNewTaskEndDate}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="assignedTo" className="text-right">
+                                Assign To
+                            </Label>
+                            <Select
+                                value={newTaskAssignedTo}
+                                onValueChange={setNewTaskAssignedTo}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a member" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {groupMembers.map((member) => (
+                                        <SelectItem key={member.id} value={member.id.toString()}>
+                                            {member.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="priority" className="text-right">
+                                Priority
+                            </Label>
+                            <Select
+                                value={newTaskPriority}
+                                onValueChange={setNewTaskPriority}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddTaskModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" onClick={handleAddTask} disabled={isCreatingTask}>
+                            {isCreatingTask ? (
+                                <>
+                                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-current"></div>
+                                    Creating...
+                                </>
+                            ) : (
+                                'Create Task'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            
+            {/* Edit Task Modal */}
+            <Dialog open={isEditTaskModalOpen} onOpenChange={setIsEditTaskModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Task</DialogTitle>
+                        <DialogDescription>
+                            Update the selected task
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-title" className="text-right">
+                                Title
+                            </Label>
+                            <Input
+                                id="edit-title"
+                                value={newTaskTitle}
+                                onChange={(e) => setNewTaskTitle(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-description" className="text-right">
+                                Description
+                            </Label>
+                            <Textarea
+                                id="edit-description"
+                                value={newTaskDescription}
+                                onChange={(e) => setNewTaskDescription(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-startDate" className="text-right">
+                                Start Date
+                            </Label>
+                            <div className="col-span-3">
+                                <DatePicker
+                                    selected={newTaskStartDate}
+                                    onSelect={setNewTaskStartDate}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-endDate" className="text-right">
+                                Due Date
+                            </Label>
+                            <div className="col-span-3">
+                                <DatePicker
+                                    selected={newTaskEndDate}
+                                    onSelect={setNewTaskEndDate}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-assignedTo" className="text-right">
+                                Assign To
+                            </Label>
+                            <Select
+                                value={newTaskAssignedTo}
+                                onValueChange={setNewTaskAssignedTo}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select a member" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {groupMembers.map((member) => (
+                                        <SelectItem key={member.id} value={member.id.toString()}>
+                                            {member.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-priority" className="text-right">
+                                Priority
+                            </Label>
+                            <Select
+                                value={newTaskPriority}
+                                onValueChange={setNewTaskPriority}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select priority" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditTaskModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" onClick={handleEditTask} disabled={isEditingTask}>
+                            {isEditingTask ? (
+                                <>
+                                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-current"></div>
+                                    Updating...
+                                </>
+                            ) : (
+                                'Update Task'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 } 

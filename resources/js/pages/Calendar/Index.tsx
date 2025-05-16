@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -11,6 +11,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import axios from 'axios';
 import { CalendarIcon, Check, RefreshCw, Calendar as CalendarLogo } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+
+// Define minimal types for event handlers
+interface CalendarEventChangeArg {
+    event: {
+        id: string;
+        start: Date | null;
+        end: Date | null;
+    };
+    revert: () => void;
+}
 
 interface CalendarEvent {
     id: string;
@@ -51,46 +61,52 @@ export default function CalendarIndex({ events }: Props) {
     const calendarRef = useRef<FullCalendar>(null);
 
     // Handle event click
-    const handleEventClick = (info: any) => {
+    interface FullCalendarEventInfo {
+        event: {
+            id: string;
+        };
+    }
+
+    const handleEventClick = (info: FullCalendarEventInfo) => {
         // Find the full event data including our custom fields
         const event = calendarEvents.find(event => event.id === info.event.id);
         setSelectedEvent(event || null);
     };
 
     // Handle event drag-n-drop
-    const handleEventChange = async (info: any) => {
+    const handleEventChange = async (info: CalendarEventChangeArg) => {
         const { id, start, end } = info.event;
-        
+
         try {
             // Format dates for API
-            const startDate = new Date(start).toISOString().split('T')[0];
-            const endDate = new Date(end || start).toISOString().split('T')[0];
-            
+            const startDate = start ? new Date(start).toISOString().split('T')[0] : '';
+            const endDate = end ? new Date(end).toISOString().split('T')[0] : startDate;
+
             // Update the task dates in the backend
             await axios.put(`/api/tasks/${id}`, {
                 start_date: startDate,
                 end_date: endDate
             });
-            
+
             // Update local state
-            setCalendarEvents(prev => 
-                prev.map(event => 
-                    event.id === id 
-                        ? { ...event, start: startDate, end: endDate || startDate } 
+            setCalendarEvents(prev =>
+                prev.map(event =>
+                    event.id === id
+                        ? { ...event, start: startDate, end: endDate || startDate }
                         : event
                 )
             );
-            
+
             toast({
                 title: "Event Updated",
                 description: "Task dates have been updated.",
             });
         } catch (error) {
             console.error('Error updating event:', error);
-            
+
             // Revert the drag if there was an error
             info.revert();
-            
+
             toast({
                 title: "Update Failed",
                 description: "Failed to update task dates. Please try again.",
@@ -102,17 +118,17 @@ export default function CalendarIndex({ events }: Props) {
     // Sync with Google Calendar
     const syncWithGoogle = async () => {
         setSyncing(true);
-        
+
         try {
-            const response = await axios.post('/api/calendar/sync');
-            
+            await axios.post('/api/calendar/sync');
+
             toast({
                 title: "Calendar Synced",
                 description: "Your tasks have been synchronized with Google Calendar.",
             });
         } catch (error) {
             console.error('Error syncing with Google Calendar:', error);
-            
+
             toast({
                 title: "Sync Failed",
                 description: "Failed to sync with Google Calendar. Please check your connection.",
@@ -185,21 +201,21 @@ export default function CalendarIndex({ events }: Props) {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     {selectedEvent.assignmentTitle && (
                                         <div className="pt-2">
                                             <p className="text-sm font-medium">Assignment</p>
                                             <p className="text-sm text-muted-foreground">{selectedEvent.assignmentTitle}</p>
                                         </div>
                                     )}
-                                    
+
                                     {selectedEvent.groupName && (
                                         <div className="pt-2">
                                             <p className="text-sm font-medium">Group</p>
                                             <p className="text-sm text-muted-foreground">{selectedEvent.groupName}</p>
                                         </div>
                                     )}
-                                    
+
                                     <div className="flex justify-between pt-2">
                                         {selectedEvent.priority && (
                                             <div>
@@ -213,7 +229,7 @@ export default function CalendarIndex({ events }: Props) {
                                                 </div>
                                             </div>
                                         )}
-                                        
+
                                         {selectedEvent.status && (
                                             <div>
                                                 <p className="text-sm font-medium">Status</p>
@@ -226,7 +242,7 @@ export default function CalendarIndex({ events }: Props) {
                                             </div>
                                         )}
                                     </div>
-                                    
+
                                     {selectedEvent.progress !== undefined && (
                                         <div className="pt-2">
                                             <p className="text-sm font-medium">Progress</p>
@@ -255,4 +271,4 @@ export default function CalendarIndex({ events }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

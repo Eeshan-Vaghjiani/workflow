@@ -106,6 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Groups
+    Route::get('groups/search', [GroupController::class, 'search']);
     Route::get('groups', [GroupController::class, 'index']);
     Route::get('groups/{group}', [GroupController::class, 'show']);
     Route::post('groups', [GroupController::class, 'store']);
@@ -232,6 +233,18 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
             'tasks_count' => count($aiResponse['tasks'] ?? [])
         ]);
         
+        // Validate and prepare the AI response for database insertion
+        if (!isset($aiResponse['assignment']) || !isset($aiResponse['tasks']) || empty($aiResponse['tasks'])) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Invalid AI response structure',
+                'data' => $aiResponse 
+            ], 500);
+        }
+        
+        // Sanitize dates and ensure all required fields exist
+        $aiResponse = sanitizeAiResponseDates($aiResponse);
+        
         // Begin transaction to create assignment and tasks
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
@@ -354,3 +367,75 @@ Route::post('test-ai-tasks', function(Illuminate\Http\Request $request) {
         ], 500);
     }
 });
+
+// Add a test endpoint for OpenRouter API
+Route::get('/your_generic_secreton', function() {
+    $aiService = app(App\Services\AIService::class);
+    $result = $aiService->testConnection();
+    
+    if ($result['success']) {
+        return response()->json([
+            'success' => true,
+            'message' => $result['message'],
+            'response' => $result['response']
+        ]);
+    } else {
+        return response()->json([
+            'success' => false,
+            'error' => $result['error'],
+            'details' => $result['response'] ?? null
+        ], 500);
+    }
+});
+
+// Function to sanitize and validate dates in AI response
+function sanitizeAiResponseDates($response) {
+    if (isset($response['assignment'])) {
+        // Ensure dates are in correct format or set defaults
+        $now = now();
+        if (!isset($response['assignment']['due_date']) || !validateDate($response['assignment']['due_date'])) {
+            $response['assignment']['due_date'] = $now->addDays(14)->format('Y-m-d');
+        }
+        if (!isset($response['assignment']['start_date']) || !validateDate($response['assignment']['start_date'])) {
+            $response['assignment']['start_date'] = $now->format('Y-m-d');
+        }
+        if (!isset($response['assignment']['end_date']) || !validateDate($response['assignment']['end_date'])) {
+            $response['assignment']['end_date'] = $now->addDays(14)->format('Y-m-d');
+        }
+    }
+    
+    if (isset($response['tasks']) && is_array($response['tasks'])) {
+        foreach ($response['tasks'] as $key => $task) {
+            $now = now();
+            
+            // Validate task has required fields
+            if (!isset($task['title']) || empty($task['title'])) {
+                $response['tasks'][$key]['title'] = 'Task ' . ($key + 1);
+            }
+            
+            // Sanitize dates
+            if (!isset($task['start_date']) || !validateDate($task['start_date'])) {
+                $response['tasks'][$key]['start_date'] = $now->format('Y-m-d');
+            }
+            
+            if (!isset($task['end_date']) || !validateDate($task['end_date'])) {
+                $response['tasks'][$key]['end_date'] = $now->addDays(7)->format('Y-m-d');
+            }
+            
+            // Sanitize priority
+            if (!isset($task['priority']) || !in_array($task['priority'], ['low', 'medium', 'high'])) {
+                $response['tasks'][$key]['priority'] = 'medium';
+            }
+        }
+    }
+    
+    return $response;
+}
+
+// Helper function to validate a date string
+function validateDate($date, $format = 'Y-m-d') {
+    if (!is_string($date)) return false;
+    
+    $d = \DateTime::createFromFormat($format, $date);
+    return $d && $d->format($format) === $date;
+}

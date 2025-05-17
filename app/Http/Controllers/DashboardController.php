@@ -217,9 +217,46 @@ class DashboardController extends Controller
                 }
             }
         }
+        
+        // Get all assignments for the dropdown
+        $assignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })
+        ->with('group')
+        ->get()
+        ->filter(function ($assignment) {
+            return $assignment->group !== null;
+        })
+        ->map(function ($assignment) {
+            return [
+                'id' => $assignment->id,
+                'title' => $assignment->title,
+                'group_id' => $assignment->group_id,
+                'group_name' => $assignment->group->name,
+            ];
+        });
+        
+        // Get all group members for the dropdown (from groups the user is a member of)
+        $groupMembersQuery = \App\Models\User::whereHas('groups', function ($query) use ($user) {
+            $query->whereIn('group_id', function ($subquery) use ($user) {
+                $subquery->select('group_id')
+                    ->from('group_user')
+                    ->where('user_id', $user->id);
+            });
+        });
+        
+        $groupMembers = $groupMembersQuery->get()
+            ->map(function ($member) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                ];
+            });
 
         return Inertia::render('Dashboard/Gantt', [
             'tasks' => $ganttTasks,
+            'assignments' => $assignments,
+            'groupMembers' => $groupMembers,
         ]);
     }
 } 

@@ -93,4 +93,51 @@ class GroupChatController extends Controller
             'newMessage' => $message
         ]);
     }
+
+    /**
+     * Get messages for a specific group via API.
+     */
+    public function getMessagesAPI(Group $group)
+    {
+        // Check if user is a member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            return response()->json(['error' => 'You are not a member of this group'], 403);
+        }
+
+        $messages = GroupMessage::where('group_id', $group->id)
+            ->with('user:id,name')
+            ->orderBy('created_at', 'asc')
+            ->take(50)
+            ->get();
+
+        return response()->json($messages);
+    }
+
+    /**
+     * Store a new message via API.
+     */
+    public function storeAPI(Request $request, Group $group)
+    {
+        // Check if user is a member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            return response()->json(['error' => 'You are not a member of this group'], 403);
+        }
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $message = GroupMessage::create([
+            'group_id' => $group->id,
+            'user_id' => auth()->id(),
+            'message' => $validated['message'],
+        ]);
+
+        $message->load('user:id,name');
+
+        // Broadcast event for real-time updates
+        event(new \App\Events\NewMessageEvent($message));
+
+        return response()->json($message, 201);
+    }
 } 

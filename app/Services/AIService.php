@@ -31,6 +31,20 @@ class AIService
     public function processTaskPrompt(string $prompt, int $userId, int $groupId): array
     {
         try {
+            // Get group members to help AI distribute tasks
+            $groupMembers = [];
+            try {
+                $group = \App\Models\Group::with('members')->find($groupId);
+                if ($group && $group->members->count() > 0) {
+                    foreach ($group->members as $member) {
+                        $groupMembers[] = $member->name;
+                    }
+                }
+            } catch (\Exception $e) {
+                // If there's an error getting group members, continue without them
+                \Illuminate\Support\Facades\Log::warning('Could not get group members: ' . $e->getMessage());
+            }
+            
             $http = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
@@ -42,44 +56,54 @@ class AIService
                 $http = $http->withoutVerifying();
             }
             
+            // Create system message with group members if available
+            $systemMessage = "You are a helpful assistant that helps structure assignment tasks. 
+            When the user describes assignment tasks they want to create, extract the following information:
+            1. The title of the assignment
+            2. The unit name for the assignment (course code or subject name)
+            3. The description of the assignment
+            4. The individual tasks within the assignment";
+            
+            if (!empty($groupMembers)) {
+                $systemMessage .= "\n\nThe following group members are available to be assigned tasks. Please distribute tasks evenly among them:
+                " . implode(", ", $groupMembers);
+            }
+            
+            $systemMessage .= "\n\nFor each task, specify:
+            1. Who each task is assigned to (choose from the available members)
+            2. The start date for each task
+            3. The end date for each task
+            4. The priority level of each task (low, medium, high)
+            
+            Respond with structured JSON data only. Follow this format:
+            {
+                \"assignment\": {
+                    \"title\": \"Assignment Title\",
+                    \"unit_name\": \"Course Code or Subject\",
+                    \"description\": \"Assignment Description\",
+                    \"start_date\": \"YYYY-MM-DD\", 
+                    \"end_date\": \"YYYY-MM-DD\",
+                    \"due_date\": \"YYYY-MM-DD\",
+                    \"priority\": \"medium\"
+                },
+                \"tasks\": [
+                    {
+                        \"title\": \"Task 1 Title\",
+                        \"description\": \"Task 1 Description\",
+                        \"assigned_to_name\": \"Full Name\", 
+                        \"start_date\": \"YYYY-MM-DD\",
+                        \"end_date\": \"YYYY-MM-DD\",
+                        \"priority\": \"medium\"
+                    }
+                ]
+            }";
+            
             $response = $http->post($this->baseUrl . '/chat/completions', [
                 'model' => $this->model,
                 'messages' => [
                     [
                         'role' => 'system',
-                        'content' => "You are a helpful assistant that helps structure assignment tasks. 
-                        When the user describes assignment tasks they want to create, extract the following information:
-                        1. The title of the assignment
-                        2. The unit name for the assignment (course code or subject name)
-                        3. The description of the assignment
-                        4. The individual tasks within the assignment
-                        5. Who each task is assigned to
-                        6. The start date for each task
-                        7. The end date for each task
-                        8. The priority level of each task (low, medium, high)
-                        
-                        Respond with structured JSON data only. Follow this format:
-                        {
-                            \"assignment\": {
-                                \"title\": \"Assignment Title\",
-                                \"unit_name\": \"Course Code or Subject\",
-                                \"description\": \"Assignment Description\",
-                                \"start_date\": \"YYYY-MM-DD\", 
-                                \"end_date\": \"YYYY-MM-DD\",
-                                \"due_date\": \"YYYY-MM-DD\",
-                                \"priority\": \"medium\"
-                            },
-                            \"tasks\": [
-                                {
-                                    \"title\": \"Task 1 Title\",
-                                    \"description\": \"Task 1 Description\",
-                                    \"assigned_to_name\": \"Full Name\", 
-                                    \"start_date\": \"YYYY-MM-DD\",
-                                    \"end_date\": \"YYYY-MM-DD\",
-                                    \"priority\": \"medium\"
-                                }
-                            ]
-                        }"
+                        'content' => $systemMessage
                     ],
                     [
                         'role' => 'user',
@@ -87,7 +111,7 @@ class AIService
                     ]
                 ],
                 'temperature' => 0.3,
-                'max_tokens' => 1000,
+                'max_tokens' => 2500, // Increased token limit to handle larger prompts
                 'response_format' => ['type' => 'json_object']
             ]);
 

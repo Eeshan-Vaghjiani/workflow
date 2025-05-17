@@ -69,8 +69,6 @@ export default function NotificationsIndex({ notifications }: Props) {
             console.error('Error marking all notifications as read:', error);
         }
     };
-
-    // Helper function to get notification icon
     const getNotificationIcon = (type: string) => {
         switch (type) {
             case 'group_invitation':
@@ -206,4 +204,4 @@ export default function NotificationsIndex({ notifications }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

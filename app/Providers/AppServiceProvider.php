@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\FileService;
+use App\Services\AIService;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register custom FileService for when you explicitly want to use it
         $this->app->singleton(FileService::class);
+        
+        // Register AIService
+        $this->app->singleton(AIService::class);
     }
 
     /**

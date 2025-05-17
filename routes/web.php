@@ -28,6 +28,11 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// Add authentication debugger page
+Route::get('/auth-debug', function () {
+    return Inertia::render('AuthDebug');
+})->name('auth.debug');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -106,6 +111,99 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Add broadcasting authentication route
 Broadcast::routes(['middleware' => ['web', 'auth']]);
+
+// Add AI test page (no auth required)
+Route::get('/ai-test', function () {
+    return Inertia::render('AITest');
+})->name('ai.test');
+
+// Add a route to test OpenRouter API directly
+Route::get('/test-openrouter', function() {
+    $apiKey = env('OPENROUTER_API_KEY', '');
+    
+    if (empty($apiKey)) {
+        return 'OpenRouter API key not configured in .env file';
+    }
+    
+    try {
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://openrouter.ai/api/v1/chat/completions');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey,
+            'HTTP-Referer: ' . config('app.url', 'http://localhost'),
+        ]);
+        
+        $data = [
+            'model' => 'meta-llama/llama-4-scout:free',
+            'messages' => [
+                [
+                    'role' => 'user',
+                    'content' => 'Hello, this is a test message from the API. Please respond with a short greeting.'
+                ]
+            ],
+            'max_tokens' => 50
+        ];
+        
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $info = curl_getinfo($ch);
+        curl_close($ch);
+        
+        if ($error) {
+            return "cURL Error: " . $error;
+        }
+        
+        $decoded = json_decode($response, true);
+        
+        return [
+            'status_code' => $info['http_code'],
+            'response' => $decoded,
+            'api_key_length' => strlen($apiKey),
+            'api_key_prefix' => substr($apiKey, 0, 10) . '...',
+        ];
+    } catch (\Exception $e) {
+        return [
+            'error' => $e->getMessage(),
+        ];
+    }
+});
+
+// Add a debug route for logs (only for development)
+Route::get('/debug-logs', function() {
+    if (app()->environment('production')) {
+        return 'Not available in production.';
+    }
+    
+    $logFile = storage_path('logs/laravel.log');
+    
+    if (!file_exists($logFile)) {
+        return 'Log file does not exist.';
+    }
+    
+    // Get the last 50 lines
+    $logs = [];
+    $file = new \SplFileObject($logFile, 'r');
+    $file->seek(PHP_INT_MAX);
+    $totalLines = $file->key();
+    
+    $startLine = max(0, $totalLines - 50);
+    $file->seek($startLine);
+    
+    while (!$file->eof()) {
+        $logs[] = $file->current();
+        $file->next();
+    }
+    
+    return view('debug.logs', [
+        'logs' => implode('', $logs)
+    ]);
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

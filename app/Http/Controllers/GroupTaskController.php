@@ -175,22 +175,45 @@ class GroupTaskController extends Controller
     }
 
     /**
-     * Mark a task as complete.
+     * Mark a task as complete from a nested route (with group and assignment params).
      */
-    public function complete(Request $request, GroupTask $groupTask)
+    public function complete(Request $request, $group, $assignment, GroupTask $task)
     {
-        $groupTask->load('assignment.group');
+        $task->load('assignment.group');
 
-        if ($groupTask->assignment === null || $groupTask->assignment->group === null) {
+        if ($task->assignment === null || $task->assignment->group === null) {
             abort(404, 'Assignment or group not found');
         }
 
         // Either the task is assigned to the current user or they are a group leader
-        if ($groupTask->assigned_to !== auth()->id() && !$groupTask->assignment->group->isLeader(auth()->id())) {
+        if ($task->assigned_to !== auth()->id() && !$task->assignment->group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to mark this task as complete');
         }
 
-        $groupTask->update([
+        $task->update([
+            'status' => 'completed',
+        ]);
+
+        return back();
+    }
+
+    /**
+     * Mark a task as complete from the tasks list (simple route without group and assignment params).
+     */
+    public function completeSimple(GroupTask $task)
+    {
+        $task->load('assignment.group');
+
+        if ($task->assignment === null || $task->assignment->group === null) {
+            abort(404, 'Assignment or group not found');
+        }
+
+        // Either the task is assigned to the current user or they are a group leader
+        if ($task->assigned_to !== auth()->id() && !$task->assignment->group->isLeader(auth()->id())) {
+            abort(403, 'You are not authorized to mark this task as complete');
+        }
+
+        $task->update([
             'status' => 'completed',
         ]);
 

@@ -282,4 +282,55 @@ class ChatController extends Controller
             
         return response()->json($groups);
     }
+    
+    /**
+     * Search for users by name.
+     */
+    public function searchUsers(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|min:2',
+            ]);
+
+            $term = $validated['name'];
+            $currentUserId = auth()->id();
+            
+            \Log::info('Chat user search request', [
+                'term' => $term, 
+                'authenticated_user' => $currentUserId,
+                'request_path' => $request->path(),
+                'request_url' => $request->url(),
+            ]);
+            
+            // Make search more lenient by checking multiple columns and using lowercase
+            $users = User::where('id', '!=', $currentUserId)
+                ->where(function($query) use ($term) {
+                    $query->where('name', 'LIKE', '%' . $term . '%')
+                          ->orWhere('email', 'LIKE', '%' . $term . '%');
+                })
+                ->select('id', 'name', 'email', 'avatar')
+                ->take(10)
+                ->get();
+                
+            // Log the search results for debugging
+            \Log::info('User search results', [
+                'term' => $term,
+                'count' => $users->count(),
+                'users' => $users->pluck('name', 'id')->toArray()
+            ]);
+
+            return response()->json($users);
+        } catch (\Exception $e) {
+            \Log::error('Error in chat user search', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to search for users',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 } 

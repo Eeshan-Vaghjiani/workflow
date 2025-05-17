@@ -68,10 +68,29 @@ class GroupController extends Controller
 
         $group->load(['members', 'assignments']);
         $isLeader = $group->isLeader(auth()->id());
+        
+        // If user is a leader, also load join requests
+        $joinRequests = [];
+        if ($isLeader) {
+            // Get users who have join requests for this group
+            $joinRequests = $group->joinRequests
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                        ],
+                        'created_at' => $user->pivot->created_at,
+                    ];
+                });
+        }
 
         return Inertia::render('Groups/Show', [
             'group' => $group,
             'isLeader' => $isLeader,
+            'joinRequests' => $joinRequests,
             'auth' => [
                 'user' => auth()->user()->only('id', 'name')
             ]
@@ -227,5 +246,128 @@ class GroupController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * Display a listing of groups that the user can join.
+     */
+    public function joinable()
+    {
+        $userId = auth()->id();
+        
+        // Get groups that the user is not a member of
+        $groups = Group::whereDoesntHave('members', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })->latest()->get();
+        
+        return Inertia::render('Groups/Joinable', [
+            'groups' => $groups
+        ]);
+    }
+
+    /**
+     * Request to join a group.
+     */
+    public function requestJoin(Group $group)
+    {
+        $userId = auth()->id();
+        
+        // Check if user is already a member
+        if ($group->members()->where('user_id', $userId)->exists()) {
+            return redirect()->route('groups.show', $group)
+                ->with('message', 'You are already a member of this group.');
+        }
+        
+        // Create a notification for the group owner
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->createGroupJoinRequest($group, auth()->user());
+        
+        // Add the user as a pending member
+        $group->joinRequests()->attach($userId);
+        
+        return redirect()->back()
+            ->with('message', 'Your request to join the group has been sent.');
+    }
+    
+    /**
+     * Approve a user's request to join a group.
+     */
+    public function approveJoinRequest(Request $request, Group $group)
+    {
+        // Check if the current user is a leader of the group
+        if (!$group->isLeader(auth()->id())) {
+            abort(403, 'You are not authorized to approve join requests');
+        }
+        
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+        
+        $userId = $validated['user_id'];
+        
+        // Remove from join requests
+        $group->joinRequests()->detach($userId);
+        
+        // Add to members
+        $group->members()->attach($userId, ['role' => 'member']);
+        
+        // Add system message to group chat
+        $user = \App\Models\User::find($userId);
+        $group->chatMessages()->create([
+            'user_id' => auth()->id(),
+            'message' => "{$user->name} has joined the group",
+            'is_system_message' => true,
+        ]);
+        
+        // Notify the user that their request was approved
+        $notificationService = new \App\Services\NotificationService();
+        $notificationService->createGroupJoinApproved($user, $group, auth()->user());
+        
+        return redirect()->back()
+            ->with('message', 'User has been added to the group.');
+    }
+    
+    /**
+     * Reject a user's request to join a group.
+     */
+    public function rejectJoinRequest(Request $request, Group $group)
+    {
+        // Check if the current user is a leader of the group
+        if (!$group->isLeader(auth()->id())) {
+            abort(403, 'You are not authorized to reject join requests');
+        }
+        
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+        
+        // Remove from join requests
+        $group->joinRequests()->detach($validated['user_id']);
+        
+        return redirect()->back()
+            ->with('message', 'Join request has been rejected.');
+    }
+
+    /**
+     * Search for groups by name.
+     */
+    public function search(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|min:3',
+        ]);
+
+        $userId = auth()->id();
+        
+        // Find groups that match the name and the user is a member of
+        $groups = Group::where('name', 'LIKE', '%' . $validated['name'] . '%')
+            ->whereHas('members', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->withCount('members')
+            ->take(5) // Limit to 5 results for security
+            ->get();
+
+        return response()->json($groups);
     }
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\API\GroupMessageController;
 use App\Http\Controllers\API\DirectMessageController;
 use App\Http\Controllers\API\AITaskController;
 use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
+use App\Http\Controllers\API\ChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -153,6 +154,13 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // AI Task Creation
     Route::post('groups/{group}/ai/tasks', [AITaskController::class, 'createFromPrompt']);
+});
+
+// Chat-specific API routes using web middleware for session auth
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/chat/groups', [ChatController::class, 'getGroups']);
+    Route::get('/chat/search-users', [ChatController::class, 'searchUsers']);
+    Route::get('/direct-messages', [ChatController::class, 'getDirectMessages']);
 });
 
 Route::middleware([
@@ -384,6 +392,85 @@ Route::get('/test-openrouter-connection', function() {
             'success' => false,
             'error' => $result['error'],
             'details' => $result['response'] ?? null
+        ], 500);
+    }
+});
+
+// Add a debug endpoint for chat system
+Route::get('/chat-test', function() {
+    return response()->json([
+        'success' => true,
+        'status' => 'Chat system is accessible',
+        'echo_config' => [
+            'broadcaster' => config('broadcasting.default'),
+            'key' => config('broadcasting.connections.pusher.key'),
+            'cluster' => config('broadcasting.connections.pusher.options.cluster'),
+        ],
+        'channels' => [
+            'private' => 'Private channels should be working',
+            'presence' => 'Presence channels should be working',
+        ]
+    ]);
+});
+
+// Add a debug endpoint for sending test messages
+Route::post('/chat-test', function(Illuminate\Http\Request $request) {
+    $validated = $request->validate([
+        'event' => 'required|string',
+        'message' => 'required|string',
+    ]);
+    
+    try {
+        // For private channel testing
+        if ($request->has('channel_type') && $request->input('channel_type') === 'private') {
+            $userId = $request->input('user_id', auth()->id() ?: 1);
+            broadcast(new \App\Events\NewDirectMessage(
+                new \App\Models\DirectMessage([
+                    'sender_id' => auth()->id() ?: 1,
+                    'receiver_id' => $userId,
+                    'message' => $validated['message'],
+                    'read' => false,
+                ]),
+                [
+                    'content' => $validated['message'],
+                    'timestamp' => date('h:i A'),
+                    'date' => date('M j, Y'),
+                    'id' => time(),
+                    'sender' => auth()->user() ? [
+                        'id' => auth()->id(),
+                        'name' => auth()->user()->name
+                    ] : ['id' => 1, 'name' => 'Test User'],
+                ]
+            ));
+        } 
+        // For group channel testing
+        else {
+            $groupId = $request->input('group_id', 1);
+            broadcast(new \App\Events\NewGroupMessage(
+                $groupId,
+                [
+                    'id' => time(),
+                    'content' => $validated['message'],
+                    'sender' => auth()->user() ? [
+                        'id' => auth()->id(),
+                        'name' => auth()->user()->name
+                    ] : ['id' => 1, 'name' => 'Test User'],
+                    'timestamp' => date('h:i A'),
+                    'date' => date('M j, Y'),
+                    'is_system_message' => false,
+                ]
+            ));
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Test message broadcast successfully',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Failed to broadcast message: ' . $e->getMessage(),
+            'trace' => $e->getTraceAsString()
         ], 500);
     }
 });

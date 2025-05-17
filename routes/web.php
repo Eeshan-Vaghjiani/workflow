@@ -401,5 +401,134 @@ Route::get('/debug/test-hardcoded-json', function () {
     }
 });
 
+// Add a debug route for chat system
+Route::get('/debug/chat', function() {
+    return view('debug.chat', [
+        'title' => 'Chat Debug',
+        'config' => [
+            'pusher_key' => config('broadcasting.connections.pusher.key'),
+            'pusher_cluster' => config('broadcasting.connections.pusher.options.cluster'),
+            'csrf_token' => csrf_token(),
+            'user' => auth()->user() ? [
+                'id' => auth()->id(),
+                'name' => auth()->user()->name
+            ] : null
+        ]
+    ]);
+});
+
+// Add a debug route to check users in the database
+Route::get('/debug/users', function() {
+    if (app()->environment('production')) {
+        return 'Not available in production.';
+    }
+    
+    try {
+        $users = \App\Models\User::select('id', 'name', 'email')
+            ->take(10)
+            ->get();
+        
+        $count = \App\Models\User::count();
+        
+        return response()->json([
+            'success' => true,
+            'total_count' => $count,
+            'users' => $users,
+            'auth' => [
+                'check' => auth()->check(),
+                'id' => auth()->id(),
+                'user' => auth()->user() ? auth()->user()->only(['id', 'name', 'email']) : null
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
+// Add a debug route to test user search
+Route::get('/debug/search-users', function(\Illuminate\Http\Request $request) {
+    if (app()->environment('production')) {
+        return 'Not available in production.';
+    }
+    
+    try {
+        $term = $request->input('q', '');
+        
+        $query = \App\Models\User::query();
+        
+        if (!empty($term)) {
+            $query->where(function($q) use ($term) {
+                $q->where('name', 'LIKE', "%{$term}%")
+                  ->orWhere('email', 'LIKE', "%{$term}%");
+            });
+        }
+        
+        $users = $query->select('id', 'name', 'email', 'created_at')
+            ->take(10)
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'term' => $term,
+            'count' => $users->count(),
+            'users' => $users,
+            'sql' => [
+                'query' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
+// Add a debug route to check authentication status
+Route::get('/debug/auth-status', function() {
+    return response()->json([
+        'authenticated' => auth()->check(),
+        'user' => auth()->user() ? [
+            'id' => auth()->id(),
+            'name' => auth()->user()->name,
+            'email' => auth()->user()->email,
+        ] : null,
+        'session' => [
+            'has_session' => session()->isStarted(),
+            'session_id' => session()->getId(),
+            'session_token' => session()->token(),
+        ],
+        'csrf' => [
+            'token' => csrf_token(),
+            'token_meta' => '<meta name="csrf-token" content="' . csrf_token() . '">',
+        ],
+        'cookie_settings' => [
+            'secure' => config('session.secure'),
+            'same_site' => config('session.same_site'),
+            'domain' => config('session.domain'),
+        ]
+    ]);
+});
+
+// Add direct API endpoints accessible via web routes (with session authentication)
+Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
+    Route::get('/chat/groups', [App\Http\Controllers\API\ChatController::class, 'getGroups']);
+    Route::get('/chat/search-users', [App\Http\Controllers\API\ChatController::class, 'searchUsers']);
+    Route::get('/direct-messages', [App\Http\Controllers\API\ChatController::class, 'getDirectMessages']);
+    Route::get('/test-auth', [App\Http\Controllers\API\ChatController::class, 'testAuth']);
+    
+    // Group Messages
+    Route::prefix('web')->group(function() {
+        Route::get('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'getMessagesAPI']);
+        Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
+    });
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

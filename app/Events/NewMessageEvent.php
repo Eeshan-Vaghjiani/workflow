@@ -55,4 +55,9 @@ class NewMessageEvent implements ShouldBroadcast
             'is_system_message' => $this->message->is_system_message,
         ];
     }
+
+    public function broadcastAs(): string
+    {
+        return 'new-message';
+    }
 }

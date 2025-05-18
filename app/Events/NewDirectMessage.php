@@ -10,6 +10,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class NewDirectMessage implements ShouldBroadcast
 {
@@ -36,6 +37,13 @@ class NewDirectMessage implements ShouldBroadcast
     {
         $this->message = $message;
         $this->messageData = $messageData;
+        
+        // Log for debugging
+        Log::debug('NewDirectMessage event created', [
+            'receiver_id' => $message->receiver_id,
+            'sender_id' => $message->sender_id,
+            'message_id' => $message->id
+        ]);
     }
 
     /**
@@ -45,6 +53,13 @@ class NewDirectMessage implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
+        Log::debug('Broadcasting direct message', [
+            'to_user' => $this->message->receiver_id, 
+            'from_user' => $this->message->sender_id,
+            'channel' => 'chat.'.$this->message->receiver_id
+        ]);
+        
+        // Only broadcast to the receiver's channel - they'll receive it on their own channel
         return [
             new PrivateChannel('chat.'.$this->message->receiver_id),
         ];
@@ -65,6 +80,21 @@ class NewDirectMessage implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        return $this->messageData;
+        // Make sure we include sender/receiver info
+        $enhancedData = $this->messageData;
+        
+        if (!isset($enhancedData['sender_id'])) {
+            $enhancedData['sender_id'] = $this->message->sender_id;
+        }
+        
+        if (!isset($enhancedData['receiver_id'])) {
+            $enhancedData['receiver_id'] = $this->message->receiver_id;
+        }
+        
+        Log::debug('Broadcasting message data:', [
+            'messageData' => $enhancedData,
+        ]);
+        
+        return $enhancedData;
     }
 } 

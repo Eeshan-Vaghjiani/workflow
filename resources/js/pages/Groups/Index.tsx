@@ -28,12 +28,20 @@ export default function GroupsIndex({ groups }: Props) {
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="flex justify-between mb-4">
                     <h1 className="text-2xl font-bold">My Groups</h1>
-                    <Link
-                        href={route('groups.create')}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
-                    >
-                        Create Group
-                    </Link>
+                    <div>
+                        <Link
+                            href={route('groups.joinable')}
+                            className="inline-flex items-center px-4 py-2 mr-2 bg-gray-200 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-800 dark:text-white uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                        >
+                            Join a Group
+                        </Link>
+                        <Link
+                            href={route('groups.create')}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                        >
+                            Create Group
+                        </Link>
+                    </div>
                 </div>
 
                 {groups.length > 0 ? (

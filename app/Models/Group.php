@@ -30,6 +30,12 @@ class Group extends Model
             ->withTimestamps();
     }
 
+    public function joinRequests()
+    {
+        return $this->belongsToMany(User::class, 'group_join_requests')
+            ->withTimestamps();
+    }
+
     public function assignments()
     {
         return $this->hasMany(GroupAssignment::class);
@@ -60,6 +66,15 @@ class Group extends Model
         $userId = $user instanceof User ? $user->id : $user;
         
         return $this->members()
+            ->where('user_id', $userId)
+            ->exists();
+    }
+
+    public function hasJoinRequest($user)
+    {
+        $userId = $user instanceof User ? $user->id : $user;
+        
+        return $this->joinRequests()
             ->where('user_id', $userId)
             ->exists();
     }

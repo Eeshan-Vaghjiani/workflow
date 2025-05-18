@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
-use App\Models\GroupMessage;
+use App\Models\GroupChatMessage;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -34,7 +34,7 @@ class GroupChatController extends Controller
             abort(403, 'You are not a member of this group');
         }
 
-        $messages = GroupMessage::where('group_id', $group->id)
+        $messages = GroupChatMessage::where('group_id', $group->id)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->take(50)
@@ -56,7 +56,7 @@ class GroupChatController extends Controller
             abort(403, 'You are not a member of this group');
         }
 
-        $messages = GroupMessage::where('group_id', $group->id)
+        $messages = GroupChatMessage::where('group_id', $group->id)
             ->with('user:id,name')
             ->orderBy('created_at', 'desc')
             ->take(50)
@@ -81,10 +81,11 @@ class GroupChatController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
-        $message = GroupMessage::create([
+        $message = GroupChatMessage::create([
             'group_id' => $group->id,
             'user_id' => auth()->id(),
             'message' => $validated['message'],
+            'is_system_message' => false,
         ]);
 
         $message->load('user:id,name');
@@ -104,7 +105,7 @@ class GroupChatController extends Controller
             return response()->json(['error' => 'You are not a member of this group'], 403);
         }
 
-        $messages = GroupMessage::where('group_id', $group->id)
+        $messages = GroupChatMessage::where('group_id', $group->id)
             ->with('user:id,name')
             ->orderBy('created_at', 'asc')
             ->take(50)
@@ -127,10 +128,11 @@ class GroupChatController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
-        $message = GroupMessage::create([
+        $message = GroupChatMessage::create([
             'group_id' => $group->id,
             'user_id' => auth()->id(),
             'message' => $validated['message'],
+            'is_system_message' => false,
         ]);
 
         $message->load('user:id,name');

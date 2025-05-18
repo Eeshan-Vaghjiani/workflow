@@ -168,4 +168,49 @@ class NotificationService
             'read' => false,
         ]);
     }
+
+    /**
+     * Create a notification for join request.
+     */
+    public function createGroupJoinRequest(Group $group, User $requester): Notification
+    {
+        // Find group leader(s) to notify
+        $leaders = $group->members()->where('role', 'owner')->get();
+        
+        $notifications = [];
+        
+        foreach ($leaders as $leader) {
+            $notifications[] = Notification::create([
+                'user_id' => $leader->id,
+                'type' => 'group_join_request',
+                'data' => [
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'requester_id' => $requester->id,
+                    'requester_name' => $requester->name,
+                ],
+                'read' => false,
+            ]);
+        }
+        
+        return $notifications[0] ?? null; // Return first notification or null if none created
+    }
+    
+    /**
+     * Create a notification for approved join request.
+     */
+    public function createGroupJoinApproved(User $user, Group $group, User $approver): Notification
+    {
+        return Notification::create([
+            'user_id' => $user->id,
+            'type' => 'group_join_approved',
+            'data' => [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+                'approver_id' => $approver->id,
+                'approver_name' => $approver->name,
+            ],
+            'read' => false,
+        ]);
+    }
 } 

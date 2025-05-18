@@ -41,6 +41,7 @@ class Kernel extends HttpKernel
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\your_generic_secreteStateful::class,
+            \Laravel\Sanctum\Http\Middleware\your_generic_secreteStateful::class,
             // 'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],

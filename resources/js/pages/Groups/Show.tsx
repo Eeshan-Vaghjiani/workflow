@@ -12,7 +12,7 @@ interface Member {
     name: string;
     email: string;
     pivot: {
-        is_leader: boolean;
+        role: string;
     };
 }
 
@@ -35,6 +35,15 @@ interface Group {
 interface Props {
     group: Group;
     isLeader: boolean;
+    joinRequests?: {
+        id: number;
+        user: {
+            id: number;
+            name: string;
+            email: string;
+        };
+        created_at: string;
+    }[];
     auth: {
         user: {
             id: number;
@@ -42,7 +51,7 @@ interface Props {
     };
 }
 
-export default function GroupShow({ group, isLeader, auth }: Props) {
+export default function GroupShow({ group, isLeader, joinRequests = [], auth }: Props) {
     const [showChat, setShowChat] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -113,7 +122,7 @@ export default function GroupShow({ group, isLeader, auth }: Props) {
                                             <div className="text-sm text-gray-500">{member.email}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {member.pivot.is_leader && (
+                                            {member.pivot.role === 'owner' && (
                                                 <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300 rounded-full">
                                                     Leader
                                                 </span>
@@ -121,6 +130,44 @@ export default function GroupShow({ group, isLeader, auth }: Props) {
                                         </div>
                                     </div>
                                 ))}
+
+                                {isLeader && joinRequests.length > 0 && (
+                                    <>
+                                        <div className="my-4 border-t pt-4">
+                                            <h3 className="font-medium text-sm mb-2">Pending Join Requests</h3>
+                                            {joinRequests.map((request) => (
+                                                <div key={request.id} className="flex justify-between items-center p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md">
+                                                    <div>
+                                                        <div className="font-medium">{request.user.name}</div>
+                                                        <div className="text-sm text-gray-500">{request.user.email}</div>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Link
+                                                            href={route('groups.approve-join', group.id)}
+                                                            method="post"
+                                                            data={{ user_id: request.user.id }}
+                                                            as="button" 
+                                                            className="px-2 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                                            preserveScroll
+                                                        >
+                                                            Approve
+                                                        </Link>
+                                                        <Link
+                                                            href={route('groups.reject-join', group.id)}
+                                                            method="post"
+                                                            data={{ user_id: request.user.id }}
+                                                            as="button"
+                                                            className="px-2 py-1 border border-red-500 text-red-500 text-sm rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                            preserveScroll
+                                                        >
+                                                            Reject
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

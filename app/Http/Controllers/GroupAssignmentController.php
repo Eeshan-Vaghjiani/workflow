@@ -50,9 +50,12 @@ class your_generic_secretr extends Controller
     public function create()
     {
         $groups = Group::whereHas('members', function ($query) {
-            $query->where('user_id', auth()->id())
-                ->where('role', 'owner');
-        })->get();
+            $query->where('user_id', auth()->id());
+        })
+        ->get()
+        ->filter(function ($group) {
+            return $group->isLeader(auth()->id());
+        });
 
         return Inertia::render('Assignments/Create', [
             'groups' => $groups

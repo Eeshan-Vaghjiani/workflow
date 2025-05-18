@@ -13,6 +13,7 @@ use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Http\Request;
 
 /*
 |your_generic_secretyour_generic_secretyour_generic_secret--
@@ -138,6 +139,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/messages/{message}', [DirectMessageController::class, 'show'])->name('direct-messages.show');
     Route::put('/messages/{message}', [DirectMessageController::class, 'update'])->name('direct-messages.update');
     Route::delete('/messages/{message}', [DirectMessageController::class, 'destroy'])->name('direct-messages.destroy');
+
+    // Group Messages
+    Route::prefix('web')->group(function() {
+        // Group messages
+        Route::get('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'getMessagesAPI']);
+        Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
+        
+        // Direct messages
+        Route::get('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'messages']);
+        Route::post('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'store']);
+    });
+});
+
+// Add API web fallback routes with explicit session auth
+Route::prefix('api/web')->middleware(['web', 'auth'])->group(function() {
+    // Direct message fallback routes with web middleware
+    Route::get('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'messages']);
+    Route::post('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'store']);
 });
 
 // Add broadcasting authentication route
@@ -490,28 +509,35 @@ Route::get('/debug/search-users', function(\Illuminate\Http\Request $request) {
     }
 });
 
-// Add a debug route to check authentication status
-Route::get('/debug/auth-status', function() {
+// Add a debug route for authentication status
+Route::get('/debug/auth-status', function (Request $request) {
+    $user = $request->user();
+    $sessionData = [];
+    
+    if ($request->hasSession()) {
+        $sessionData = [
+            'has_session' => true,
+            'session_id' => $request->session()->getId(),
+            'session_token' => csrf_token()
+        ];
+    } else {
+        $sessionData = [
+            'has_session' => false
+        ];
+    }
+    
     return response()->json([
-        'authenticated' => auth()->check(),
-        'user' => auth()->user() ? [
-            'id' => auth()->id(),
-            'name' => auth()->user()->name,
-            'email' => auth()->user()->email,
-        ] : null,
-        'session' => [
-            'has_session' => session()->isStarted(),
-            'session_id' => session()->getId(),
-            'session_token' => session()->token(),
-        ],
+        'authenticated' => !is_null($user),
+        'user' => $user,
+        'session' => $sessionData,
         'csrf' => [
             'token' => csrf_token(),
-            'token_meta' => '<meta name="csrf-token" content="' . csrf_token() . '">',
+            'token_meta' => '<meta name="csrf-token" content="'.csrf_token().'">'
         ],
         'cookie_settings' => [
             'secure' => config('session.secure'),
             'same_site' => config('session.same_site'),
-            'domain' => config('session.domain'),
+            'domain' => config('session.domain')
         ]
     ]);
 });
@@ -528,6 +554,21 @@ Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
         Route::get('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'getMessagesAPI']);
         Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
     });
+});
+
+// Add a debug route for testing broadcasting auth
+Route::get('/debug/broadcasting-auth', function() {
+    $authEndpoint = url('/broadcasting/auth');
+    $csrfToken = csrf_token();
+    $userId = auth()->id() ?: 0;
+    
+    return view('debug.broadcasting', [
+        'csrfToken' => $csrfToken,
+        'authEndpoint' => $authEndpoint,
+        'userId' => $userId,
+        'isAuthenticated' => auth()->check(),
+        'socketId' => request('socket_id', '123.456'),
+    ]);
 });
 
 require __DIR__.'/settings.php';

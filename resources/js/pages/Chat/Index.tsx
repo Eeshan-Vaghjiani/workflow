@@ -416,11 +416,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
   useEffect(() => {
     // Auto-scroll to bottom when messages change
     if (messagesContainerRef.current && messages.length > 0) {
-      setTimeout(() => {
-        if (messagesContainerRef.current) {
-          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
-      }, 100);
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
@@ -880,9 +876,9 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
 
         {/* Chat Area */}
         {selectedChat ? (
-          <div className={`${selectedChat && window.innerWidth < 768 ? 'block' : 'hidden'} md:block flex-1 flex flex-col h-full overflow-hidden`}>
+          <div className={`${selectedChat && window.innerWidth < 768 ? 'block' : 'hidden'} md:block flex-1 flex flex-col h-full`}>
             {/* Chat Header */}
-            <div className="flex items-center p-4 border-b border-neutral-200 dark:border-neutral-700 shrink-0">
+            <div className="flex items-center p-4 border-b border-neutral-200 dark:border-neutral-700 shrink-0 bg-white dark:bg-neutral-900">
               {window.innerWidth < 768 && (
                 <Button 
                   variant="ghost" 
@@ -917,72 +913,71 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
               </div>
             </div>
             
-            {/* Messages Container with custom scrolling */}
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <div 
-                ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent"
-              >
-                {loadingMessages ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="h-6 w-6 animate-spin rounded-full border-t-2 border-neutral-500"></div>
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-neutral-500 dark:text-neutral-400">
-                    <p className="mb-2">No messages yet</p>
-                    <p>Start the conversation!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {messages.map((message, index) => {
-                      // Create a truly unique key using multiple unique properties plus a random component
-                      // This ensures each message will have a completely unique key even with fast rerenders
-                      const uniqueMessageId = typeof message.id === 'number' ? message.id : message.id || '';
-                      const uniqueKey = `msg-${uniqueMessageId}-${message.user_id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                      
-                      return (
+            {/* Messages Container */}
+            <div 
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto p-4"
+              style={{ height: 'calc(100% - 140px)' }} // Explicit calculation: full height minus header and input heights
+            >
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="h-6 w-6 animate-spin rounded-full border-t-2 border-neutral-500"></div>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center text-neutral-500 dark:text-neutral-400">
+                  <p className="mb-2">No messages yet</p>
+                  <p>Start the conversation!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((message, index) => {
+                    // Create a truly unique key using multiple unique properties plus a random component
+                    // This ensures each message will have a completely unique key even with fast rerenders
+                    const uniqueMessageId = typeof message.id === 'number' ? message.id : message.id || '';
+                    const uniqueKey = `msg-${uniqueMessageId}-${message.user_id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    return (
+                      <div
+                        key={uniqueKey}
+                        className={`flex ${message.user_id === currentUser.id ? 'justify-end' : 'justify-start'}`}
+                      >
+                        {message.user_id !== currentUser.id && (
+                          <Avatar className="h-8 w-8 mr-2 mt-1 shrink-0">
+                            <AvatarImage src={message.user?.avatar} alt={message.user?.name} />
+                            <AvatarFallback>
+                              {message.user?.name?.substring(0, 2).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
                         <div
-                          key={uniqueKey}
-                          className={`flex ${message.user_id === currentUser.id ? 'justify-end' : 'justify-start'}`}
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            message.user_id === currentUser.id
+                              ? 'bg-blue-500 text-white dark:bg-blue-600'
+                              : 'bg-neutral-100 dark:bg-neutral-800'
+                          }`}
                         >
                           {message.user_id !== currentUser.id && (
-                            <Avatar className="h-8 w-8 mr-2 mt-1 shrink-0">
-                              <AvatarImage src={message.user?.avatar} alt={message.user?.name} />
-                              <AvatarFallback>
-                                {message.user?.name?.substring(0, 2).toUpperCase() || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
+                            <div className="text-xs font-medium mb-1 text-neutral-500 dark:text-neutral-300">
+                              {message.user?.name || 'Unknown User'}
+                            </div>
                           )}
-                          <div
-                            className={`max-w-[70%] rounded-lg p-3 ${
-                              message.user_id === currentUser.id
-                                ? 'bg-blue-500 text-white dark:bg-blue-600'
-                                : 'bg-neutral-100 dark:bg-neutral-800'
-                            }`}
-                          >
-                            {message.user_id !== currentUser.id && (
-                              <div className="text-xs font-medium mb-1 text-neutral-500 dark:text-neutral-300">
-                                {message.user?.name || 'Unknown User'}
-                              </div>
-                            )}
-                            <div className="break-words">
-                              {message.content || message.message}
-                            </div>
-                            <div className="text-xs mt-1 opacity-70 text-right">
-                              {formatTime(message.created_at)}
-                            </div>
+                          <div className="break-words">
+                            {message.content || message.message}
+                          </div>
+                          <div className="text-xs mt-1 opacity-70 text-right">
+                            {formatTime(message.created_at)}
                           </div>
                         </div>
-                      );
-                    })}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
-              </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
             </div>
             
-            {/* Message Input */}
-            <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0">
+            {/* Message Input - Fixed at the bottom */}
+            <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0 bg-white dark:bg-neutral-900">
               <form 
                 className="flex items-center gap-2"
                 onSubmit={(e) => {
@@ -1001,6 +996,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                 <Button 
                   type="submit" 
                   disabled={isSending || !newMessage.trim()}
+                  className="shrink-0"
                 >
                   {isSending ? (
                     <div className="h-4 w-4 animate-spin rounded-full border-t-2 border-white"></div>

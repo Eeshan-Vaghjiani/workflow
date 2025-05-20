@@ -1,7 +1,6 @@
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import { type BreadcrumbItem } from '@/types';
 import { type ReactNode } from 'react';
-import { HomeIcon, CheckSquareIcon, UsersIcon, CalendarIcon, SettingsIcon } from '@/icons';
 
 interface AppLayoutProps {
     children: ReactNode;

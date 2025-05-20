@@ -7,6 +7,9 @@ use App\Models\GroupAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+/**
+ * @property int $id
+ */
 class GroupTaskController extends Controller
 {
     /**
@@ -41,7 +44,7 @@ class GroupTaskController extends Controller
     {
         $assignments = GroupAssignment::whereHas('group.members', function ($query) {
             $query->where('user_id', auth()->id())
-                ->where('is_leader', true);
+                ->where('role', 'owner');
         })->with('group:id,name')->get();
 
         // Get the pre-selected assignment if provided

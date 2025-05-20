@@ -18,7 +18,7 @@ class AIService
         // Note: Using the demo key has limited requests per month
         $this->apiKey = env('OPENROUTER_API_KEY', 'your_generic_secretyour_generic_secretyour_generic_secreta');
         $this->baseUrl = 'https://openrouter.ai/api/v1';
-        $this->model = env('OPENROUTER_MODEL', 'meta-llama/llama-4-scout:free');
+        $this->model = env('OPENROUTER_MODEL', 'anthropic/claude-3-haiku:beta');
         $this->verifySSL = env('OPENROUTER_VERIFY_SSL', false);
 
         // Log API Key information (masked for security)

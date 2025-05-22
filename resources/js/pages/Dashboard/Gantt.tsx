@@ -50,6 +50,8 @@ interface GanttTask {
         progressColor?: string;
         progressSelectedColor?: string;
     };
+    effort_hours?: number;
+    importance?: number;
 }
 
 interface Assignment {
@@ -104,11 +106,18 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     const [newTaskEndDate, setNewTaskEndDate] = useState<Date | undefined>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
     const [newTaskAssignedTo, setNewTaskAssignedTo] = useState<string>('');
     const [newTaskPriority, setNewTaskPriority] = useState('medium');
+    const [newTaskEffortHours, setNewTaskEffortHours] = useState('1');
+    const [newTaskImportance, setNewTaskImportance] = useState('3');
     const [isCreatingTask, setIsCreatingTask] = useState(false);
     
     // Task edit modal state
     const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
     const [isEditingTask, setIsEditingTask] = useState(false);
+
+    // Auto-distribute tasks state
+    const [isAssigningTasks, setIsAssigningTasks] = useState(false);
+    const [assignmentId, setAssignmentId] = useState<string>('');
+    const [groupId, setGroupId] = useState<string>('');
 
     // Calculate column width based on container width and view mode
     const updateColumnWidth = useCallback(() => {
@@ -244,7 +253,9 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                 end_date: newTaskEndDate.toISOString().split('T')[0],
                 assignment_id: selectedAssignmentId,
                 assigned_to: newTaskAssignedTo || null,
-                priority: newTaskPriority
+                priority: newTaskPriority,
+                effort_hours: newTaskEffortHours,
+                importance: newTaskImportance
             });
             
             // Close modal and reset form
@@ -276,7 +287,9 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                 start_date: newTaskStartDate?.toISOString().split('T')[0],
                 end_date: newTaskEndDate?.toISOString().split('T')[0],
                 assigned_to: newTaskAssignedTo || null,
-                priority: newTaskPriority
+                priority: newTaskPriority,
+                effort_hours: newTaskEffortHours,
+                importance: newTaskImportance
             });
             
             // Close modal and reset form
@@ -302,6 +315,8 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         setNewTaskEndDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
         setNewTaskAssignedTo('');
         setNewTaskPriority('medium');
+        setNewTaskEffortHours('1');
+        setNewTaskImportance('3');
     };
     
     // Open edit task modal with task data
@@ -312,12 +327,45 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         setNewTaskEndDate(new Date(task.end));
         setNewTaskAssignedTo(task.assignedTo);
         setNewTaskPriority(task.priority || 'medium');
+        setNewTaskEffortHours(task.effort_hours?.toString() || '1');
+        setNewTaskImportance(task.importance?.toString() || '3');
         setIsEditTaskModalOpen(true);
     };
     
     // Create a new assignment
     const handleCreateAssignment = () => {
         router.visit('/group-assignments/create');
+    };
+
+    // Handle auto-distributing tasks using AI
+    const your_generic_secrets = async () => {
+        if (!assignmentId || !groupId) {
+            setError('Please select an assignment first');
+            return;
+        }
+
+        try {
+            setIsAssigningTasks(true);
+            const response = await axios.post(`/api/groups/${groupId}/assignments/${assignmentId}/auto-distribute`);
+            
+            if (response.data.success) {
+                // Refresh data to show new assignments
+                router.reload();
+            } else {
+                setError('Failed to distribute tasks: ' + (response.data.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error distributing tasks:', error);
+            setError('Failed to distribute tasks. Please try again.');
+        } finally {
+            setIsAssigningTasks(false);
+        }
+    };
+
+    // Function to select an assignment for task distribution
+    const your_generic_secretibution = (assignment: Assignment) => {
+        setAssignmentId(assignment.id.toString());
+        setGroupId(assignment.group_id.toString());
     };
 
     if (error) {
@@ -345,39 +393,88 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                         <div className="flex justify-between items-center">
                             <h1 className="text-2xl font-bold dark:text-white">Gantt Chart View</h1>
                             <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                    onClick={() => setIsAddTaskModalOpen(true)}
-                                >
-                                    <PlusSquare className="w-4 h-4" />
-                                    Add Task
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-2"
-                                    onClick={handleCreateAssignment}
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    New Assignment
-                                </Button>
-                                {viewModeOptions.map(({ mode, label, icon: Icon }) => (
-                                    <Button
-                                        key={mode}
-                                        variant={viewMode === mode ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setViewMode(mode)}
-                                        className={cn(
-                                            "gap-2",
-                                            viewMode === mode && "bg-primary text-primary-foreground"
-                                        )}
+                                <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:space-x-2 ml-auto">
+                                    {/* Add task button */}
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => setIsAddTaskModalOpen(true)}
+                                        className="flex items-center gap-1"
                                     >
-                                        <Icon className="w-4 h-4" />
-                                        {label}
+                                        <Plus className="h-4 w-4" /> Add Task
                                     </Button>
-                                ))}
+                                    
+                                    {/* Add assignment button */}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCreateAssignment}
+                                        className="flex items-center gap-1"
+                                    >
+                                        <PlusSquare className="h-4 w-4" /> New Assignment
+                                    </Button>
+
+                                    {/* Auto distribute tasks button - only show if assignments exist */}
+                                    {assignments.length > 0 && (
+                                        <div className="relative flex items-center gap-2">
+                                            <select
+                                                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                                                value={assignmentId}
+                                                onChange={(e) => {
+                                                    const assignment = assignments.find(a => a.id.toString() === e.target.value);
+                                                    if (assignment) {
+                                                        your_generic_secretibution(assignment);
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">Select assignment</option>
+                                                {assignments.map(assignment => (
+                                                    <option key={assignment.id} value={assignment.id}>
+                                                        {assignment.title} ({assignment.group_name})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                onClick={your_generic_secrets}
+                                                disabled={!assignmentId || isAssigningTasks}
+                                                className="flex items-center gap-1"
+                                            >
+                                                {isAssigningTasks ? (
+                                                    <>
+                                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        Assigning...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <ListTodo className="h-4 w-4" /> Auto Assign
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    )}
+                                    
+                                    {/* View mode buttons */}
+                                    {viewModeOptions.map(({ mode, label, icon: Icon }) => (
+                                        <Button
+                                            key={mode}
+                                            variant={viewMode === mode ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setViewMode(mode)}
+                                            className={cn(
+                                                "gap-2",
+                                                viewMode === mode && "bg-primary text-primary-foreground"
+                                            )}
+                                        >
+                                            <Icon className="w-4 h-4" />
+                                            {label}
+                                        </Button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
@@ -413,6 +510,12 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                                     )}
                                                     {selectedTask.priority && (
                                                         <p><span className="font-medium">Priority:</span> {selectedTask.priority}</p>
+                                                    )}
+                                                    {selectedTask.effort_hours && (
+                                                        <p><span className="font-medium">Effort:</span> {selectedTask.effort_hours} hours</p>
+                                                    )}
+                                                    {selectedTask.importance && (
+                                                        <p><span className="font-medium">Importance:</span> {selectedTask.importance}/5</p>
                                                     )}
                                                     <p><span className="font-medium">Progress:</span> {selectedTask.progress}%</p>
                                                     <p><span className="font-medium">Duration:</span> {new Date(selectedTask.start).toLocaleDateString()} - {new Date(selectedTask.end).toLocaleDateString()}</p>
@@ -561,6 +664,40 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="effort_hours" className="text-right">
+                                Effort (hours)
+                            </Label>
+                            <Input
+                                id="effort_hours"
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={newTaskEffortHours}
+                                onChange={(e) => setNewTaskEffortHours(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="importance" className="text-right">
+                                Importance
+                            </Label>
+                            <Select
+                                value={newTaskImportance}
+                                onValueChange={setNewTaskImportance}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select importance" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1 (Lowest)</SelectItem>
+                                    <SelectItem value="2">2</SelectItem>
+                                    <SelectItem value="3">3 (Medium)</SelectItem>
+                                    <SelectItem value="4">4</SelectItem>
+                                    <SelectItem value="5">5 (Highest)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAddTaskModalOpen(false)}>
@@ -671,6 +808,40 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                     <SelectItem value="low">Low</SelectItem>
                                     <SelectItem value="medium">Medium</SelectItem>
                                     <SelectItem value="high">High</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-effort_hours" className="text-right">
+                                Effort (hours)
+                            </Label>
+                            <Input
+                                id="edit-effort_hours"
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={newTaskEffortHours}
+                                onChange={(e) => setNewTaskEffortHours(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-importance" className="text-right">
+                                Importance
+                            </Label>
+                            <Select
+                                value={newTaskImportance}
+                                onValueChange={setNewTaskImportance}
+                            >
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Select importance" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1 (Lowest)</SelectItem>
+                                    <SelectItem value="2">2</SelectItem>
+                                    <SelectItem value="3">3 (Medium)</SelectItem>
+                                    <SelectItem value="4">4</SelectItem>
+                                    <SelectItem value="5">5 (Highest)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

@@ -9,7 +9,7 @@ interface Task {
     start_date: string;
     end_date: string;
     status: 'pending' | 'completed';
-    priority: 'low' | 'medium' | 'high';
+    priority: string | null;
     assignment: {
         id: number;
         title: string;
@@ -60,13 +60,13 @@ export default function Show({ task }: Props) {
                                 }`}>
                                 {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                             </span>
-                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${task.priority === 'high'
+                            <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${String(task.priority).toLowerCase() === 'high'
                                     ? 'bg-red-100 text-red-800'
-                                    : task.priority === 'medium'
+                                    : String(task.priority).toLowerCase() === 'medium'
                                         ? 'bg-orange-100 text-orange-800'
                                         : 'bg-blue-100 text-blue-800'
                                 }`}>
-                                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+                                {task.priority ? String(task.priority).charAt(0).toUpperCase() + String(task.priority).slice(1) : 'Medium'} Priority
                             </span>
                         </div>
                     </div>

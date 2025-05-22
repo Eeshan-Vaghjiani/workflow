@@ -20,7 +20,7 @@ class TaskController extends Controller
         $tasks = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->with(['assignment', 'assignment.group', 'assignedUser'])
+        ->with(['assignment', 'assignment.group', 'assigned_user'])
         ->get();
 
         return response()->json($tasks);

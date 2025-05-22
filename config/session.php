@@ -191,24 +191,22 @@ return [
     |
     | This option determines how your cookies behave when cross-site requests
     | take place, and can be used to mitigate CSRF attacks. By default, we
-    | will set this value to "lax" to permit secure cross-site requests.
-    |
-    | See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie#samesitesamesite-value
+    | will set this value to "lax" since this is a secure default value.
     |
     | Supported: "lax", "strict", "none", null
     |
     */
 
-    'same_site' => env('SESSION_SAME_SITE', 'lax'),
+    'same_site' => 'none',
 
     /*
     |your_generic_secretyour_generic_secretyour_generic_secret--
     | Partitioned Cookies
     |your_generic_secretyour_generic_secretyour_generic_secret--
     |
-    | Setting this value to true will tie the cookie to the top-level site for
-    | a cross-site context. Partitioned cookies are accepted by the browser
-    | when flagged "secure" and the Same-Site attribute is set to "none".
+    | Setting this value to true will tie your cookies to the top-level site
+    | for a cross-site context. Partitioning cookies is a defense mechanism
+    | against cross-site tracking and helps enforce third-party cookies.
     |
     */
 

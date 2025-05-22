@@ -14,11 +14,15 @@ class AIService
 
     public function __construct()
     {
-        // Get the API key from .env, with a fallback to a free demo key if not set
-        // Note: Using the demo key has limited requests per month
-        $this->apiKey = env('OPENROUTER_API_KEY', 'your_generic_secretyour_generic_secretyour_generic_secreta');
+        // Get the API key from .env
+        $this->apiKey = env('OPENROUTER_API_KEY');
+        if (empty($this->apiKey)) {
+            throw new \RuntimeException('OPENROUTER_API_KEY is not set in .env file');
+        }
+        
         $this->baseUrl = 'https://openrouter.ai/api/v1';
-        $this->model = env('OPENROUTER_MODEL', 'anthropic/claude-3-haiku:beta');
+        // Using mistralai/mistral-7b-instruct as it's a free model with good performance
+        $this->model = env('OPENROUTER_MODEL', 'mistralai/mistral-7b-instruct');
         $this->verifySSL = env('OPENROUTER_VERIFY_SSL', false);
 
         // Log API Key information (masked for security)

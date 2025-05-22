@@ -10,17 +10,19 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.axios.defaults.withCredentials = true; // This is important for maintaining session cookies
 
 // Get the CSRF token from the meta tag
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+const token = document.head.querySelector('meta[name="csrf-token"]');
 
-if (csrfToken) {
-    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+if (token) {
+    window.axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content;
+} else {
+    console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
 }
 
 // Add a request interceptor to ensure CSRF token is always up-to-date
 axios.interceptors.request.use(config => {
-    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const token = document.head.querySelector('meta[name="csrf-token"]');
     if (token) {
-        config.headers['X-CSRF-TOKEN'] = token;
+        config.headers['X-CSRF-TOKEN'] = token.content;
     }
     return config;
 }, error => {
@@ -30,7 +32,7 @@ axios.interceptors.request.use(config => {
 // Log configuration for debugging
 console.log('Axios configuration:', {
     withCredentials: window.axios.defaults.withCredentials,
-    hasCsrfToken: !!csrfToken,
+    hasCsrfToken: !!token,
     baseURL: window.axios.defaults.baseURL || window.location.origin
 });
 
@@ -41,7 +43,7 @@ window.Pusher = Pusher;
 console.log('Initializing Echo with:', {
     key: import.meta.env.VITE_PUSHER_APP_KEY || 'your_pusher_app_key',
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
-    csrfToken: csrfToken ? 'Present' : 'Missing'
+    csrfToken: token ? 'Present' : 'Missing'
 });
 
 try {
@@ -60,7 +62,7 @@ try {
         authEndpoint: '/broadcasting/auth',
         auth: {
             headers: {
-                'X-CSRF-TOKEN': csrfToken,
+                'X-CSRF-TOKEN': token ? token.content : '',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         }

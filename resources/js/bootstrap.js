@@ -8,6 +8,7 @@ window.axios = axios;
 // Set global headers
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.axios.defaults.withCredentials = true; // This is important for maintaining session cookies
+window.axios.defaults.baseURL = window.location.origin; // Ensure same origin for requests
 
 // Get the CSRF token from the meta tag
 const token = document.head.querySelector('meta[name="csrf-token"]');
@@ -18,22 +19,82 @@ if (token) {
     console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
 }
 
+// Function to refresh the CSRF token and session
+async function refreshCSRFToken() {
+    try {
+        console.log('Refreshing CSRF token...');
+        await axios.get('/sanctum/csrf-cookie');
+        
+        // Get the updated token from the meta tag
+        const updatedToken = document.head.querySelector('meta[name="csrf-token"]');
+        if (updatedToken) {
+            window.axios.defaults.headers.common['X-CSRF-TOKEN'] = updatedToken.content;
+            console.log('CSRF token refreshed successfully');
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Failed to refresh CSRF token:', error);
+        return false;
+    }
+}
+
 // Add a request interceptor to ensure CSRF token is always up-to-date
 axios.interceptors.request.use(config => {
+    // Refresh token on each request
     const token = document.head.querySelector('meta[name="csrf-token"]');
     if (token) {
         config.headers['X-CSRF-TOKEN'] = token.content;
     }
+    
+    // Always include credentials for cross-origin requests
+    config.withCredentials = true;
+    
+    // Always ensure these headers are set for Laravel to recognize it as an XHR
+    config.headers['X-Requested-With'] = 'XMLHttpRequest';
+    config.headers['Accept'] = 'application/json';
+    
+    // Log out HTTP requests for debugging
+    console.log(`🚀 Making ${config.method?.toUpperCase()} request to ${config.url}`, { 
+        withCredentials: config.withCredentials,
+        hasCsrfToken: !!token
+    });
+    
     return config;
 }, error => {
     return Promise.reject(error);
 });
 
+// Add a response interceptor to handle auth errors
+axios.interceptors.response.use(
+    response => response,
+    async error => {
+        // Only retry once to prevent infinite loops
+        const originalRequest = error.config;
+        
+        if (error.response && error.response.status === 401 && !originalRequest._retry) {
+            console.error('Authentication error - attempting to refresh session', error.response);
+            
+            originalRequest._retry = true;
+            
+            // Try to refresh the CSRF token
+            const tokenRefreshed = await refreshCSRFToken();
+            
+            if (tokenRefreshed) {
+                // Retry the original request with the new token
+                return axios(originalRequest);
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 // Log configuration for debugging
 console.log('Axios configuration:', {
     withCredentials: window.axios.defaults.withCredentials,
     hasCsrfToken: !!token,
-    baseURL: window.axios.defaults.baseURL || window.location.origin
+    baseURL: window.axios.defaults.baseURL || window.location.origin,
+    headers: window.axios.defaults.headers
 });
 
 // Initialize Pusher and Echo

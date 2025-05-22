@@ -117,7 +117,10 @@ class GroupAssignmentController extends Controller
             abort(404, 'Assignment not found in this group');
         }
 
-        $assignment->load(['group', 'tasks']);
+        $assignment->load(['group', 'tasks' => function($query) {
+            $query->with(['assigned_user:id,name', 'creator:id,name'])
+                  ->orderBy('order_index');
+        }]);
         $isLeader = $group->isLeader(auth()->id());
 
         return Inertia::render('Assignments/Show', [

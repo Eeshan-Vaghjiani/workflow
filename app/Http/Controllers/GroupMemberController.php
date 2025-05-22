@@ -54,7 +54,7 @@ class GroupMemberController extends Controller
 
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'role' => 'nullable|string|in:owner,admin,member',
+            'role' => 'nullable|string|in:leader,member',
         ]);
 
         $userId = $validated['user_id'];

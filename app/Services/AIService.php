@@ -92,6 +92,8 @@ class AIService
             - Start date (relative to now)
             - End date (absolute date or relative to start date)
             - Priority (low, medium, or high)
+            - Effort hours (estimated time needed to complete the task, from 1-20 hours)
+            - Importance (scale of 1-5, where 5 is most important)
 
             CRITICAL: Your entire response must ONLY be valid JSON with no additional text before or after. DO NOT include markdown backticks, explanations, or any other text.
 
@@ -110,11 +112,31 @@ class AIService
                         \"assigned_to_name\": \"Person's Name\",
                         \"start_date\": \"YYYY-MM-DD\",
                         \"end_date\": \"YYYY-MM-DD\",
-                        \"priority\": \"medium\"
+                        \"priority\": \"medium\",
+                        \"effort_hours\": 3,
+                        \"importance\": 4
                     }
                 ]
             }
 
+            When determining effort hours and importance, consider:
+            - Effort hours: Realistic estimate of how many hours it would take to complete the task (1-20)
+              - Simple tasks: 1-3 hours
+              - Medium tasks: 4-8 hours
+              - Complex tasks: 9-20 hours
+            
+            - Importance: How critical the task is to the overall assignment success
+              - 5: Critical path task, project cannot succeed without it
+              - 4: Very important task with major impact
+              - 3: Standard task with moderate impact
+              - 2: Supporting task with minor impact
+              - 1: Nice-to-have task with minimal impact
+            
+            - When assigning tasks, consider:
+              1. Balancing workload by considering both effort AND importance
+              2. Assigning related tasks to the same person when logical
+              3. Each member should have a mix of high and low importance tasks
+            
             Always use the YYYY-MM-DD format for dates. Your ENTIRE response must be parseable as JSON.";
 
             // Log request parameters
@@ -374,5 +396,80 @@ class AIService
 
         // If we get here, all parsing attempts failed
         return null;
+    }
+
+    /**
+     * Distribute tasks among group members evenly considering task effort and importance
+     * 
+     * @param array $tasks List of tasks with effort, importance, and other attributes
+     * @param array $groupMembers List of group members who can be assigned tasks
+     * @return array Modified tasks with assigned_to fields populated
+     */
+    public function distributeTasks(array $tasks, array $groupMembers): array
+    {
+        if (empty($groupMembers) || empty($tasks)) {
+            return $tasks;
+        }
+        
+        // Calculate initial workload scores for each member
+        $memberWorkloads = [];
+        foreach ($groupMembers as $member) {
+            $memberWorkloads[$member['id']] = [
+                'id' => $member['id'], 
+                'name' => $member['name'],
+                'totalWorkload' => 0,
+                'taskCount' => 0
+            ];
+        }
+        
+        // First, sort tasks by importance (descending) and effort (descending)
+        usort($tasks, function($a, $b) {
+            // Compare importance first
+            $importanceComp = ($b['importance'] ?? 1) - ($a['importance'] ?? 1);
+            if ($importanceComp !== 0) {
+                return $importanceComp;
+            }
+            
+            // If importance is equal, compare effort
+            return ($b['effort_hours'] ?? 1) - ($a['effort_hours'] ?? 1);
+        });
+        
+        // Assign each task to the member with the lowest current workload
+        foreach ($tasks as &$task) {
+            // Skip if already assigned
+            if (!empty($task['assigned_user_id'])) {
+                // Update the workload for the already assigned member
+                if (isset($memberWorkloads[$task['assigned_user_id']])) {
+                    $memberWorkloads[$task['assigned_user_id']]['totalWorkload'] += ($task['effort_hours'] ?? 1) * ($task['importance'] ?? 1);
+                    $memberWorkloads[$task['assigned_user_id']]['taskCount']++;
+                }
+                continue;
+            }
+            
+            // Find member with lowest current workload
+            $lowestWorkloadMember = null;
+            $lowestWorkload = PHP_INT_MAX;
+            
+            foreach ($memberWorkloads as $memberId => $workloadInfo) {
+                if ($workloadInfo['totalWorkload'] < $lowestWorkload) {
+                    $lowestWorkload = $workloadInfo['totalWorkload'];
+                    $lowestWorkloadMember = $memberId;
+                }
+            }
+            
+            // Assign task to member with lowest workload
+            if ($lowestWorkloadMember !== null) {
+                $task['assigned_user_id'] = $lowestWorkloadMember;
+                $task['assigned_to_name'] = $memberWorkloads[$lowestWorkloadMember]['name'];
+                
+                // Update workload
+                $taskEffort = ($task['effort_hours'] ?? 1);
+                $taskImportance = ($task['importance'] ?? 1);
+                $memberWorkloads[$lowestWorkloadMember]['totalWorkload'] += $taskEffort * $taskImportance;
+                $memberWorkloads[$lowestWorkloadMember]['taskCount']++;
+            }
+        }
+        
+        return $tasks;
     }
 }

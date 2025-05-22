@@ -18,13 +18,21 @@ class GroupChatMessage extends Model
 
     protected $casts = [
         'is_system_message' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
+    /**
+     * Get the group that the message belongs to.
+     */
     public function group()
     {
         return $this->belongsTo(Group::class);
     }
 
+    /**
+     * Get the user who sent the message.
+     */
     public function user()
     {
         return $this->belongsTo(User::class);

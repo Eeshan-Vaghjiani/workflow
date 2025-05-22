@@ -90,6 +90,12 @@ export default function Show({ assignment, isLeader }: Props) {
                         >
                             Add Task
                         </Link>
+                        <Link
+                            href={route('task-assignments.show', { group: assignment.group.id, assignment: assignment.id })}
+                            className="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700"
+                        >
+                            Task Assignments
+                        </Link>
                     </div>
                 </div>
 

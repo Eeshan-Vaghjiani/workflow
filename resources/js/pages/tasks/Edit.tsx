@@ -22,6 +22,8 @@ interface Task {
         group_id: number;
     };
     assigned_to: number | null;
+    effort_hours: number;
+    importance: number;
 }
 
 interface Props {
@@ -38,6 +40,8 @@ export default function Edit({ task, group_members, errors }: Props) {
         assigned_to: task.assigned_to?.toString() || '',
         status: task.status,
         priority: task.priority,
+        effort_hours: task.effort_hours?.toString() || '1',
+        importance: task.importance?.toString() || '3',
     });
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -177,6 +181,45 @@ export default function Edit({ task, group_members, errors }: Props) {
                                         <option value="completed">Completed</option>
                                     </select>
                                     {errors.status && <div className="text-red-500 text-sm mt-1">{errors.status}</div>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label htmlFor="effort_hours" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Effort (hours)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="effort_hours"
+                                        min="1"
+                                        max="100"
+                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        value={data.effort_hours}
+                                        onChange={e => setData('effort_hours', e.target.value)}
+                                    />
+                                    {errors.effort_hours && <div className="text-red-500 text-sm mt-1">{errors.effort_hours}</div>}
+                                    <p className="text-xs text-gray-500 mt-1">Estimated hours to complete this task</p>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="importance" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Importance
+                                    </label>
+                                    <select
+                                        id="importance"
+                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        value={data.importance}
+                                        onChange={e => setData('importance', e.target.value)}
+                                    >
+                                        <option value="1">1 (Lowest)</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3 (Medium)</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5 (Highest)</option>
+                                    </select>
+                                    {errors.importance && <div className="text-red-500 text-sm mt-1">{errors.importance}</div>}
+                                    <p className="text-xs text-gray-500 mt-1">How critical this task is to the assignment</p>
                                 </div>
                             </div>
 

@@ -13,6 +13,9 @@ use App\Http\Controllers\API\DirectMessageController;
 use App\Http\Controllers\API\AITaskController;
 use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
 use App\Http\Controllers\API\ChatController;
+use App\Http\Controllers\API\TaskAssignmentController;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\API\SearchController;
 
 /*
 |--------------------------------------------------------------------------
@@ -154,6 +157,13 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // AI Task Creation
     Route::post('groups/{group}/ai/tasks', [AITaskController::class, 'createFromPrompt']);
+    
+    // Auto-distribute tasks
+    Route::post('groups/{groupId}/assignments/{assignmentId}/auto-distribute', [App\Http\Controllers\GroupTaskController::class, 'autoDistributeTasksAPI']);
+    
+    // Task assignment routes
+    Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\TaskAssignmentController::class, 'getAssignmentStats']);
+    Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\TaskAssignmentController::class, 'autoDistributeTasks']);
 });
 
 // Chat-specific API routes using web middleware for session auth
@@ -526,3 +536,34 @@ function validateDate($date, $format = 'Y-m-d') {
     $d = \DateTime::createFromFormat($format, $date);
     return $d && $d->format($format) === $date;
 }
+
+// Dashboard chat routes
+Route::middleware(['auth:sanctum'])->prefix('web')->group(function () {
+    Route::get('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'getMessagesAPI']);
+    Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
+});
+
+// Add a route to check auth status
+Route::get('/auth/check', function(Request $request) {
+    if (Auth::check()) {
+        return response()->json([
+            'authenticated' => true,
+            'user' => $request->user(),
+            'session_active' => true,
+            'session_id' => session()->getId(),
+        ]);
+    }
+    
+    return response()->json([
+        'authenticated' => false,
+        'session_active' => $request->hasSession() && session()->isStarted(),
+        'cookies_received' => count($request->cookies->all()) > 0,
+        'session_id' => session()->getId(),
+    ], 401);
+})->middleware(['web']);
+
+// Add direct web authenticated routes for assignment stats
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\TaskAssignmentController::class, 'getAssignmentStats']);
+    Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\TaskAssignmentController::class, 'autoDistributeTasks']);
+});

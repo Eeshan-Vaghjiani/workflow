@@ -26,6 +26,10 @@ use Illuminate\Http\Request;
 |
 */
 
+Route::get('/csrf-refresh', function() {
+    return response()->json(['csrf_token' => csrf_token()]);
+});
+
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');

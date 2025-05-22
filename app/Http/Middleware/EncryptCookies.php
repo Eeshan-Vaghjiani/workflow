@@ -12,6 +12,9 @@ class EncryptCookies extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        'appearance',
+        'sidebar_state',
+        'XSRF-TOKEN',
+        'laravel_session'
     ];
 }

@@ -18,7 +18,9 @@ class GroupMemberController extends Controller
             abort(403, 'You are not a member of this group');
         }
 
-        $members = $group->members()->with('user')->get();
+        $members = $group->members()->with(['groups' => function ($query) use ($group) {
+            $query->where('groups.id', $group->id);
+        }])->get();
 
         return Inertia::render('Groups/Members/Index', [
             'group' => $group,

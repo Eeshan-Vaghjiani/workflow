@@ -9,6 +9,11 @@ interface Task {
     description: string | null;
     status: 'pending' | 'completed';
     end_date: string;
+    assigned_to: number | null;
+    assigned_user?: {
+        id: number;
+        name: string;
+    };
     assignment?: {
         id: number;
         title: string;
@@ -72,16 +77,35 @@ export default function TaskList({ tasks = [] }: Props) {
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{task.description}</p>
                                 )}
 
-                                <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-                                    <div className="flex justify-between">
-                                        <span>Due Date:</span>
+                                <div className="mt-3 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600 dark:text-gray-400">Due Date:</span>
                                         <span className="font-medium">{new Date(task.end_date).toLocaleDateString()}</span>
                                     </div>
 
+                                    <div className="mb-3">
+                                        <p className="text-sm font-medium">Assigned to:</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            {task.assigned_user ? task.assigned_user.name : 'Unassigned'}
+                                        </p>
+                                    </div>
+
                                     {task.assignment && (
-                                        <div className="flex justify-between mt-1">
-                                            <span>Assignment:</span>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400">Assignment:</span>
                                             <span className="font-medium">{task.assignment.title}</span>
+                                        </div>
+                                    )}
+
+                                    {task.assignment?.group && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600 dark:text-gray-400">Group:</span>
+                                            <Link 
+                                                href={route('groups.show', task.assignment.group.id)}
+                                                className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                            >
+                                                {task.assignment.group.name}
+                                            </Link>
                                         </div>
                                     )}
                                 </div>

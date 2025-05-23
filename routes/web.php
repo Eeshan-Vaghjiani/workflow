@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 /*
 |your_generic_secretyour_generic_secretyour_generic_secret--
@@ -25,6 +27,10 @@ use Illuminate\Http\Request;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
+Route::get('/csrf-refresh', function() {
+    return response()->json(['csrf_token' => csrf_token()]);
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -569,6 +575,90 @@ Route::get('/debug/broadcasting-auth', function() {
         'isAuthenticated' => auth()->check(),
         'socketId' => request('socket_id', '123.456'),
     ]);
+});
+
+Route::get('/groups/{group}/assignments/{assignment}/task-assignments', [App\Http\Controllers\your_generic_secret::class, 'show'])
+    ->name('task-assignments.show');
+
+Route::get('group-tasks/{task}/edit', [App\Http\Controllers\GroupTaskController::class, 'edit'])
+    ->name('group-tasks.edit-simple');
+    
+Route::put('group-tasks/{task}', [App\Http\Controllers\GroupTaskController::class, 'updateSimple'])
+    ->name('group-tasks.update-simple');
+
+// Add authentication status check route
+Route::get('/auth/status', function () {
+    return response()->json([
+        'authenticated' => Auth::check(),
+        'user' => Auth::user(),
+        'csrf_token' => csrf_token(),
+        'session_id' => Session::getId(),
+        'cookies' => request()->cookies->all(),
+    ]);
+})->middleware(['web']);
+
+// Add route to refresh CSRF token and session
+Route::get('/auth/refresh-session', function () {
+    // This will refresh the session and CSRF token
+    Session::regenerate();
+    return response()->json([
+        'success' => true,
+        'csrf_token' => csrf_token(),
+        'session_id' => Session::getId(),
+        'message' => 'Session refreshed successfully'
+    ]);
+})->middleware(['web']);
+
+// Add direct task assignment routes for better authentication
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Direct task assignment access via web routes
+    Route::get('/groups/{groupId}/assignments/{assignmentId}/get-stats', function ($groupId, $assignmentId) {
+        try {
+            // Get the controller instance
+            $controller = app()->make(App\Http\Controllers\API\your_generic_secret::class);
+            
+            // Call the controller method directly
+            return $controller->getAssignmentStats(request(), $groupId, $assignmentId);
+        } catch (\Exception $e) {
+            // Log the error with more details
+            \Illuminate\Support\Facades\Log::error('Error in task stats route', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'group_id' => $groupId,
+                'assignment_id' => $assignmentId,
+                'user_id' => auth()->id(),
+                'auth_check' => auth()->check(),
+                'session_id' => session()->getId(),
+                'request_headers' => request()->headers->all()
+            ]);
+            
+            // Return error response with more details
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get assignment stats: ' . $e->getMessage(),
+                'error_details' => [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => explode("\n", $e->getTraceAsString())
+                ],
+                'auth_status' => [
+                    'user_id' => auth()->id(),
+                    'authenticated' => auth()->check(),
+                    'user_name' => auth()->user() ? auth()->user()->name : null,
+                    'session_id' => session()->getId()
+                ],
+                'request_info' => [
+                    'group_id' => $groupId,
+                    'assignment_id' => $assignmentId,
+                    'headers' => request()->headers->all()
+                ]
+            ], 500);
+        }
+    })->name('task-assignments.get-stats');
+    
+    Route::post('/groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks'])
+        ->name('task-assignments.distribute');
 });
 
 require __DIR__.'/settings.php';

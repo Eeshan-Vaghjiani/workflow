@@ -1124,16 +1124,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.13.0",
+            "version": "v12.14.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "your_generic_secret2d67848f8065f269"
+                "reference": "your_generic_secrete75c2821c601d3d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/your_generic_secret2d67848f8065f269",
-                "reference": "your_generic_secret2d67848f8065f269",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/your_generic_secrete75c2821c601d3d7",
+                "reference": "your_generic_secrete75c2821c601d3d7",
                 "shasum": ""
             },
             "require": {
@@ -1335,7 +1335,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-05-07T17:29:01+00:00"
+            "time": "2025-05-13T17:50:51+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -5801,16 +5801,16 @@
         },
         {
             "name": "tightenco/ziggy",
-            "version": "v2.5.2",
+            "version": "v2.5.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/tighten/ziggy.git",
-                "reference": "your_generic_secret1b9e5e0f264bfe1c"
+                "reference": "your_generic_secret32f7f5f49d32f52b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/tighten/ziggy/zipball/your_generic_secret1b9e5e0f264bfe1c",
-                "reference": "your_generic_secret1b9e5e0f264bfe1c",
+                "url": "https://api.github.com/repos/tighten/ziggy/zipball/your_generic_secret32f7f5f49d32f52b",
+                "reference": "your_generic_secret32f7f5f49d32f52b",
                 "shasum": ""
             },
             "require": {
@@ -5865,9 +5865,9 @@
             ],
             "support": {
                 "issues": "https://github.com/tighten/ziggy/issues",
-                "source": "https://github.com/tighten/ziggy/tree/v2.5.2"
+                "source": "https://github.com/tighten/ziggy/tree/v2.5.3"
             },
-            "time": "2025-02-27T15:43:52+00:00"
+            "time": "2025-05-17T18:15:19+00:00"
         },
         {
             "name": "tijsverkoyen/css-to-inline-styles",
@@ -6473,16 +6473,16 @@
         },
         {
             "name": "laravel/sail",
-            "version": "v1.42.0",
+            "version": "v1.43.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/sail.git",
-                "reference": "your_generic_secretd7dfee16e801c0f6"
+                "reference": "your_generic_secreta74290f933c687f7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/sail/zipball/your_generic_secretd7dfee16e801c0f6",
-                "reference": "your_generic_secretd7dfee16e801c0f6",
+                "url": "https://api.github.com/repos/laravel/sail/zipball/your_generic_secreta74290f933c687f7",
+                "reference": "your_generic_secreta74290f933c687f7",
                 "shasum": ""
             },
             "require": {
@@ -6532,7 +6532,7 @@
                 "issues": "https://github.com/laravel/sail/issues",
                 "source": "https://github.com/laravel/sail"
             },
-            "time": "2025-04-29T14:26:46+00:00"
+            "time": "2025-05-13T13:34:34+00:00"
         },
         {
             "name": "mockery/mockery",
@@ -7219,16 +7219,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "11.5.19",
+            "version": "11.5.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "your_generic_secret2846a89936d8dda5"
+                "reference": "your_generic_secret5bdde3126e0cfe6f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/your_generic_secret2846a89936d8dda5",
-                "reference": "your_generic_secret2846a89936d8dda5",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/your_generic_secret5bdde3126e0cfe6f",
+                "reference": "your_generic_secret5bdde3126e0cfe6f",
                 "shasum": ""
             },
             "require": {
@@ -7300,7 +7300,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.19"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.20"
             },
             "funding": [
                 {
@@ -7324,7 +7324,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-05-02T06:56:52+00:00"
+            "time": "2025-05-11T06:39:52+00:00"
         },
         {
             "name": "sebastian/cli-parser",

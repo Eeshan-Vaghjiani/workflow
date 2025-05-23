@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, useEffect } from 'react';
+import axios from 'axios';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -28,10 +29,37 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         remember: false,
     });
 
-    const submit: FormEventHandler = (e) => {
+    useEffect(() => {
+        // Refresh CSRF token on component mount
+        refreshCsrfToken();
+    }, []);
+
+    const refreshCsrfToken = async () => {
+        try {
+            // Use our custom endpoint to get a fresh CSRF token
+            const response = await axios.get('/csrf-refresh');
+            if (response.data?.csrf_token) {
+                // Update the meta tag with the new token
+                const tokenElement = document.head.querySelector('meta[name="csrf-token"]');
+                if (tokenElement) {
+                    tokenElement.setAttribute('content', response.data.csrf_token);
+                    // Update axios headers
+                    axios.defaults.headers.common['X-CSRF-TOKEN'] = response.data.csrf_token;
+                }
+                console.log('CSRF token refreshed successfully');
+            }
+        } catch (error) {
+            console.error('Error refreshing CSRF token', error);
+        }
+    };
+
+    const submit: FormEventHandler = async (e) => {
         e.preventDefault();
+        // Refresh CSRF token before submitting
+        await refreshCsrfToken();
         post(route('login'), {
             onFinish: () => reset('password'),
+            preserveScroll: true,
         });
     };
 

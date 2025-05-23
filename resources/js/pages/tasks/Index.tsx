@@ -17,6 +17,10 @@ interface Task {
             name: string;
         };
     };
+    assignedUser?: {
+        id: number;
+        name: string;
+    };
 }
 
 interface Props {
@@ -70,6 +74,14 @@ export default function Index({ tasks }: Props) {
                                     </span>
                                 </div>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{task.description || 'No description'}</p>
+                                
+                                <div className="mb-3">
+                                    <p className="text-sm font-medium">Assigned to:</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                                        {task.assignedUser ? task.assignedUser.name : 'Unassigned'}
+                                    </p>
+                                </div>
+                                
                                 {task.assignment && task.assignment.group && (
                                     <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 dark:text-gray-400">
                                         <div>

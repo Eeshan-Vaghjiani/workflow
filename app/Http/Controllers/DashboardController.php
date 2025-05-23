@@ -7,6 +7,7 @@ use App\Models\GroupAssignment;
 use App\Models\GroupTask;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -17,6 +18,28 @@ class DashboardController extends Controller
         $groups = Group::whereHas('members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })->withCount(['members', 'assignments'])->get();
+
+        // Add last message data for groups
+        $groups = $groups->map(function($group) use ($user) {
+            // Get the latest message for the group
+            $lastMessage = $group->chatMessages()->with('user:id,name')->latest()->first();
+            
+            // Get messages count from other users in last 24 hours as a simple way to show "unread" messages
+            // This is a simplified approach that doesn't require tracking read status
+            $unreadCount = $group->chatMessages()
+                ->where('created_at', '>=', now()->subDay())
+                ->where('user_id', '!=', $user->id)
+                ->count();
+            
+            $group->lastMessage = $lastMessage ? [
+                'content' => $lastMessage->message,
+                'timestamp' => $lastMessage->created_at->diffForHumans(),
+            ] : null;
+            
+            $group->unreadCount = $unreadCount;
+            
+            return $group;
+        });
 
         $assignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -67,80 +90,28 @@ class DashboardController extends Controller
 
     public function calendar()
     {
-        $user = request()->user();
-
-        // Get all tasks for the user
-        $tasksQuery = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
+        $user = Auth::user();
+        $tasks = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->with(['assignment', 'assignment.group']);
-        
-        $tasks = $tasksQuery->get();
-        
-        // Filter out tasks with null relationships
-        $tasks = $tasks->filter(function ($task) {
-            return $task->assignment !== null && $task->assignment->group !== null;
-        })
+        ->with(['assignment', 'assignment.group', 'assigned_user'])
+        ->get()
         ->map(function ($task) {
             return [
                 'id' => $task->id,
                 'title' => $task->title,
-                'start' => $task->start_date->format('Y-m-d'),
-                'end' => $task->end_date->format('Y-m-d'),
-                'extendedProps' => [
-                    'assignment' => $task->assignment->title,
-                    'group' => $task->assignment->group->name,
-                    'priority' => $task->priority,
-                    'status' => $task->status,
-                ],
-                'backgroundColor' => $task->priority === 'high' ? '#f87171' : ($task->priority === 'medium' ? '#fbbf24' : '#60a5fa'),
-                'borderColor' => $task->priority === 'high' ? '#ef4444' : ($task->priority === 'medium' ? '#f59e0b' : '#3b82f6'),
-                'url' => route('group-tasks.show', [
-                    'group' => $task->assignment->group_id,
-                    'assignment' => $task->assignment_id,
-                    'task' => $task->id
-                ]),
+                'start' => $task->start_date,
+                'end' => $task->end_date,
+                'status' => $task->status,
+                'priority' => $task->priority,
+                'assigned_to' => $task->assigned_user ? $task->assigned_user->name : 'Unassigned',
+                'group' => $task->assignment->group->name,
+                'assignment' => $task->assignment->title,
             ];
         });
 
-        // Get all assignments for the user
-        $assignmentsQuery = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })
-        ->with('group');
-        
-        $assignments = $assignmentsQuery->get();
-        
-        // Filter out assignments with null relationships
-        $assignments = $assignments->filter(function ($assignment) {
-            return $assignment->group !== null;
-        })
-        ->map(function ($assignment) {
-            return [
-                'id' => 'assignment-' . $assignment->id,
-                'title' => $assignment->title . ' (Assignment)',
-                'start' => $assignment->due_date->format('Y-m-d'),
-                'end' => $assignment->due_date->format('Y-m-d'),
-                'allDay' => true,
-                'extendedProps' => [
-                    'type' => 'assignment',
-                    'group' => $assignment->group->name,
-                    'priority' => $assignment->priority,
-                ],
-                'backgroundColor' => '#10b981',
-                'borderColor' => '#059669',
-                'url' => route('group-assignments.show', [
-                    'group' => $assignment->group_id,
-                    'assignment' => $assignment->id
-                ]),
-            ];
-        });
-
-        // Combine tasks and assignments into a single array
-        $events = $tasks->concat($assignments);
-
-        return Inertia::render('Dashboard/Calendar', [
-            'events' => $events,
+        return Inertia::render('dashboard/Calendar', [
+            'tasks' => $tasks
         ]);
     }
 

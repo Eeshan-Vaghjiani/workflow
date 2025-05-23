@@ -106,7 +106,7 @@ class GroupChatController extends Controller
         }
 
         $messages = GroupChatMessage::where('group_id', $group->id)
-            ->with('user:id,name')
+            ->with('user:id,name,avatar')
             ->orderBy('created_at', 'asc')
             ->take(50)
             ->get();
@@ -135,10 +135,21 @@ class GroupChatController extends Controller
             'is_system_message' => false,
         ]);
 
-        $message->load('user:id,name');
+        $message->load('user:id,name,avatar');
 
         // Broadcast event for real-time updates
-        event(new \App\Events\NewMessageEvent($message));
+        event(new \App\Events\NewGroupMessage($group->id, [
+            'id' => $message->id,
+            'content' => $message->message,
+            'sender' => [
+                'id' => $message->user->id,
+                'name' => $message->user->name,
+                'avatar' => $message->user->avatar
+            ],
+            'timestamp' => $message->created_at->format('g:i A'),
+            'date' => $message->created_at->format('M j, Y'),
+            'is_system_message' => $message->is_system_message
+        ]));
 
         return response()->json($message, 201);
     }

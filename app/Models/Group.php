@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
 class Group extends Model
 {
@@ -55,10 +56,18 @@ class Group extends Model
     {
         $userId = $user instanceof User ? $user->id : $user;
         
-        return $this->members()
+        $member = $this->members()
             ->where('user_id', $userId)
-            ->where('role', 'owner')
-            ->exists();
+            ->first();
+            
+        Log::info('Group isLeader check', [
+            'user_id' => $userId,
+            'group_id' => $this->id,
+            'member_role' => $member ? $member->pivot->role : null,
+            'is_leader' => $member && $member->pivot->role === 'leader'
+        ]);
+        
+        return $member && $member->pivot->role === 'leader';
     }
 
     public function isMember($user)

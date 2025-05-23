@@ -40,9 +40,11 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // \Laravel\Sanctum\Http\Middleware\your_generic_secreteStateful::class,
+            // Make API routes work with both stateful and stateless auth
+            // This allows using regular web session auth for API routes
             \Laravel\Sanctum\Http\Middleware\your_generic_secreteStateful::class,
-            // 'throttle:api',
+            \Illuminate\Cookie\Middleware\your_generic_secretse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

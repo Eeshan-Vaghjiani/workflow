@@ -13,7 +13,12 @@ class TaskController extends Controller
         $user = auth()->user();
 
         $tasks = GroupTask::query()
-            ->with(['assignment:id,title', 'assignment.group:id,name'])
+            ->with([
+                'assignment:id,title',
+                'assignment.group:id,name',
+                'assigned_user:id,name',
+                'creator:id,name'
+            ])
             ->whereHas('assignment.group.members', function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             })

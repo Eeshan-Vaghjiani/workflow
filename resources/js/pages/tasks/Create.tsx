@@ -20,6 +20,9 @@ interface Props {
         description?: string;
         end_date?: string;
         assignment_id?: string;
+        effort_hours?: string;
+        importance?: string;
+        priority?: string;
     };
 }
 
@@ -40,6 +43,9 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
         description: '',
         end_date: '',
         assignment_id: selectedAssignmentId?.toString() || '',
+        effort_hours: '1',
+        importance: '3',
+        priority: 'medium',
     });
 
     function handleSubmit(e: React.FormEvent) {
@@ -117,6 +123,66 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                     required
                                 />
                                 {errors.end_date && <div className="text-red-500 text-sm mt-1">{errors.end_date}</div>}
+                            </div>
+
+                            <div className="mb-6 grid grid-cols-3 gap-4">
+                                <div>
+                                    <label htmlFor="effort_hours" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Effort (hours)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="effort_hours"
+                                        min="1"
+                                        max="100"
+                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.effort_hours ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
+                                            }`}
+                                        value={data.effort_hours}
+                                        onChange={e => setData('effort_hours', e.target.value)}
+                                    />
+                                    {errors.effort_hours && <div className="text-red-500 text-sm mt-1">{errors.effort_hours}</div>}
+                                    <p className="text-xs text-gray-500 mt-1">Estimated hours to complete</p>
+                                </div>
+                                
+                                <div>
+                                    <label htmlFor="importance" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Importance
+                                    </label>
+                                    <select
+                                        id="importance"
+                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.importance ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
+                                            }`}
+                                        value={data.importance}
+                                        onChange={e => setData('importance', e.target.value)}
+                                    >
+                                        <option value="1">1 (Lowest)</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3 (Medium)</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5 (Highest)</option>
+                                    </select>
+                                    {errors.importance && <div className="text-red-500 text-sm mt-1">{errors.importance}</div>}
+                                    <p className="text-xs text-gray-500 mt-1">Task importance level</p>
+                                </div>
+                                
+                                <div>
+                                    <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Priority
+                                    </label>
+                                    <select
+                                        id="priority"
+                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.priority ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
+                                            }`}
+                                        value={data.priority}
+                                        onChange={e => setData('priority', e.target.value)}
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                    {errors.priority && <div className="text-red-500 text-sm mt-1">{errors.priority}</div>}
+                                    <p className="text-xs text-gray-500 mt-1">Task urgency level</p>
+                                </div>
                             </div>
 
                             <div className="mb-6">

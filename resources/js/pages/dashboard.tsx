@@ -9,6 +9,7 @@ import { ChatList } from "@/components/Chat/chat-list"
 import { ChatWindow } from "@/components/Chat/chat-window"
 import { useState, useEffect, useMemo } from "react"
 import { ErrorBoundary } from 'react-error-boundary'
+import { toast } from "@/components/ui/use-toast"
 
 interface Group {
     id: number;
@@ -90,15 +91,18 @@ export default function Dashboard(props: Props) {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedChatId, setSelectedChatId] = useState<number>();
     const [error, setError] = useState<Error | null>(null);
+    const [messages, setMessages] = useState<{ id: number; content: string; sender: { id: number; name: string; avatar: string }; timestamp: string; isSystemMessage: boolean }[]>([]);
 
     // Safely destructure props with defaults
     const {
-        groups = [],
+        groups: initialGroups = [],
         assignments = [],
         tasks = [],
         unreadNotificationsCount = 0,
         auth
     } = props;
+    
+    const [groups, setGroups] = useState<Group[]>(initialGroups);
 
     // Memoize the upcoming tasks calculation
     const upcomingTasks = useMemo(() => {
@@ -143,17 +147,56 @@ export default function Dashboard(props: Props) {
                 throw new Error('User authentication data is missing');
             }
 
+            // Set up chat listener
+            const channel = window.Echo?.channel(`group-chat`);
+            if (channel) {
+                channel.listen('NewGroupMessage', (event) => {
+                    console.log('Received message event:', event);
+                    
+                    // If we have the chat open, add new message
+                    if (selectedChatId === event.groupId) {
+                        setMessages(prev => [...prev, {
+                            id: event.message.id,
+                            content: event.message.content,
+                            sender: event.message.sender,
+                            timestamp: event.message.timestamp,
+                            isSystemMessage: event.message.is_system_message
+                        }]);
+                    }
+                    
+                    // Update unread count for the group
+                    setGroups(prev => prev.map(group => {
+                        if (group.id === event.groupId && event.message.sender.id !== auth.user.id) {
+                            return {
+                                ...group,
+                                unreadCount: (group.unreadCount || 0) + 1,
+                                lastMessage: {
+                                    content: event.message.content,
+                                    timestamp: event.message.timestamp
+                                }
+                            };
+                        }
+                        return group;
+                    }));
+                });
+            }
+
             // Simulate loading state
             const timer = setTimeout(() => {
                 setIsLoading(false);
             }, 500);
 
-            return () => clearTimeout(timer);
+            return () => {
+                clearTimeout(timer);
+                if (channel) {
+                    channel.stopListening('NewGroupMessage');
+                }
+            };
         } catch (e) {
             setError(e instanceof Error ? e : new Error('An unknown error occurred'));
             setIsLoading(false);
         }
-    }, [auth]);
+    }, [auth, selectedChatId]);
 
     // Handle message sending
     const handleSendMessage = async (content: string) => {
@@ -376,26 +419,130 @@ export default function Dashboard(props: Props) {
                         </Card>
                     </div>
                 </div>
-                <div className="flex h-screen">
-                    <div className="w-80 border-r">
+                <div className="flex h-[500px] mt-6 border rounded-xl overflow-hidden">
+                    <div className="w-1/4 border-r">
+                        <div className="flex items-center justify-between p-3 border-b">
+                            <h3 className="font-semibold text-lg">Chat</h3>
+                            <Link href="/chat" className="text-blue-600 hover:text-blue-800 text-sm">
+                                View All
+                            </Link>
+                        </div>
                         <ChatList
-                            chats={groups}
+                            chats={groups.map(group => ({
+                                id: group.id,
+                                name: group.name,
+                                avatar: group.avatar,
+                                lastMessage: group.lastMessage,
+                                unreadCount: group.unreadCount || 0
+                            }))}
                             selectedChatId={selectedChatId}
-                            onChatSelect={setSelectedChatId}
+                            onChatSelect={async (chatId) => {
+                                setIsLoading(true);
+                                setSelectedChatId(chatId);
+                                
+                                try {
+                                    // Fetch messages from the API
+                                    const response = await fetch(`/api/web/groups/${chatId}/messages`);
+                                    if (!response.ok) throw new Error('Failed to load messages');
+                                    
+                                    const data = await response.json();
+                                    // Convert messages to the format expected by ChatWindow
+                                    const formattedMessages = data.map(msg => ({
+                                        id: msg.id,
+                                        content: msg.message,
+                                        sender: {
+                                            id: msg.user.id,
+                                            name: msg.user.name,
+                                            avatar: msg.user.avatar
+                                        },
+                                        timestamp: new Date(msg.created_at).toLocaleTimeString(),
+                                        isSystemMessage: msg.is_system_message
+                                    }));
+                                    
+                                    setMessages(formattedMessages);
+                                    
+                                    // Reset unread count for this group
+                                    setGroups(prev => prev.map(g => {
+                                        if (g.id === chatId) {
+                                            return { ...g, unreadCount: 0 };
+                                        }
+                                        return g;
+                                    }));
+                                } catch (e) {
+                                    console.error('Error loading messages:', e);
+                                    toast({
+                                        title: "Error",
+                                        description: "Failed to load messages. Please try again.",
+                                        variant: "destructive"
+                                    });
+                                } finally {
+                                    setIsLoading(false);
+                                }
+                            }}
                         />
                     </div>
                     <div className="flex-1">
                         {selectedChatId ? (
                             <ChatWindow
-                                user={currentUser}
-                                messages={[]}
+                                user={{
+                                    id: selectedChatId,
+                                    name: groups.find(g => g.id === selectedChatId)?.name || 'Chat',
+                                    status: "online"
+                                }}
+                                messages={messages}
                                 currentUserId={auth.user.id}
-                                onSendMessage={handleSendMessage}
+                                onSendMessage={async (content) => {
+                                    if (!selectedChatId) return;
+                                    
+                                    try {
+                                        setIsLoading(true);
+                                        const response = await fetch(`/api/web/groups/${selectedChatId}/messages`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                                            },
+                                            body: JSON.stringify({ message: content })
+                                        });
+                                        
+                                        if (!response.ok) throw new Error('Failed to send message');
+                                        
+                                        const newMessage = await response.json();
+                                        
+                                        // Add the new message to the messages array
+                                        setMessages(prev => [...prev, {
+                                            id: newMessage.id,
+                                            content: newMessage.message,
+                                            sender: {
+                                                id: newMessage.user.id,
+                                                name: newMessage.user.name,
+                                                avatar: newMessage.user.avatar
+                                            },
+                                            timestamp: new Date(newMessage.created_at).toLocaleTimeString(),
+                                            isSystemMessage: newMessage.is_system_message
+                                        }]);
+                                        
+                                    } catch (e) {
+                                        console.error('Error sending message:', e);
+                                        toast({
+                                            title: "Error",
+                                            description: "Failed to send message. Please try again.",
+                                            variant: "destructive"
+                                        });
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
                                 isLoading={isLoading}
                             />
                         ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground">
-                                Select a chat to start messaging
+                                <div className="text-center">
+                                    <h3 className="text-lg font-medium mb-2">Select a conversation</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Choose a group chat from the list to start messaging
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>

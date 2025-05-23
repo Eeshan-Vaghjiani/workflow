@@ -52,7 +52,7 @@ class GroupController extends Controller
             'owner_id' => auth()->id(),
         ]);
 
-        $group->members()->attach(auth()->id(), ['role' => 'owner']);
+        $group->members()->attach(auth()->id(), ['role' => 'leader']);
 
         return redirect()->route('groups.show', $group);
     }

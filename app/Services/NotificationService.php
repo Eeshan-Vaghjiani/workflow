@@ -67,8 +67,18 @@ class NotificationService
      */
     public function createNewAssignment(User $user, GroupAssignment $assignment, User $creator)
     {
-        return Notification::create([
-            'user_id' => $user->id,
+        // Notify all group members about the new assignment
+        $group = $assignment->group;
+        $notifications = [];
+
+        foreach ($group->members as $member) {
+            // Skip notifying the creator
+            if ($member->id === $creator->id) {
+                continue;
+            }
+
+            $notifications[] = Notification::create([
+                'user_id' => $member->id,
             'type' => 'assignment_created',
             'data' => [
                 'assignment_id' => $assignment->id,
@@ -81,6 +91,9 @@ class NotificationService
             ],
             'read' => false,
         ]);
+        }
+
+        return $notifications[0] ?? null; // Return first notification or null if none created
     }
 
     /**

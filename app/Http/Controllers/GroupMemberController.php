@@ -18,7 +18,9 @@ class GroupMemberController extends Controller
             abort(403, 'You are not a member of this group');
         }
 
-        $members = $group->members()->with('user')->get();
+        $members = $group->members()->with(['groups' => function ($query) use ($group) {
+            $query->where('groups.id', $group->id);
+        }])->get();
 
         return Inertia::render('Groups/Members/Index', [
             'group' => $group,
@@ -52,7 +54,7 @@ class GroupMemberController extends Controller
 
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'role' => 'nullable|string|in:owner,admin,member',
+            'role' => 'nullable|string|in:leader,member',
         ]);
 
         $userId = $validated['user_id'];

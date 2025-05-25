@@ -34,15 +34,37 @@ class your_generic_secretroller extends Controller
     public function store(LoginRequest $request): RedirectResponse|Response
     {
         try {
+            // Log request headers for debugging
+            \Log::debug('Login Request Headers', [
+                'headers' => $request->headers->all(),
+                'has_csrf' => $request->hasHeader('X-CSRF-TOKEN'),
+                'csrf_token' => $request->header('X-CSRF-TOKEN'),
+                'session_token' => session()->token(),
+                'matches' => $request->header('X-CSRF-TOKEN') === session()->token()
+            ]);
+            
             $request->authenticate();
             $request->session()->regenerate();
 
-            if ($request->header('X-Inertia')) {
-                return redirect()->intended(route('dashboard'))->toResponse($request);
+            // Check if this is the user's first login
+            $user = auth()->user();
+            if (!$user->last_login_at) {
+                $user->last_login_at = now();
+                $user->save();
             }
 
-            return redirect()->intended(route('dashboard'));
+            // Always redirect to dashboard after successful login
+            if ($request->header('X-Inertia')) {
+                return redirect()->route('dashboard');
+            }
+
+            return redirect()->route('dashboard');
         } catch (\Exception $e) {
+            \Log::error('Login Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             if ($request->header('X-Inertia')) {
                 return Inertia::render('auth/login', [
                     'errors' => [

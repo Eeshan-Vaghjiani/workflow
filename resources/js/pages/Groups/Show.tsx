@@ -122,7 +122,7 @@ export default function GroupShow({ group, isLeader, joinRequests = [], auth }: 
                                             <div className="text-sm text-gray-500">{member.email}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {member.pivot.role === 'owner' && (
+                                            {member.pivot.role === 'leader' && (
                                                 <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800/20 dark:text-blue-300 rounded-full">
                                                     Leader
                                                 </span>

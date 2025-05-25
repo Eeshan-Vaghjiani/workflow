@@ -14,19 +14,18 @@ class AIService
 
     public function __construct()
     {
-        // Get the API key from .env, with a fallback to a free demo key if not set
-        // Note: Using the demo key has limited requests per month
-        $this->apiKey = env('OPENROUTER_API_KEY', 'your_generic_secretyour_generic_secretyour_generic_secreta');
+        $this->apiKey = env('OPENROUTER_API_KEY');
+
+        if (empty($this->apiKey)) {
+            Log::warning('OpenRouter API key not set. Service will not function properly.');
+        }
+
         $this->baseUrl = 'https://openrouter.ai/api/v1';
-        $this->model = env('OPENROUTER_MODEL', 'meta-llama/llama-4-scout:free');
+        $this->model = env('OPENROUTER_MODEL', 'qwen/qwen3-4b:free');
         $this->verifySSL = env('OPENROUTER_VERIFY_SSL', false);
 
-        // Log API Key information (masked for security)
-        $keyLength = strlen($this->apiKey);
-        $maskedKey = substr($this->apiKey, 0, 10) . str_repeat('*', $keyLength - 14) . substr($this->apiKey, -4);
+        // Log initialization (without exposing API key)
         Log::info('AIService initialized', [
-            'key_length' => $keyLength,
-            'masked_key' => $maskedKey,
             'model' => $this->model,
             'verify_ssl' => $this->verifySSL ? 'true' : 'false',
         ]);

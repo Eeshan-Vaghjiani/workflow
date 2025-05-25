@@ -14,6 +14,8 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         // Temporarily exempt broadcasting auth routes for debugging
         'broadcasting/auth',
-        'api/broadcasting/auth'
+        'api/broadcasting/auth',
+        // Temporarily exclude login route to debug CSRF issues
+        'login'
     ];
 }

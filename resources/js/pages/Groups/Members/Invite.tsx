@@ -162,8 +162,7 @@ export default function Invite({ group, errors }: Props) {
                                         onChange={(e) => setData('role', e.target.value)}
                                     >
                                         <option value="member">Member</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="owner">Owner</option>
+                                        <option value="leader">Leader</option>
                                     </select>
                                 </div>
                                 {errors.user_id && <div className="text-red-500 text-sm mt-1">{errors.user_id}</div>}

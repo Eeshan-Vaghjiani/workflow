@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Doctrine\DBAL\Schema\SchemaException;
 
 return new class extends Migration
 {
@@ -11,8 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('last_login_at')->nullable();
+        Schema::table('group_tasks', function (Blueprint $table) {
+            $table->renameColumn('assigned_to', 'assigned_user_id');
         });
     }
 
@@ -21,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('last_login_at');
+        Schema::table('group_tasks', function (Blueprint $table) {
+            $table->renameColumn('assigned_user_id', 'assigned_to');
         });
     }
 };

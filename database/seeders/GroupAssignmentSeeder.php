@@ -17,7 +17,7 @@ class GroupAssignmentSeeder extends Seeder
     {
         // Get all groups with their members
         $groups = Group::with('members')->get();
-        
+
         // Define sample assignments
         $sampleAssignments = [
             [
@@ -51,7 +51,7 @@ class GroupAssignmentSeeder extends Seeder
                 'priority' => 'medium',
             ],
         ];
-        
+
         // Sample tasks
         $sampleTasks = [
             [
@@ -115,21 +115,21 @@ class GroupAssignmentSeeder extends Seeder
                 'priority' => 'high',
             ],
         ];
-        
+
         foreach ($groups as $group) {
             // Determine how many assignments to create (1-3)
             $assignmentCount = rand(1, 3);
-            
+
             // Shuffle assignments to get random ones
             $shuffledAssignments = collect($sampleAssignments)->shuffle();
-            
+
             for ($i = 0; $i < $assignmentCount; $i++) {
                 // Get assignment data
                 $assignmentData = $shuffledAssignments[$i] ?? $shuffledAssignments[0];
-                
+
                 // Set due date (between now and 30 days from now)
                 $dueDate = Carbon::now()->addDays(rand(7, 30));
-                
+
                 // Create the assignment
                 $assignment = GroupAssignment::create([
                     'group_id' => $group->id,
@@ -140,27 +140,27 @@ class GroupAssignmentSeeder extends Seeder
                     'due_date' => $dueDate,
                     'created_by' => $group->owner_id,
                 ]);
-                
+
                 // Create 3-6 tasks for each assignment
                 $taskCount = rand(3, 6);
                 $shuffledTasks = collect($sampleTasks)->shuffle();
-                
+
                 for ($j = 0; $j < $taskCount; $j++) {
                     $taskData = $shuffledTasks[$j] ?? $shuffledTasks[$j % count($sampleTasks)];
-                    
+
                     // Assign to a random group member
                     $assignedTo = $group->members->random()->id;
-                    
+
                     // Set task dates (start between now and due date, end between start and due date)
                     $startDate = Carbon::now()->addDays(rand(0, 5));
                     $endDate = (clone $startDate)->addDays(rand(1, max(1, $dueDate->diffInDays($startDate))));
-                    
+
                     // Create the task
                     GroupTask::create([
                         'assignment_id' => $assignment->id,
                         'title' => $taskData['title'],
                         'description' => $taskData['description'],
-                        'assigned_to' => $assignedTo,
+                        'assigned_user_id' => $assignedTo,
                         'start_date' => $startDate,
                         'end_date' => $endDate,
                         'status' => $taskData['status'],
@@ -172,4 +172,4 @@ class GroupAssignmentSeeder extends Seeder
             }
         }
     }
-} 
+}

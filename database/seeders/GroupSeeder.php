@@ -20,7 +20,7 @@ class GroupSeeder extends Seeder
         // Get all users
         $users = User::all();
         $evaUser = User::where('email', 'evaghjiani@gmail.com')->first();
-        
+
         // Create groups with Eva as the owner
         $groups = [
             [
@@ -39,18 +39,18 @@ class GroupSeeder extends Seeder
                 'owner_id' => $evaUser->id,
             ],
         ];
-        
+
         foreach ($groups as $groupData) {
             $group = Group::create($groupData);
-            
+
             // Add Eva as owner
-            $group->members()->attach($evaUser->id, ['role' => 'owner']);
-            
+            $group->members()->attach($evaUser->id, ['role' => 'leader']);
+
             // Add random users to the group with different roles
             $otherUsers = $users->where('id', '!=', $evaUser->id)->shuffle();
-            
+
             // Add 2-3 members with different roles
-            $roles = ['admin', 'member'];
+            $roles = ['leader', 'member'];
             for ($i = 0; $i < rand(2, 3); $i++) {
                 if (isset($otherUsers[$i])) {
                     $role = $roles[array_rand($roles)];
@@ -58,7 +58,7 @@ class GroupSeeder extends Seeder
                 }
             }
         }
-        
+
         // Create a group with another user as owner and Eva as member
         $anotherOwner = $users->where('id', '!=', $evaUser->id)->first();
         $anotherGroup = Group::create([
@@ -66,19 +66,19 @@ class GroupSeeder extends Seeder
             'description' => 'Work for client Y',
             'owner_id' => $anotherOwner->id,
         ]);
-        
+
         // Add the owner
-        $anotherGroup->members()->attach($anotherOwner->id, ['role' => 'owner']);
-        
+        $anotherGroup->members()->attach($anotherOwner->id, ['role' => 'leader']);
+
         // Add Eva as member
         $anotherGroup->members()->attach($evaUser->id, ['role' => 'member']);
-        
+
         // Add some other members
         $otherMembers = $users->where('id', '!=', $anotherOwner->id)
             ->where('id', '!=', $evaUser->id)
             ->shuffle()
             ->take(2);
-            
+
         foreach ($otherMembers as $member) {
             $anotherGroup->members()->attach($member->id, ['role' => 'member']);
         }

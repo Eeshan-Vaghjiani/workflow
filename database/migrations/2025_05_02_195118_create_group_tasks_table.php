@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('assignment_id')->constrained('group_assignments')->onDelete('cascade');
             $table->string('title');
-            $table->foreignId('assigned_to')->constrained('users');
+            $table->foreignId('assigned_to')->nullable()->constrained('users');
             $table->date('start_date');
             $table->date('end_date');
             $table->enum('status', ['pending', 'in_progress', 'completed'])->default('pending');

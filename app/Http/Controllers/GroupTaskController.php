@@ -186,14 +186,14 @@ class GroupTaskController extends Controller
             $assignment = GroupAssignment::where('id', $assignmentId)
                 ->where('group_id', $groupId)
                 ->firstOrFail();
-            
+
             // Check if user is authorized
             if (!$assignment->group->isLeader(auth()->id())) {
                 return response()->json(['error' => 'You are not authorized to distribute tasks for this assignment'], 403);
             }
-            
+
             $tasks = GroupTask::where('assignment_id', $assignmentId)->get()->toArray();
-            
+
             // Get all group members
             $groupMembers = $assignment->group->members->map(function($member) {
                 return [
@@ -201,29 +201,29 @@ class GroupTaskController extends Controller
                     'name' => $member->user->name
                 ];
             })->toArray();
-            
+
             // Use AI service to distribute tasks
-            $aiService = app(App\Services\AIService::class);
+            $aiService = app(\App\Services\AIService::class);
             $distributedTasks = $aiService->distributeTasks($tasks, $groupMembers);
-            
+
             // Update tasks with new assignments
             foreach ($distributedTasks as $task) {
                 if (isset($task['id']) && isset($task['assigned_user_id'])) {
                     GroupTask::where('id', $task['id'])->update(['assigned_user_id' => $task['assigned_user_id']]);
                 }
             }
-            
+
             // Return updated tasks
             $updatedTasks = GroupTask::where('assignment_id', $assignmentId)
                 ->with('assigned_user:id,name')
                 ->get();
-                
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tasks have been distributed based on effort and importance',
                 'tasks' => $updatedTasks
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to distribute tasks: ' . $e->getMessage()
@@ -318,6 +318,47 @@ class GroupTaskController extends Controller
             'group' => $task->assignment->group_id,
             'assignment' => $task->assignment_id,
             'task' => $task->id
+        ]);
+    }
+
+    /**
+     * Display a kanban board view of tasks.
+     */
+    public function kanbanView(Request $request)
+    {
+        // Get all tasks assigned to the current user or from groups they're part of
+        $user = auth()->user();
+
+        // Query to get tasks either assigned to this user or from groups they're a member of
+        $tasks = GroupTask::with(['assignment.group', 'assigned_user'])
+            ->where(function($query) use ($user) {
+                $query->where('assigned_user_id', $user->id)
+                    ->orWhereHas('assignment.group.members', function($q) use ($user) {
+                        $q->where('user_id', $user->id);
+                    });
+            })
+            ->orderBy('end_date')
+            ->get();
+
+        // Optional: filter by group or assignment if provided in request
+        $groupId = $request->input('group');
+        $assignmentId = $request->input('assignment');
+
+        if ($groupId) {
+            $tasks = $tasks->filter(function($task) use ($groupId) {
+                return $task->assignment && $task->assignment->group &&
+                       $task->assignment->group->id == $groupId;
+            });
+        }
+
+        if ($assignmentId) {
+            $tasks = $tasks->where('assignment_id', $assignmentId);
+        }
+
+        return Inertia::render('tasks/KanbanView', [
+            'tasks' => $tasks,
+            'groupId' => $groupId,
+            'assignmentId' => $assignmentId
         ]);
     }
 }

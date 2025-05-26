@@ -3,15 +3,13 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\Group;
 use App\Models\GroupAssignment;
 use App\Models\GroupTask;
-use App\Models\User;
-use App\Models\Group;
 use App\Services\AIService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class AITaskController extends Controller
 {
@@ -23,234 +21,306 @@ class AITaskController extends Controller
     }
 
     /**
-     * Process natural language prompt to create assignment tasks
-     *
-     * @param Request $request
-     * @param int $groupId
-     * @return \Illuminate\Http\JsonResponse
+     * Show the AI task generation page for a group
      */
-    public function createFromPrompt(Request $request, $groupId)
+    public function index(Request $request, Group $group)
     {
-        // Check authentication first
-        if (!Auth::check()) {
-            return response()->json([
-                'error' => 'Authentication required',
-                'message' => 'You must be logged in to use this endpoint',
-                'auth_status' => [
-                    'authenticated' => false,
-                    'has_session' => $request->hasSession(),
-                    'cookies_received' => count($request->cookies->all()) > 0,
-                    'fix' => 'Please visit /login to authenticate before trying again'
-                ]
-            ], 401);
+        // Check if user is member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            abort(403, 'You are not a member of this group');
+        }
+
+        return Inertia::render('Groups/AITaskAssignment', [
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'members' => $group->members()->with('user:id,name,email')->get()->map(function ($member) {
+                    return [
+                        'id' => $member->user->id,
+                        'name' => $member->user->name,
+                        'email' => $member->user->email
+                    ];
+                })
+            ]
+        ]);
+    }
+
+    /**
+     * Show the AI task generation page for a specific assignment
+     */
+    public function forAssignment(Request $request, Group $group, GroupAssignment $assignment)
+    {
+        // Check if user is member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            abort(403, 'You are not a member of this group');
+        }
+
+        // Check if assignment belongs to the group
+        if ($assignment->group_id !== $group->id) {
+            abort(404, 'Assignment not found in this group');
+        }
+
+        return Inertia::render('Groups/AITaskAssignment', [
+            'group' => [
+                'id' => $group->id,
+                'name' => $group->name,
+                'members' => $group->members()->with('user:id,name,email')->get()->map(function ($member) {
+                    return [
+                        'id' => $member->user->id,
+                        'name' => $member->user->name,
+                        'email' => $member->user->email
+                    ];
+                })
+            ],
+            'assignment' => [
+                'id' => $assignment->id,
+                'title' => $assignment->title
+            ]
+        ]);
+    }
+
+    /**
+     * Generate tasks for an assignment using AI
+     */
+    public function generateTasks(Request $request, Group $group)
+    {
+        // Check if user is member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            return response()->json(['error' => 'You are not a member of this group'], 403);
+        }
+
+        $request->validate([
+            'prompt' => 'required|string|min:10',
+            'assignment_id' => 'nullable|exists:group_assignments,id'
+        ]);
+
+        try {
+            $result = $this->aiService->processTaskPrompt(
+                $request->prompt,
+                auth()->id(),
+                $group->id
+            );
+
+            if (isset($result['error'])) {
+                return response()->json(['error' => $result['error']], 500);
+            }
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to process task prompt: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Create a new assignment with tasks using AI-generated data
+     */
+    public function createAssignment(Request $request, Group $group)
+    {
+        // Check if user is member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            return response()->json(['error' => 'You are not a member of this group'], 403);
         }
 
         // Validate request
         $validated = $request->validate([
-            'prompt' => 'required|string|min:5',
+            'assignment' => 'required|array',
+            'assignment.title' => 'required|string|max:255',
+            'assignment.unit_name' => 'required|string|max:255',
+            'assignment.description' => 'required|string',
+            'assignment.due_date' => 'required|date',
+            'tasks' => 'required|array',
+            'tasks.*.title' => 'required|string|max:255',
+            'tasks.*.description' => 'required|string',
+            'tasks.*.start_date' => 'required|date',
+            'tasks.*.end_date' => 'required|date|after_or_equal:tasks.*.start_date',
+            'tasks.*.priority' => 'required|in:low,medium,high',
+            'tasks.*.effort_hours' => 'required|numeric|min:1|max:100',
+            'tasks.*.importance' => 'required|integer|min:1|max:5',
+            'tasks.*.assigned_to_name' => 'nullable|string',
         ]);
 
-        // Check if group exists
-        $group = Group::find($groupId);
-        if (!$group) {
-            return response()->json(['error' => 'Group not found'], 404);
-        }
-
-        $user = Auth::user();
-
-        // Check if user is a member of the group
-        if (!$group->members()->where('user_id', $user->id)->exists()) {
-            return response()->json([
-                'error' => 'Access denied',
-                'message' => 'You are not a member of this group',
-                'user_id' => $user->id,
-                'group_id' => $groupId
-            ], 403);
-        }
-
-        // Process prompt with AI service
-        $aiResponse = $this->aiService->processTaskPrompt($validated['prompt'], $user->id, $groupId);
-
-        // Check if AI processing encountered an error
-        if (isset($aiResponse['error'])) {
-            return response()->json([
-                'error' => 'AI Service Error',
-                'message' => $aiResponse['error'],
-                'debug' => $aiResponse['debug'] ?? null
-            ], 500);
-        }
-
-        // Begin transaction to create assignment and tasks
         try {
+            // Start transaction
             DB::beginTransaction();
-            
-            // Create the assignment
+
+            // Create assignment
             $assignment = GroupAssignment::create([
-                'group_id' => $groupId,
-                'title' => $aiResponse['assignment']['title'],
-                'unit_name' => $aiResponse['assignment']['unit_name'] ?? 'General',
-                'description' => $aiResponse['assignment']['description'] ?? '',
-                'due_date' => $aiResponse['assignment']['due_date'] ?? now()->addWeeks(2),
-                'priority' => $aiResponse['assignment']['priority'] ?? 'medium',
+                'group_id' => $group->id,
+                'title' => $validated['assignment']['title'],
+                'unit_name' => $validated['assignment']['unit_name'],
+                'description' => $validated['assignment']['description'],
+                'start_date' => date('Y-m-d'),
+                'end_date' => $validated['assignment']['due_date'],
+                'due_date' => $validated['assignment']['due_date'],
                 'status' => 'active',
-                'created_by' => $user->id,
+                'created_by' => auth()->id(),
             ]);
 
-            // Process tasks
-            $createdTasks = [];
-            foreach ($aiResponse['tasks'] as $taskData) {
+            // Create tasks
+            foreach ($validated['tasks'] as $taskData) {
                 // Find user by name if assigned_to_name is provided
-                $assignedUserId = $user->id; // Default to the current user
-                if (isset($taskData['assigned_to_name'])) {
-                    $assignedUser = User::whereHas('groups', function ($query) use ($groupId) {
-                        $query->where('group_id', $groupId);
-                    })
-                    ->where(function ($query) use ($taskData) {
-                        $name = $taskData['assigned_to_name'];
-                        $query->where('name', 'like', "%{$name}%")
-                            ->orWhere('email', 'like', "{$name}%");
-                    })
-                    ->first();
+                $assignedUserId = null;
 
-                    if ($assignedUser) {
-                        $assignedUserId = $assignedUser->id;
+                if (!empty($taskData['assigned_to_name'])) {
+                    $member = $group->members()
+                        ->whereHas('user', function ($query) use ($taskData) {
+                            $query->where('name', $taskData['assigned_to_name']);
+                        })
+                        ->first();
+
+                    if ($member) {
+                        $assignedUserId = $member->user_id;
                     }
                 }
 
-                // Create task
-                $task = GroupTask::create([
+                GroupTask::create([
                     'assignment_id' => $assignment->id,
                     'title' => $taskData['title'],
-                    'description' => $taskData['description'] ?? '',
-                    'assigned_user_id' => $assignedUserId,
-                    'start_date' => $taskData['start_date'] ?? now(),
-                    'end_date' => $taskData['end_date'] ?? now()->addWeeks(1),
+                    'description' => $taskData['description'],
+                    'start_date' => $taskData['start_date'],
+                    'end_date' => $taskData['end_date'],
                     'status' => 'pending',
-                    'priority' => $taskData['priority'] ?? 'medium',
-                    'effort_hours' => $taskData['effort_hours'] ?? rand(1, 5),
-                    'importance' => $taskData['importance'] ?? rand(1, 5),
-                    'created_by' => $user->id,
-                    'order_index' => count($createdTasks),
+                    'priority' => $taskData['priority'],
+                    'effort_hours' => $taskData['effort_hours'],
+                    'importance' => $taskData['importance'],
+                    'assigned_user_id' => $assignedUserId,
+                    'created_by' => auth()->id(),
                 ]);
-
-                $task->load('assignedUser');
-                $createdTasks[] = $task;
-            }
-            
-            // Auto-distribute tasks if requested or if no specific assignments were made
-            if ($request->input('auto_distribute', true) || !isset($aiResponse['tasks'][0]['assigned_to_name'])) {
-                // Get all group members for distribution
-                $groupMembers = $group->members()
-                    ->with('user:id,name')
-                    ->get()
-                    ->map(function($member) {
-                        return [
-                            'id' => $member->user->id,
-                            'name' => $member->user->name
-                        ];
-                    })
-                    ->toArray();
-                    
-                if (!empty($groupMembers)) {
-                    // Convert created tasks to array format for distributor
-                    $taskArray = $createdTasks->map(function($task) {
-                        return [
-                            'id' => $task->id,
-                            'title' => $task->title,
-                            'assigned_user_id' => $task->assigned_user_id,
-                            'effort_hours' => $task->effort_hours,
-                            'importance' => $task->importance
-                        ];
-                    })->toArray();
-                    
-                    // Use AI service to distribute tasks based on effort and importance
-                    $distributedTasks = $this->aiService->distributeTasks($taskArray, $groupMembers);
-                    
-                    // Update tasks with new assignments
-                    foreach ($distributedTasks as $distributedTask) {
-                        if (isset($distributedTask['id']) && isset($distributedTask['assigned_user_id'])) {
-                            GroupTask::where('id', $distributedTask['id'])->update([
-                                'assigned_user_id' => $distributedTask['assigned_user_id']
-                            ]);
-                            
-                            // Update the task in the createdTasks collection
-                            foreach ($createdTasks as $key => $task) {
-                                if ($task->id === $distributedTask['id']) {
-                                    $createdTasks[$key]->assigned_user_id = $distributedTask['assigned_user_id'];
-                                    $createdTasks[$key]->load('assignedUser');
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Log the distribution
-                    Log::info('Tasks auto-distributed', [
-                        'assignment_id' => $assignment->id,
-                        'task_count' => count($createdTasks),
-                        'member_count' => count($groupMembers)
-                    ]);
-                    
-                    // Reload all tasks with assigned users to ensure UI shows correct assignments
-                    $createdTasks = GroupTask::where('assignment_id', $assignment->id)
-                        ->with('assignedUser')
-                        ->get();
-                }
             }
 
             DB::commit();
 
-            // Return the created assignment and tasks
             return response()->json([
-                'assignment' => $assignment,
-                'tasks' => $createdTasks,
-                'message' => 'Successfully created assignment and tasks from prompt'
-            ], 201);
-
+                'success' => true,
+                'message' => 'Assignment and tasks created successfully',
+                'redirect_url' => route('group-assignments.show', ['group' => $group->id, 'assignment' => $assignment->id])
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to create tasks from prompt', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Failed to create tasks: ' . $e->getMessage()], 500);
+
+            return response()->json([
+                'error' => 'Failed to create assignment: ' . $e->getMessage()
+            ], 500);
         }
     }
 
-    public function distributeTasks(Request $request, $assignmentId)
+    /**
+     * Add AI-generated tasks to an existing assignment
+     */
+    public function addTasksToAssignment(Request $request, Group $group, GroupAssignment $assignment)
     {
-        $assignment = GroupAssignment::with(['tasks', 'group.members.user'])
-            ->findOrFail($assignmentId);
-
-        // Get all tasks and group members
-        $tasks = $assignment->tasks->map(function ($task) {
-            return [
-                'id' => $task->id,
-                'title' => $task->title,
-                'effort_hours' => $task->effort_hours,
-                'importance' => $task->importance,
-                'assigned_user_id' => $task->assigned_user_id,
-                'assigned_to_name' => $task->assigned_user ? $task->assigned_user->name : null
-            ];
-        })->toArray();
-
-        $groupMembers = $assignment->group->members->map(function ($member) {
-            return [
-                'id' => $member->user->id,
-                'name' => $member->user->name
-            ];
-        })->toArray();
-
-        // Distribute tasks using AI service
-        $distributedTasks = $this->aiService->distributeTasks($tasks, $groupMembers);
-
-        // Update tasks in database
-        foreach ($distributedTasks as $task) {
-            GroupTask::where('id', $task['id'])->update([
-                'assigned_user_id' => $task['assigned_user_id']
-            ]);
+        // Check if user is member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            return response()->json(['error' => 'You are not a member of this group'], 403);
         }
 
-        return response()->json([
-            'message' => 'Tasks distributed successfully',
-            'tasks' => $distributedTasks
+        // Check if assignment belongs to the group
+        if ($assignment->group_id !== $group->id) {
+            return response()->json(['error' => 'Assignment not found in this group'], 404);
+        }
+
+        // Validate request
+        $validated = $request->validate([
+            'tasks' => 'required|array',
+            'tasks.*.title' => 'required|string|max:255',
+            'tasks.*.description' => 'required|string',
+            'tasks.*.start_date' => 'required|date',
+            'tasks.*.end_date' => 'required|date|after_or_equal:tasks.*.start_date',
+            'tasks.*.priority' => 'required|in:low,medium,high',
+            'tasks.*.effort_hours' => 'required|numeric|min:1|max:100',
+            'tasks.*.importance' => 'required|integer|min:1|max:5',
+            'tasks.*.assigned_to_name' => 'nullable|string',
         ]);
+
+        try {
+            // Start transaction
+            DB::beginTransaction();
+
+            // Create tasks
+            foreach ($validated['tasks'] as $taskData) {
+                // Find user by name if assigned_to_name is provided
+                $assignedUserId = null;
+
+                if (!empty($taskData['assigned_to_name'])) {
+                    $member = $group->members()
+                        ->whereHas('user', function ($query) use ($taskData) {
+                            $query->where('name', $taskData['assigned_to_name']);
+                        })
+                        ->first();
+
+                    if ($member) {
+                        $assignedUserId = $member->user_id;
+                    }
+                }
+
+                GroupTask::create([
+                    'assignment_id' => $assignment->id,
+                    'title' => $taskData['title'],
+                    'description' => $taskData['description'],
+                    'start_date' => $taskData['start_date'],
+                    'end_date' => $taskData['end_date'],
+                    'status' => 'pending',
+                    'priority' => $taskData['priority'],
+                    'effort_hours' => $taskData['effort_hours'],
+                    'importance' => $taskData['importance'],
+                    'assigned_user_id' => $assignedUserId,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tasks added to assignment successfully',
+                'redirect_url' => route('group-assignments.show', ['group' => $group->id, 'assignment' => $assignment->id])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'error' => 'Failed to add tasks to assignment: ' . $e->getMessage()
+            ], 500);
+        }
     }
-} 
+
+    /**
+     * Distribute tasks among group members using AI
+     */
+    public function autoDistributeTasks(Request $request, Group $group)
+    {
+        // Check if user is member of the group
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            return response()->json(['error' => 'You are not a member of this group'], 403);
+        }
+
+        // Validate request
+        $validated = $request->validate([
+            'tasks' => 'required|array',
+            'tasks.*.id' => 'nullable|integer',
+            'tasks.*.title' => 'required|string',
+            'tasks.*.effort_hours' => 'required|numeric|min:1',
+            'tasks.*.importance' => 'required|integer|min:1|max:5',
+            'members' => 'required|array',
+            'members.*.id' => 'required|integer',
+            'members.*.name' => 'required|string',
+        ]);
+
+        try {
+            // Process task distribution with AI
+            $distributedTasks = $this->aiService->distributeTasks(
+                $validated['tasks'],
+                $validated['members']
+            );
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $distributedTasks
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to distribute tasks: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}

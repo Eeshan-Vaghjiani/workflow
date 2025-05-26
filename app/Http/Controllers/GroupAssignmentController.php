@@ -16,13 +16,13 @@ class your_generic_secretr extends Controller
     {
         // Start with a query that always includes group data
         $query = GroupAssignment::query()->with('group');
-        
+
         // Filter by group if one is provided
         if ($group) {
             if (!$group->members()->where('user_id', auth()->id())->exists()) {
                 abort(403, 'You are not a member of this group');
             }
-            
+
             $query->where('group_id', $group->id);
         } else {
             // If no group provided, show all assignments for the user
@@ -30,9 +30,9 @@ class your_generic_secretr extends Controller
                 $query->where('user_id', auth()->id());
             });
         }
-        
+
         $assignments = $query->latest()->get();
-        
+
         // Filter out any assignments with null groups (shouldn't happen, but just in case)
         $assignments = $assignments->filter(function ($assignment) {
             return $assignment->group !== null;
@@ -47,18 +47,18 @@ class your_generic_secretr extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Group $group)
     {
-        $groups = Group::whereHas('members', function ($query) {
-            $query->where('user_id', auth()->id());
-        })
-        ->get()
-        ->filter(function ($group) {
-            return $group->isLeader(auth()->id());
-        });
+        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+            abort(403, 'You are not a member of this group');
+        }
 
-        return Inertia::render('Assignments/Create', [
-            'groups' => $groups
+        if (!$group->isLeader(auth()->id())) {
+            abort(403, 'You are not authorized to create assignments for this group');
+        }
+
+        return Inertia::render('Groups/Assignments/Create', [
+            'groupId' => $group->id
         ]);
     }
 
@@ -90,7 +90,7 @@ class your_generic_secretr extends Controller
         // Create notifications for all group members
         $notificationService = new \App\Services\NotificationService();
         $groupMembers = $group->members;
-        
+
         foreach ($groupMembers as $member) {
             // Don't notify the creator
             if ($member->id != auth()->id()) {

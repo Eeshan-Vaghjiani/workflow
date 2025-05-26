@@ -22,11 +22,13 @@ OPENROUTER_API_KEY=your_api_key_here
 4. The AI will automatically create a structured assignment with tasks assigned to group members
 
 Example prompt:
+
 ```
 Create a website development project for our client XYZ Company. The project needs UI design by Alice due next Friday, backend development by Bob with high priority due in 2 weeks, and deployment by Charlie with medium priority due by the end of the month.
 ```
 
 The AI will extract:
+
 - Assignment title and description
 - Individual tasks with descriptions
 - Task assignments to team members
@@ -36,6 +38,7 @@ The AI will extract:
 ## Troubleshooting
 
 ### 401 Unauthorized Error
+
 If you see a 401 Unauthorized error when using the AI Task Creator:
 
 1. Make sure you're logged in to the application
@@ -44,6 +47,7 @@ If you see a 401 Unauthorized error when using the AI Task Creator:
 4. Use the "Check Auth Status" button to debug authentication issues
 
 ### API Key Issues
+
 If the OpenRouter API isn't working:
 
 1. Confirm your API key is correctly set in the `.env` file as `OPENROUTER_API_KEY=your_key_here`
@@ -51,8 +55,10 @@ If the OpenRouter API isn't working:
 3. Check if there are any usage limits or restrictions on your OpenRouter account
 
 ### Testing the API Connection
+
 You can test your API connection by visiting the following endpoints:
+
 - `/api/auth-check` - Should always work and return a message
 - `/api/user` - Should return your user info if you're authenticated
 
-If you continue to have issues, check your Laravel logs at `storage/logs/laravel.log` for detailed error information. 
+If you continue to have issues, check your Laravel logs at `storage/logs/laravel.log` for detailed error information.

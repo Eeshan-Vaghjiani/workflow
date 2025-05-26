@@ -41,7 +41,7 @@ Route::get('/auth-check', function () {
 Route::get('/auth-status', function (Request $request) {
     $user = $request->user();
     $sessionData = [];
-    
+
     if ($request->hasSession()) {
         $sessionData = [
             'has_session' => true,
@@ -53,7 +53,7 @@ Route::get('/auth-status', function (Request $request) {
             'has_session' => false
         ];
     }
-    
+
     return response()->json([
         'authenticated' => !is_null($user),
         'user' => $user,
@@ -73,7 +73,7 @@ Route::get('/auth-status', function (Request $request) {
 Route::get('/auth-quick', function (Request $request) {
     $user = $request->user();
     $isAuthenticated = !is_null($user);
-    
+
     if ($isAuthenticated) {
         return response()->json([
             'authenticated' => true,
@@ -154,13 +154,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('direct-messages/{user}', [DirectMessageController::class, 'store']);
     Route::post('direct-messages/{user}/read', [DirectMessageController::class, 'markAsRead']);
     Route::post('direct-messages/{user}/typing', [DirectMessageController::class, 'typing']);
-    
+
     // AI Task Creation
     Route::post('groups/{group}/ai/tasks', [AITaskController::class, 'createFromPrompt']);
-    
+
+    // AI Task Generation and Distribution
+    Route::post('groups/{group}/ai-tasks/generate', [AITaskController::class, 'generateTasks']);
+    Route::post('groups/{group}/assignments/ai-create', [AITaskController::class, 'createAssignment']);
+    Route::post('groups/{group}/assignments/{assignment}/tasks/ai-create', [AITaskController::class, 'addTasksToAssignment']);
+    Route::post('groups/{group}/ai-tasks/distribute', [AITaskController::class, 'autoDistributeTasks']);
+
     // Auto-distribute tasks
     Route::post('groups/{groupId}/assignments/{assignmentId}/auto-distribute', [App\Http\Controllers\GroupTaskController::class, 'autoDistributeTasksAPI']);
-    
+
     // Task assignment routes
     Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\your_generic_secret::class, 'getAssignmentStats']);
     Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks']);
@@ -200,18 +206,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
 // Add a public endpoint for AI tasks (no auth required)
 Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
     $aiService = app(App\Services\AIService::class);
-    
+
     try {
         // Validate the request
         $validated = $request->validate([
             'prompt' => 'required|string|min:5',
             'group_id' => 'required|integer',
         ]);
-        
+
         // Use default values since we're bypassing authentication
         $userId = $request->input('user_id', 1); // Default user ID
         $groupId = $request->input('group_id');
-        
+
         // Check if group exists
         $group = \App\Models\Group::find($groupId);
         if (!$group) {
@@ -221,52 +227,52 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
                 'group_id' => $groupId,
             ], 404);
         }
-        
+
         // Log the AI request parameters
         \Illuminate\Support\Facades\Log::info('AI Task Request', [
             'prompt' => $request->prompt,
             'group_id' => $groupId,
             'user_id' => $userId
         ]);
-        
+
         // Process prompt with AI service
         $aiResponse = $aiService->processTaskPrompt($request->prompt, $userId, $groupId);
-        
+
         // Check if AI processing encountered an error
         if (isset($aiResponse['error'])) {
             \Illuminate\Support\Facades\Log::error('AI Service Error', [
                 'error' => $aiResponse['error'],
                 'debug' => $aiResponse['debug'] ?? null
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'error' => 'AI Service Error: ' . $aiResponse['error'],
                 'debug' => $aiResponse['debug'] ?? null
             ], 500);
         }
-        
+
         \Illuminate\Support\Facades\Log::info('AI Response', [
             'assignment_title' => $aiResponse['assignment']['title'] ?? 'No title',
             'tasks_count' => count($aiResponse['tasks'] ?? [])
         ]);
-        
+
         // Validate and prepare the AI response for database insertion
         if (!isset($aiResponse['assignment']) || !isset($aiResponse['tasks']) || empty($aiResponse['tasks'])) {
             return response()->json([
                 'success' => false,
                 'error' => 'Invalid AI response structure',
-                'data' => $aiResponse 
+                'data' => $aiResponse
             ], 500);
         }
-        
+
         // Sanitize dates and ensure all required fields exist
         $aiResponse = sanitizeAiResponseDates($aiResponse);
-        
+
         // Begin transaction to create assignment and tasks
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
-            
+
             // Create the assignment
             $assignment = \App\Models\GroupAssignment::create([
                 'group_id' => $groupId,
@@ -335,9 +341,9 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'error' => 'Failed to create tasks: ' . $e->getMessage(),
                 'trace' => explode("\n", $e->getTraceAsString())
             ], 500);
@@ -353,7 +359,7 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
         ]);
-        
+
         return response()->json([
             'success' => false,
             'error' => 'Error processing AI request: ' . $e->getMessage(),
@@ -365,11 +371,11 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
 // Add a no-auth test route for AI tasks
 Route::post('test-ai-tasks', function(Illuminate\Http\Request $request) {
     $aiService = app(App\Services\AIService::class);
-    
+
     $validated = $request->validate([
         'prompt' => 'required|string|min:5|max:1000',
     ]);
-    
+
     try {
         $result = $aiService->processTaskPrompt($request->prompt, 1, 1);
         return response()->json([
@@ -390,7 +396,7 @@ Route::post('test-ai-tasks', function(Illuminate\Http\Request $request) {
 Route::get('/your_generic_secreton', function() {
     $aiService = app(App\Services\AIService::class);
     $result = $aiService->testConnection();
-    
+
     if ($result['success']) {
         return response()->json([
             'success' => true,
@@ -429,7 +435,7 @@ Route::post('/chat-test', function(Illuminate\Http\Request $request) {
         'event' => 'required|string',
         'message' => 'required|string',
     ]);
-    
+
     try {
         // For private channel testing
         if ($request->has('channel_type') && $request->input('channel_type') === 'private') {
@@ -452,7 +458,7 @@ Route::post('/chat-test', function(Illuminate\Http\Request $request) {
                     ] : ['id' => 1, 'name' => 'Test User'],
                 ]
             ));
-        } 
+        }
         // For group channel testing
         else {
             $groupId = $request->input('group_id', 1);
@@ -471,7 +477,7 @@ Route::post('/chat-test', function(Illuminate\Http\Request $request) {
                 ]
             ));
         }
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Test message broadcast successfully',
@@ -500,39 +506,39 @@ function sanitizeAiResponseDates($response) {
             $response['assignment']['end_date'] = $now->addDays(14)->format('Y-m-d');
         }
     }
-    
+
     if (isset($response['tasks']) && is_array($response['tasks'])) {
         foreach ($response['tasks'] as $key => $task) {
             $now = now();
-            
+
             // Validate task has required fields
             if (!isset($task['title']) || empty($task['title'])) {
                 $response['tasks'][$key]['title'] = 'Task ' . ($key + 1);
             }
-            
+
             // Sanitize dates
             if (!isset($task['start_date']) || !validateDate($task['start_date'])) {
                 $response['tasks'][$key]['start_date'] = $now->format('Y-m-d');
             }
-            
+
             if (!isset($task['end_date']) || !validateDate($task['end_date'])) {
                 $response['tasks'][$key]['end_date'] = $now->addDays(7)->format('Y-m-d');
             }
-            
+
             // Sanitize priority
             if (!isset($task['priority']) || !in_array($task['priority'], ['low', 'medium', 'high'])) {
                 $response['tasks'][$key]['priority'] = 'medium';
             }
         }
     }
-    
+
     return $response;
 }
 
 // Helper function to validate a date string
 function validateDate($date, $format = 'Y-m-d') {
     if (!is_string($date)) return false;
-    
+
     $d = \DateTime::createFromFormat($format, $date);
     return $d && $d->format($format) === $date;
 }
@@ -553,7 +559,7 @@ Route::get('/auth/check', function(Request $request) {
             'session_id' => session()->getId(),
         ]);
     }
-    
+
     return response()->json([
         'authenticated' => false,
         'session_active' => $request->hasSession() && session()->isStarted(),

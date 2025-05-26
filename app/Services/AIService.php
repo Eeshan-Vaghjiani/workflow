@@ -11,6 +11,13 @@ class AIService
     protected $baseUrl;
     protected $model;
     protected $verifySSL;
+    protected $availableModels = [
+        'qwen/qwen3-4b:free',
+        'mistralai/mistral-7b-instruct',
+        'openai/opus',
+        'meta-llama/llama-3-8b-instruct',
+        'anthropic/claude-3-haiku'
+    ];
 
     public function __construct()
     {
@@ -21,18 +28,60 @@ class AIService
         }
 
         $this->baseUrl = 'https://openrouter.ai/api/v1';
-<<<<<<< HEAD
-        $this->model = env('OPENROUTER_MODEL', 'qwen/qwen3-4b:free');
-=======
-        $this->model = env('OPENROUTER_MODEL', 'mistralai/mistral-7b-instruct');
->>>>>>> your_generic_secret515ca8223723822f
+        // Will be determined dynamically when needed
+        $this->model = env('OPENROUTER_MODEL', '');
         $this->verifySSL = env('OPENROUTER_VERIFY_SSL', false);
 
         // Log initialization (without exposing API key)
         Log::info('AIService initialized', [
-            'model' => $this->model,
             'verify_ssl' => $this->verifySSL ? 'true' : 'false',
         ]);
+    }
+
+    /**
+     * Get a working model from available free models
+     */
+    protected function getWorkingModel()
+    {
+        // If model is already set and not empty, return it
+        if (!empty($this->model)) {
+            return $this->model;
+        }
+
+        // Check available models from OpenRouter
+        try {
+            $http = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json',
+            ]);
+
+            if (!$this->verifySSL) {
+                $http = $http->withoutVerifying();
+            }
+
+            $response = $http->get($this->baseUrl . '/models');
+
+            if ($response->successful()) {
+                $models = $response->json('data', []);
+                $availableModelIds = collect($models)->pluck('id')->toArray();
+
+                // Find the first model from our list that's available
+                foreach ($this->availableModels as $modelId) {
+                    if (in_array($modelId, $availableModelIds)) {
+                        Log::info('Using OpenRouter model: ' . $modelId);
+                        $this->model = $modelId;
+                        return $modelId;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error checking available models: ' . $e->getMessage());
+        }
+
+        // Fallback to a default model if none available
+        $this->model = $this->availableModels[0];
+        Log::info('Falling back to default model: ' . $this->model);
+        return $this->model;
     }
 
     public function processTaskPrompt(string $prompt, int $userId, int $groupId): array
@@ -127,14 +176,17 @@ class AIService
 
             Always use the YYYY-MM-DD format for dates. Your ENTIRE response must be parseable as JSON.";
 
+            // Get a working model
+            $modelToUse = $this->getWorkingModel();
+
             Log::info('Making OpenRouter API request', [
-                'model' => $this->model,
+                'model' => $modelToUse,
                 'system_message_length' => strlen($systemMessage),
                 'prompt_length' => strlen($prompt),
             ]);
 
             $response = $http->post($this->baseUrl . '/chat/completions', [
-                'model' => $this->model,
+                'model' => $modelToUse,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemMessage],
                     ['role' => 'user', 'content' => $prompt],
@@ -204,6 +256,191 @@ class AIService
         }
     }
 
+    /**
+     * Distribute tasks among group members based on effort and importance
+     *
+     * @param array $tasks Array of tasks with id, title, effort_hours, importance
+     * @param array $groupMembers Array of group members with id, name
+     * @return array Updated tasks with assigned_user_id
+     */
+    public function distributeTasks(array $tasks, array $groupMembers): array
+    {
+        try {
+            // If there are no tasks or group members, return tasks unchanged
+            if (empty($tasks) || empty($groupMembers)) {
+                Log::warning('Cannot distribute tasks: No tasks or group members provided', [
+                    'task_count' => count($tasks),
+                    'member_count' => count($groupMembers)
+                ]);
+                return $tasks;
+            }
+
+            $http = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => config('app.url', 'http://localhost'),
+                'X-Title' => 'Workflow Task Manager'
+            ]);
+
+            if (!$this->verifySSL) {
+                $http = $http->withoutVerifying();
+            }
+
+            // Prepare task data for AI processing
+            $taskData = [];
+            foreach ($tasks as $task) {
+                $taskData[] = [
+                    'id' => $task['id'],
+                    'title' => $task['title'],
+                    'effort_hours' => $task['effort_hours'] ?? 1,
+                    'importance' => $task['importance'] ?? 3
+                ];
+            }
+
+            // Prepare member data
+            $memberData = [];
+            foreach ($groupMembers as $member) {
+                $memberData[] = [
+                    'id' => $member['id'],
+                    'name' => $member['name']
+                ];
+            }
+
+            // Create system message for AI
+            $systemMessage = "You are a task distribution AI. Your job is to optimally distribute tasks among team members based on effort hours and importance.
+
+            IMPORTANT: You MUST return a valid JSON array of task assignments that ONLY contains the task ID and the assigned user ID. Nothing else.
+
+            Distribute tasks evenly considering:
+            1. Balance total effort hours among members
+            2. Balance total importance points among members
+            3. Consider both factors together (effort * importance) for fairness
+            4. Return ONLY the task IDs and assigned user IDs
+
+            The response format must be a JSON array like this:
+            [
+                {\"id\": 1, \"assigned_user_id\": 505},
+                {\"id\": 2, \"assigned_user_id\": 506},
+                {\"id\": 3, \"assigned_user_id\": 505}
+            ]";
+
+            // Prepare user message with task and member data
+            $userMessage = json_encode([
+                'tasks' => $taskData,
+                'members' => $memberData
+            ]);
+
+            // Get a working model
+            $modelToUse = $this->getWorkingModel();
+
+            // Make API request
+            $response = $http->post($this->baseUrl . '/chat/completions', [
+                'model' => $modelToUse,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemMessage],
+                    ['role' => 'user', 'content' => $userMessage],
+                ],
+                'temperature' => 0.1,
+                'response_format' => ["type" => "json_object"],
+            ]);
+
+            if ($response->failed()) {
+                Log::error('OpenRouter API request failed for task distribution', [
+                    'status' => $response->status(),
+                    'reason' => $response->reason(),
+                    'body' => $response->body()
+                ]);
+
+                // Fallback: simple round-robin distribution
+                return $this->fallbackDistributeTasks($tasks, $groupMembers);
+            }
+
+            $data = $response->json();
+
+            if (!isset($data['choices'][0]['message']['content'])) {
+                Log::error('Invalid AI response for task distribution', ['response' => $data]);
+                return $this->fallbackDistributeTasks($tasks, $groupMembers);
+            }
+
+            $rawContent = $data['choices'][0]['message']['content'];
+            $assignments = $this->robustJsonDecode($rawContent);
+
+            if (!is_array($assignments)) {
+                Log::error('Failed to parse AI task distribution response', [
+                    'raw_content' => $rawContent
+                ]);
+                return $this->fallbackDistributeTasks($tasks, $groupMembers);
+            }
+
+            // Merge assignments back into tasks
+            $assignmentMap = [];
+            foreach ($assignments as $assignment) {
+                if (isset($assignment['id']) && isset($assignment['assigned_user_id'])) {
+                    $assignmentMap[$assignment['id']] = $assignment['assigned_user_id'];
+                }
+            }
+
+            foreach ($tasks as &$task) {
+                if (isset($assignmentMap[$task['id']])) {
+                    $task['assigned_user_id'] = $assignmentMap[$task['id']];
+                }
+            }
+
+            return $tasks;
+        } catch (\Exception $e) {
+            Log::error('Exception in distributeTasks', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Fallback: simple round-robin distribution
+            return $this->fallbackDistributeTasks($tasks, $groupMembers);
+        }
+    }
+
+    /**
+     * Fallback method for distributing tasks when AI fails
+     * Uses a simple round-robin approach based on effort and importance
+     */
+    protected function fallbackDistributeTasks(array $tasks, array $groupMembers): array
+    {
+        // Sort tasks by combined effort and importance (descending)
+        usort($tasks, function($a, $b) {
+            $aScore = ($a['effort_hours'] ?? 1) * ($a['importance'] ?? 3);
+            $bScore = ($b['effort_hours'] ?? 1) * ($b['importance'] ?? 3);
+            return $bScore <=> $aScore;
+        });
+
+        // Calculate initial workload for each member (starting at 0)
+        $memberWorkloads = [];
+        foreach ($groupMembers as $member) {
+            $memberWorkloads[$member['id']] = 0;
+        }
+
+        // Assign tasks to members with the lowest current workload
+        foreach ($tasks as &$task) {
+            // Find member with lowest workload
+            $minWorkload = PHP_INT_MAX;
+            $minMemberId = null;
+
+            foreach ($memberWorkloads as $memberId => $workload) {
+                if ($workload < $minWorkload) {
+                    $minWorkload = $workload;
+                    $minMemberId = $memberId;
+                }
+            }
+
+            // Assign task to this member
+            $task['assigned_user_id'] = $minMemberId;
+
+            // Update member's workload
+            $taskWeight = ($task['effort_hours'] ?? 1) * ($task['importance'] ?? 3);
+            $memberWorkloads[$minMemberId] += $taskWeight;
+        }
+
+        return $tasks;
+    }
+
     public function testConnection(): array
     {
         try {
@@ -242,6 +479,14 @@ class AIService
     protected function robustJsonDecode(string $json)
     {
         $cleaned = trim($json);
+        $decoded = json_decode($cleaned, true);
+
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // Try to clean up the JSON by removing any markdown code block syntax
+        $cleaned = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $cleaned);
         $decoded = json_decode($cleaned, true);
 
         if (json_last_error() === JSON_ERROR_NONE) {

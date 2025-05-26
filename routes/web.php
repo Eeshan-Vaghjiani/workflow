@@ -49,26 +49,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Simple redirects for Dashboard links
     Route::get('/calendar', function() { return redirect('/dashboard/calendar'); });
-    
+
     // Dynamic group assignments redirect - uses first group the user is a member of
-    Route::get('/group-assignments', function() { 
+    Route::get('/group-assignments', function() {
         // Get the first group the user is a member of, or redirect to groups list if none
         $user = auth()->user();
         $group = $user->groups()->first();
-        
+
         if ($group) {
             return redirect()->route('group-assignments.index', ['group' => $group->id]);
         } else {
             return redirect()->route('groups.index')->with('error', 'You need to join a group first.');
         }
     });
-    
+
     // Dynamic assignments redirect - uses first group the user is a member of
-    Route::get('/assignments', function() { 
+    Route::get('/assignments', function() {
         // Get the first group the user is a member of, or redirect to groups list if none
         $user = auth()->user();
         $group = $user->groups()->first();
-        
+
         if ($group) {
             return redirect()->route('group-assignments.index', ['group' => $group->id]);
         } else {
@@ -109,13 +109,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'update'])->name('group-assignments.update');
     Route::delete('/groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'destroy'])->name('group-assignments.destroy');
 
+    // AI Task Assignment
+    Route::get('/groups/{group}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'index'])->name('ai-tasks.index');
+    Route::get('/groups/{group}/assignments/{assignment}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'forAssignment'])->name('ai-tasks.for-assignment');
+
     // Group Tasks
     Route::get('/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
+    Route::get('/tasks/kanban', [GroupTaskController::class, 'kanbanView'])->name('group-tasks.kanban');
     Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'completeSimple'])->name('group-tasks.complete-simple');
     Route::get('/tasks/create', [GroupTaskController::class, 'create'])->name('group-tasks.create');
     Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-simple');
     Route::put('/tasks/{task}', [GroupTaskController::class, 'update'])->name('group-tasks.update-simple');
-    
+
     Route::get('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index-nested');
     Route::post('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'store'])->name('group-tasks.store');
     Route::get('/groups/{group}/assignments/{assignment}/tasks/{task}', [GroupTaskController::class, 'show'])->name('group-tasks.show');
@@ -132,7 +137,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/groups/{group}/chat/{message}', [GroupChatController::class, 'update'])->name('group-chat.update');
     Route::delete('/groups/{group}/chat/{message}', [GroupChatController::class, 'destroy'])->name('group-chat.destroy');
 
-    // Chat Routes  
+    // Chat Routes
     Route::get('/chat/search-users', [ChatController::class, 'searchUsers'])->name('chat.search-users');
     Route::get('/chat', [GroupChatController::class, 'index'])->name('chat');
     Route::get('/chat/{group}', [GroupChatController::class, 'show'])->name('chat.show');
@@ -151,7 +156,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Group messages
         Route::get('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'getMessagesAPI']);
         Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
-        
+
         // Direct messages
         Route::get('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'messages']);
         Route::post('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'store']);
@@ -176,11 +181,11 @@ Route::get('/ai-test', function () {
 // Add a route to test OpenRouter API directly
 Route::get('/test-openrouter', function() {
     $apiKey = env('OPENROUTER_API_KEY', '');
-    
+
     if (empty($apiKey)) {
         return 'OpenRouter API key not configured in .env file';
     }
-    
+
     try {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, 'https://openrouter.ai/api/v1/chat/completions');
@@ -192,7 +197,7 @@ Route::get('/test-openrouter', function() {
             'Authorization: Bearer ' . $apiKey,
             'HTTP-Referer: ' . config('app.url', 'http://localhost'),
         ]);
-        
+
         $data = [
             'model' => 'meta-llama/llama-4-scout:free',
             'messages' => [
@@ -203,20 +208,20 @@ Route::get('/test-openrouter', function() {
             ],
             'max_tokens' => 50
         ];
-        
+
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        
+
         $response = curl_exec($ch);
         $error = curl_error($ch);
         $info = curl_getinfo($ch);
         curl_close($ch);
-        
+
         if ($error) {
             return "cURL Error: " . $error;
         }
-        
+
         $decoded = json_decode($response, true);
-        
+
         return [
             'status_code' => $info['http_code'],
             'response' => $decoded,
@@ -235,27 +240,27 @@ Route::get('/debug-logs', function() {
     if (app()->environment('production')) {
         return 'Not available in production.';
     }
-    
+
     $logFile = storage_path('logs/laravel.log');
-    
+
     if (!file_exists($logFile)) {
         return 'Log file does not exist.';
     }
-    
+
     // Get the last 50 lines
     $logs = [];
     $file = new \SplFileObject($logFile, 'r');
     $file->seek(PHP_INT_MAX);
     $totalLines = $file->key();
-    
+
     $startLine = max(0, $totalLines - 50);
     $file->seek($startLine);
-    
+
     while (!$file->eof()) {
         $logs[] = $file->current();
         $file->next();
     }
-    
+
     return view('debug.logs', [
         'logs' => implode('', $logs)
     ]);
@@ -265,7 +270,7 @@ Route::get('/debug-logs', function() {
 Route::get('/debug/ai-service-test', function () {
     $aiService = app(\App\Services\AIService::class);
     $result = $aiService->processTaskPrompt(
-        "Create a web development project with 3 tasks including backend, frontend, and documentation", 
+        "Create a web development project with 3 tasks including backend, frontend, and documentation",
         1, // Default user ID
         1  // Default group ID
     );
@@ -285,14 +290,14 @@ Route::get('/debug/ai-raw-response', function () {
     $apiKey = env('OPENROUTER_API_KEY', '');
     $baseUrl = 'https://openrouter.ai/api/v1';
     $model = env('OPENROUTER_MODEL', 'meta-llama/llama-4-scout:free');
-    
+
     $http = \Illuminate\Support\Facades\Http::withHeaders([
         'Authorization' => 'Bearer ' . $apiKey,
         'Content-Type' => 'application/json',
         'HTTP-Referer' => config('app.url', 'http://localhost'),
         'X-Title' => 'Workflow Task Manager'
     ])->withoutVerifying();
-    
+
     $systemMessage = "Create a valid JSON structure for a website development project with the following tasks. Format your response EXACTLY as follows, with NO additional text:
     {
         \"assignment\": {
@@ -312,7 +317,7 @@ Route::get('/debug/ai-raw-response', function () {
             }
         ]
     }";
-    
+
     // Make the API request
     $response = $http->post($baseUrl . '/chat/completions', [
         'model' => $model,
@@ -323,7 +328,7 @@ Route::get('/debug/ai-raw-response', function () {
         'temperature' => 0.1,
         'response_format' => ["type" => "json_object"],
     ]);
-    
+
     return response()->json([
         'status' => $response->status(),
         'headers' => $response->headers(),
@@ -366,14 +371,14 @@ Route::get('/debug/test-hardcoded-json', function () {
             ]
         ]
     ];
-    
+
     try {
         // Test database insertion with the sample JSON
         \Illuminate\Support\Facades\DB::beginTransaction();
-        
+
         $userId = 1; // Default user
         $groupId = 1; // Default group
-        
+
         // Create assignment
         $assignment = \App\Models\GroupAssignment::create([
             'group_id' => $groupId,
@@ -387,7 +392,7 @@ Route::get('/debug/test-hardcoded-json', function () {
             'status' => 'active',
             'created_by' => $userId,
         ]);
-        
+
         // Create tasks
         $createdTasks = [];
         foreach ($validJson['tasks'] as $taskData) {
@@ -403,19 +408,19 @@ Route::get('/debug/test-hardcoded-json', function () {
                 'created_by' => $userId,
                 'order_index' => count($createdTasks),
             ]);
-            
+
             $createdTasks[] = $task;
         }
-        
+
         \Illuminate\Support\Facades\DB::commit();
-        
+
         return response()->json([
             'success' => true,
             'message' => 'Successfully created test assignment and tasks',
             'assignment' => $assignment,
             'tasks' => $createdTasks
         ]);
-        
+
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\DB::rollBack();
         return response()->json([
@@ -447,14 +452,14 @@ Route::get('/debug/users', function() {
     if (app()->environment('production')) {
         return 'Not available in production.';
     }
-    
+
     try {
         $users = \App\Models\User::select('id', 'name', 'email')
             ->take(10)
             ->get();
-        
+
         $count = \App\Models\User::count();
-        
+
         return response()->json([
             'success' => true,
             'total_count' => $count,
@@ -479,23 +484,23 @@ Route::get('/debug/search-users', function(\Illuminate\Http\Request $request) {
     if (app()->environment('production')) {
         return 'Not available in production.';
     }
-    
+
     try {
         $term = $request->input('q', '');
-        
+
         $query = \App\Models\User::query();
-        
+
         if (!empty($term)) {
             $query->where(function($q) use ($term) {
                 $q->where('name', 'LIKE', "%{$term}%")
                   ->orWhere('email', 'LIKE', "%{$term}%");
             });
         }
-        
+
         $users = $query->select('id', 'name', 'email', 'created_at')
             ->take(10)
             ->get();
-        
+
         return response()->json([
             'success' => true,
             'term' => $term,
@@ -519,7 +524,7 @@ Route::get('/debug/search-users', function(\Illuminate\Http\Request $request) {
 Route::get('/debug/auth-status', function (Request $request) {
     $user = $request->user();
     $sessionData = [];
-    
+
     if ($request->hasSession()) {
         $sessionData = [
             'has_session' => true,
@@ -531,7 +536,7 @@ Route::get('/debug/auth-status', function (Request $request) {
             'has_session' => false
         ];
     }
-    
+
     return response()->json([
         'authenticated' => !is_null($user),
         'user' => $user,
@@ -554,7 +559,7 @@ Route::middleware(['auth', 'verified'])->prefix('api')->group(function () {
     Route::get('/chat/search-users', [App\Http\Controllers\API\ChatController::class, 'searchUsers']);
     Route::get('/direct-messages', [App\Http\Controllers\API\ChatController::class, 'getDirectMessages']);
     Route::get('/test-auth', [App\Http\Controllers\API\ChatController::class, 'testAuth']);
-    
+
     // Group Messages
     Route::prefix('web')->group(function() {
         Route::get('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'getMessagesAPI']);
@@ -567,7 +572,7 @@ Route::get('/debug/broadcasting-auth', function() {
     $authEndpoint = url('/broadcasting/auth');
     $csrfToken = csrf_token();
     $userId = auth()->id() ?: 0;
-    
+
     return view('debug.broadcasting', [
         'csrfToken' => $csrfToken,
         'authEndpoint' => $authEndpoint,
@@ -582,7 +587,7 @@ Route::get('/groups/{group}/assignments/{assignment}/task-assignments', [App\Htt
 
 Route::get('group-tasks/{task}/edit', [App\Http\Controllers\GroupTaskController::class, 'edit'])
     ->name('group-tasks.edit-simple');
-    
+
 Route::put('group-tasks/{task}', [App\Http\Controllers\GroupTaskController::class, 'updateSimple'])
     ->name('group-tasks.update-simple');
 
@@ -616,7 +621,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         try {
             // Get the controller instance
             $controller = app()->make(App\Http\Controllers\API\your_generic_secret::class);
-            
+
             // Call the controller method directly
             return $controller->getAssignmentStats(request(), $groupId, $assignmentId);
         } catch (\Exception $e) {
@@ -631,7 +636,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'session_id' => session()->getId(),
                 'request_headers' => request()->headers->all()
             ]);
-            
+
             // Return error response with more details
             return response()->json([
                 'success' => false,
@@ -656,7 +661,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ], 500);
         }
     })->name('task-assignments.get-stats');
-    
+
     Route::post('/groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks'])
         ->name('task-assignments.distribute');
 });

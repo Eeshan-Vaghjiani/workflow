@@ -53,7 +53,13 @@ class GroupTask extends Model
         return $this->belongsTo(GroupAssignment::class, 'assignment_id');
     }
 
-    public function assigned_user()
+    public function assigned_user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    // Alias for assigned_user for better naming conventions
+    public function assignedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
     }
@@ -80,7 +86,7 @@ class GroupTask extends Model
     // Helper method to check if task is assigned
     public function isAssigned()
     {
-        return !is_null($this->assigned_to);
+        return !is_null($this->assigned_user_id);
     }
 
     // Helper method to check if task is completed

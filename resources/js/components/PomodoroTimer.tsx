@@ -2,21 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Play, Pause, RotateCcw, CheckCircle2, Coffee, BrainCircuit } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, BellOff } from 'lucide-react';
 
-// Notification sound
-const NOTIFICATION_SOUND = '/sounds/notification.mp3';
+interface PomodoroTimerProps {
+    userId: number;
+}
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
-interface PomodoroSettings {
+interface TimerSettings {
     focusMinutes: number;
     shortBreakMinutes: number;
     longBreakMinutes: number;
@@ -26,387 +24,321 @@ interface PomodoroSettings {
     notifications: boolean;
 }
 
-const DEFAULT_SETTINGS: PomodoroSettings = {
-    focusMinutes: 25,
-    shortBreakMinutes: 5,
-    longBreakMinutes: 15,
-    longBreakInterval: 4,
-    autoStartBreaks: true,
-    autoStartPomodoros: true,
-    notifications: true
-};
-
-interface PomodoroTimerProps {
-    userId?: number;
-}
-
 const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
-    // Timer state
+    // Default settings
+    const defaultSettings: TimerSettings = {
+        focusMinutes: 25,
+        shortBreakMinutes: 5,
+        longBreakMinutes: 15,
+        longBreakInterval: 4,
+        autoStartBreaks: true,
+        autoStartPomodoros: false,
+        notifications: true
+    };
+
+    // State variables
+    const [settings, setSettings] = useState<TimerSettings>(defaultSettings);
     const [mode, setMode] = useState<TimerMode>('focus');
-    const [timeLeft, setTimeLeft] = useState<number>(DEFAULT_SETTINGS.focusMinutes * 60);
-    const [isActive, setIsActive] = useState<boolean>(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-    const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
-    const [settings, setSettings] = useState<PomodoroSettings>(DEFAULT_SETTINGS);
+    const [timeLeft, setTimeLeft] = useState(settings.focusMinutes * 60);
+    const [isActive, setIsActive] = useState(false);
+    const [completedPomodoros, setCompletedPomodoros] = useState(0);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const timerRef = useRef<number | null>(null);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
     const { toast } = useToast();
 
-    // Load saved settings from localStorage
+    // Initialize the timer with the correct mode duration
     useEffect(() => {
-        const savedSettings = localStorage.getItem(`pomodoroSettings-${userId || 'default'}`);
-        const savedPomodoros = localStorage.getItem(`completedPomodoros-${userId || 'default'}`);
-
-        if (savedSettings) {
-            setSettings(JSON.parse(savedSettings));
-        }
-
-        if (savedPomodoros) {
-            setCompletedPomodoros(parseInt(savedPomodoros, 10));
-        }
-
-        // Initialize audio
-        audioRef.current = new Audio(NOTIFICATION_SOUND);
-
-        return () => {
-            // Cleanup timer on unmount
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        };
-    }, [userId]);
-
-    // Save settings to localStorage
-    useEffect(() => {
-        localStorage.setItem(`pomodoroSettings-${userId || 'default'}`, JSON.stringify(settings));
-    }, [settings, userId]);
-
-    // Save completed pomodoros to localStorage
-    useEffect(() => {
-        localStorage.setItem(`completedPomodoros-${userId || 'default'}`, completedPomodoros.toString());
-    }, [completedPomodoros, userId]);
-
-    // Update timeLeft when mode or settings change
-    useEffect(() => {
-        switch (mode) {
-            case 'focus':
-                setTimeLeft(settings.focusMinutes * 60);
-                break;
-            case 'shortBreak':
-                setTimeLeft(settings.shortBreakMinutes * 60);
-                break;
-            case 'longBreak':
-                setTimeLeft(settings.longBreakMinutes * 60);
-                break;
+        if (mode === 'focus') {
+            setTimeLeft(settings.focusMinutes * 60);
+        } else if (mode === 'shortBreak') {
+            setTimeLeft(settings.shortBreakMinutes * 60);
+        } else {
+            setTimeLeft(settings.longBreakMinutes * 60);
         }
     }, [mode, settings]);
 
-    // Timer logic
+    // Timer countdown logic
     useEffect(() => {
-        if (isActive) {
-            timerRef.current = window.setInterval(() => {
-                setTimeLeft(prevTime => {
-                    if (prevTime <= 1) {
-                        clearInterval(timerRef.current!);
-                        handleTimerComplete();
-                        return 0;
-                    }
-                    return prevTime - 1;
-                });
+        if (isActive && timeLeft > 0) {
+            timerRef.current = window.setTimeout(() => {
+                setTimeLeft(prevTime => prevTime - 1);
             }, 1000);
-        } else if (timerRef.current) {
-            clearInterval(timerRef.current);
+        } else if (isActive && timeLeft === 0) {
+            handleTimerComplete();
         }
 
         return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
+            if (timerRef.current) clearTimeout(timerRef.current);
         };
-    }, [isActive]);
+    }, [isActive, timeLeft]);
 
     // Handle timer completion
     const handleTimerComplete = () => {
-        // Play notification sound if enabled
-        if (settings.notifications && audioRef.current) {
-            audioRef.current.play().catch(e => console.error('Error playing notification sound:', e));
-        }
+        playAlarmSound();
+        showNotification();
 
-        // Show notification
-        const modeMessages = {
-            focus: "Focus session complete! Time for a break.",
-            shortBreak: "Break complete! Ready to focus again?",
-            longBreak: "Long break complete! Ready for a new focus session?"
-        };
-
-        toast({
-            title: "Timer Complete",
-            description: modeMessages[mode],
-        });
-
-        // Handle automatic transitions
         if (mode === 'focus') {
-            // Increment completed pomodoros count
-            const newCount = completedPomodoros + 1;
-            setCompletedPomodoros(newCount);
+            const newCompletedCount = completedPomodoros + 1;
+            setCompletedPomodoros(newCompletedCount);
 
-            // Determine if we need a long break
-            const isLongBreakDue = newCount % settings.longBreakInterval === 0;
-            const nextMode = isLongBreakDue ? 'longBreak' : 'shortBreak';
+            if (newCompletedCount % settings.longBreakInterval === 0) {
+                setMode('longBreak');
+                toast({
+                    title: "Time for a long break!",
+                    description: `You've completed ${newCompletedCount} pomodoros. Take ${settings.longBreakMinutes} minutes to recharge.`,
+                });
+            } else {
+                setMode('shortBreak');
+                toast({
+                    title: "Time for a short break!",
+                    description: `You've completed a pomodoro. Take ${settings.shortBreakMinutes} minutes to refresh.`,
+                });
+            }
 
-            setMode(nextMode);
-
-            // Auto-start break if enabled
-            setIsActive(settings.autoStartBreaks);
+            if (settings.autoStartBreaks) {
+                setIsActive(true);
+            } else {
+                setIsActive(false);
+            }
         } else {
-            // If we're finishing a break, go back to focus mode
             setMode('focus');
+            toast({
+                title: "Break complete!",
+                description: "Time to focus again.",
+            });
 
-            // Auto-start pomodoro if enabled
-            setIsActive(settings.autoStartPomodoros);
+            if (settings.autoStartPomodoros) {
+                setIsActive(true);
+            } else {
+                setIsActive(false);
+            }
         }
     };
 
-    // Format time as MM:SS
-    const formatTime = (seconds: number): string => {
+    // Notification and sound helpers
+    const playAlarmSound = () => {
+        if (settings.notifications) {
+            try {
+                const audio = new Audio('/sounds/bell.mp3');
+                audio.play();
+            } catch (error) {
+                console.error('Failed to play sound:', error);
+            }
+        }
+    };
+
+    const showNotification = () => {
+        if (settings.notifications && 'Notification' in window) {
+            if (Notification.permission === 'granted') {
+                new Notification('Pomodoro Timer', {
+                    body: mode === 'focus'
+                        ? 'Focus session complete. Time for a break!'
+                        : 'Break is over. Time to focus!',
+                    icon: '/favicon.ico'
+                });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+    };
+
+    // Timer controls
+    const startTimer = () => setIsActive(!isActive);
+    const resetTimer = () => {
+        setIsActive(false);
+        if (mode === 'focus') {
+            setTimeLeft(settings.focusMinutes * 60);
+        } else if (mode === 'shortBreak') {
+            setTimeLeft(settings.shortBreakMinutes * 60);
+        } else {
+            setTimeLeft(settings.longBreakMinutes * 60);
+        }
+    };
+
+    // Format time display
+    const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Progress calculation
-    const calculateProgress = (): number => {
-        let totalSeconds;
-        switch (mode) {
-            case 'focus':
-                totalSeconds = settings.focusMinutes * 60;
-                break;
-            case 'shortBreak':
-                totalSeconds = settings.shortBreakMinutes * 60;
-                break;
-            case 'longBreak':
-                totalSeconds = settings.longBreakMinutes * 60;
-                break;
-        }
-
-        const percentage = 100 - (timeLeft / totalSeconds) * 100;
-        return Math.max(0, Math.min(100, percentage));
-    };
-
-    // Get theme color based on current mode
-    const getModeColor = (): string => {
-        switch (mode) {
-            case 'focus':
-                return 'text-red-500 dark:text-red-400';
-            case 'shortBreak':
-                return 'text-green-500 dark:text-green-400';
-            case 'longBreak':
-                return 'text-blue-500 dark:text-blue-400';
-        }
-    };
-
-    // Get progress color based on current mode
-    const getProgressColor = (): string => {
-        switch (mode) {
-            case 'focus':
-                return 'bg-red-500 dark:bg-red-600';
-            case 'shortBreak':
-                return 'bg-green-500 dark:bg-green-600';
-            case 'longBreak':
-                return 'bg-blue-500 dark:bg-blue-600';
-        }
-    };
-
-    // Timer controls
-    const startTimer = () => setIsActive(true);
-    const pauseTimer = () => setIsActive(false);
-    const resetTimer = () => {
-        setIsActive(false);
-        switch (mode) {
-            case 'focus':
-                setTimeLeft(settings.focusMinutes * 60);
-                break;
-            case 'shortBreak':
-                setTimeLeft(settings.shortBreakMinutes * 60);
-                break;
-            case 'longBreak':
-                setTimeLeft(settings.longBreakMinutes * 60);
-                break;
-        }
-    };
-
     return (
         <div className="w-full max-w-md mx-auto">
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardTitle className="flex items-center gap-2">
-                            Pomodoro Timer
-                            <Badge className="ml-2" variant="outline">
-                                {completedPomodoros} {completedPomodoros === 1 ? 'Session' : 'Sessions'}
-                            </Badge>
-                        </CardTitle>
-                    </div>
-                    <CardDescription>
-                        Stay focused with timed work sessions
+            <Card className="overflow-hidden">
+                <CardHeader className={`${mode === 'focus' ? 'bg-red-500' :
+                    mode === 'shortBreak' ? 'bg-green-500' : 'bg-blue-500'
+                    } text-white`}>
+                    <CardTitle className="text-center text-2xl">Pomodoro Timer</CardTitle>
+                    <CardDescription className="text-center text-white">
+                        {mode === 'focus' ? 'Focus Session' :
+                            mode === 'shortBreak' ? 'Short Break' : 'Long Break'}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <Tabs value={mode} onValueChange={(value) => setMode(value as TimerMode)} className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="focus" className="flex items-center gap-1">
-                                <BrainCircuit className="h-4 w-4" />
-                                Focus
-                            </TabsTrigger>
-                            <TabsTrigger value="shortBreak" className="flex items-center gap-1">
-                                <Coffee className="h-4 w-4" />
-                                Short Break
-                            </TabsTrigger>
-                            <TabsTrigger value="longBreak" className="flex items-center gap-1">
-                                <CheckCircle2 className="h-4 w-4" />
-                                Long Break
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
 
-                    <div className="flex flex-col items-center space-y-6">
-                        <div className="relative flex items-center justify-center w-48 h-48 rounded-full border-4 border-muted">
-                            <Progress
-                                value={calculateProgress()}
-                                className={cn(
-                                    "absolute top-0 left-0 w-full h-full rounded-full [&>div]:h-full [&>div]:transition-all",
-                                    getProgressColor()
-                                )}
-                            />
-                            <div className="absolute inset-3 bg-background dark:bg-background rounded-full flex items-center justify-center">
-                                <span className={cn("text-5xl font-bold", getModeColor())}>
-                                    {formatTime(timeLeft)}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            {!isActive ? (
-                                <Button
-                                    onClick={startTimer}
-                                    className="flex gap-2 items-center"
-                                    size="lg"
-                                >
-                                    <Play className="h-5 w-5" />
-                                    Start
-                                </Button>
-                            ) : (
-                                <Button
-                                    onClick={pauseTimer}
-                                    className="flex gap-2 items-center"
-                                    variant="outline"
-                                    size="lg"
-                                >
-                                    <Pause className="h-5 w-5" />
-                                    Pause
-                                </Button>
-                            )}
-
+                <CardContent className="p-6">
+                    <div className="text-center mb-6">
+                        <div className="text-6xl font-bold mb-4">{formatTime(timeLeft)}</div>
+                        <div className="space-x-2 mb-4">
                             <Button
-                                onClick={resetTimer}
-                                variant="outline"
-                                size="icon"
+                                variant={mode === 'focus' ? 'default' : 'outline'}
+                                onClick={() => setMode('focus')}
+                                className="rounded-full"
                             >
-                                <RotateCcw className="h-5 w-5" />
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                Focus
+                            </Button>
+                            <Button
+                                variant={mode === 'shortBreak' ? 'default' : 'outline'}
+                                onClick={() => setMode('shortBreak')}
+                                className="rounded-full"
+                            >
+                                <Coffee className="mr-2 h-4 w-4" />
+                                Short Break
+                            </Button>
+                            <Button
+                                variant={mode === 'longBreak' ? 'default' : 'outline'}
+                                onClick={() => setMode('longBreak')}
+                                className="rounded-full"
+                            >
+                                <Coffee className="mr-2 h-4 w-4" />
+                                Long Break
                             </Button>
                         </div>
+                    </div>
+
+                    <div className="flex justify-center space-x-4">
+                        <Button onClick={startTimer} size="lg" className="w-24">
+                            {isActive ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+                            {isActive ? 'Pause' : 'Start'}
+                        </Button>
+                        <Button onClick={resetTimer} variant="outline" size="lg" className="w-24">
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reset
+                        </Button>
                     </div>
                 </CardContent>
-                <CardFooter className="flex flex-col">
-                    <div className="w-full pt-4 border-t">
-                        <div className="flex justify-between">
-                            <p className="text-sm font-medium">Settings</p>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                            >
-                                {isSettingsOpen ? 'Hide' : 'Show'}
-                            </Button>
-                        </div>
 
-                        {isSettingsOpen && (
-                            <div className="mt-4 space-y-4">
-                                <div className="space-y-2">
-                                    <Label>Focus Duration: {settings.focusMinutes} minutes</Label>
-                                    <Slider
-                                        value={[settings.focusMinutes]}
-                                        min={5}
-                                        max={60}
-                                        step={5}
-                                        onValueChange={(value) => setSettings({ ...settings, focusMinutes: value[0] })}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Short Break: {settings.shortBreakMinutes} minutes</Label>
-                                    <Slider
-                                        value={[settings.shortBreakMinutes]}
-                                        min={1}
-                                        max={15}
-                                        step={1}
-                                        onValueChange={(value) => setSettings({ ...settings, shortBreakMinutes: value[0] })}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Long Break: {settings.longBreakMinutes} minutes</Label>
-                                    <Slider
-                                        value={[settings.longBreakMinutes]}
-                                        min={5}
-                                        max={30}
-                                        step={5}
-                                        onValueChange={(value) => setSettings({ ...settings, longBreakMinutes: value[0] })}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Long Break After: {settings.longBreakInterval} sessions</Label>
-                                    <Slider
-                                        value={[settings.longBreakInterval]}
-                                        min={2}
-                                        max={8}
-                                        step={1}
-                                        onValueChange={(value) => setSettings({ ...settings, longBreakInterval: value[0] })}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="auto-start-breaks">Auto-start breaks</Label>
-                                    <Switch
-                                        id="auto-start-breaks"
-                                        checked={settings.autoStartBreaks}
-                                        onCheckedChange={(checked) => setSettings({ ...settings, autoStartBreaks: checked })}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="auto-start-pomodoros">Auto-start focus sessions</Label>
-                                    <Switch
-                                        id="auto-start-pomodoros"
-                                        checked={settings.autoStartPomodoros}
-                                        onCheckedChange={(checked) => setSettings({ ...settings, autoStartPomodoros: checked })}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                    <Label htmlFor="notifications">Sound notifications</Label>
-                                    <Switch
-                                        id="notifications"
-                                        checked={settings.notifications}
-                                        onCheckedChange={(checked) => setSettings({ ...settings, notifications: checked })}
-                                    />
-                                </div>
-                            </div>
-                        )}
+                <CardFooter className="bg-muted/50 px-6 py-4 flex justify-between items-center">
+                    <div>
+                        <Badge variant="outline" className="mr-2">
+                            {completedPomodoros} Completed
+                        </Badge>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSettings({
+                                ...settings,
+                                notifications: !settings.notifications
+                            })}
+                        >
+                            {settings.notifications ?
+                                <Bell className="h-4 w-4" /> :
+                                <BellOff className="h-4 w-4" />
+                            }
+                        </Button>
                     </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    >
+                        {isSettingsOpen ? 'Hide Settings' : 'Settings'}
+                    </Button>
                 </CardFooter>
             </Card>
+
+            {isSettingsOpen && (
+                <Card className="mt-4">
+                    <CardHeader>
+                        <CardTitle>Timer Settings</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <Label>Focus Duration: {settings.focusMinutes} min</Label>
+                            </div>
+                            <Slider
+                                value={[settings.focusMinutes]}
+                                min={5}
+                                max={60}
+                                step={5}
+                                onValueChange={(value) => setSettings({ ...settings, focusMinutes: value[0] })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <Label>Short Break: {settings.shortBreakMinutes} min</Label>
+                            </div>
+                            <Slider
+                                value={[settings.shortBreakMinutes]}
+                                min={1}
+                                max={15}
+                                step={1}
+                                onValueChange={(value) => setSettings({ ...settings, shortBreakMinutes: value[0] })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <Label>Long Break: {settings.longBreakMinutes} min</Label>
+                            </div>
+                            <Slider
+                                value={[settings.longBreakMinutes]}
+                                min={5}
+                                max={30}
+                                step={5}
+                                onValueChange={(value) => setSettings({ ...settings, longBreakMinutes: value[0] })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <Label>Long Break After: {settings.longBreakInterval} pomodoros</Label>
+                            </div>
+                            <Slider
+                                value={[settings.longBreakInterval]}
+                                min={2}
+                                max={6}
+                                step={1}
+                                onValueChange={(value) => setSettings({ ...settings, longBreakInterval: value[0] })}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="auto-break">Auto-start Breaks</Label>
+                            <Switch
+                                id="auto-break"
+                                checked={settings.autoStartBreaks}
+                                onCheckedChange={(checked: boolean) => setSettings({ ...settings, autoStartBreaks: checked })}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="auto-pomodoro">Auto-start Pomodoros</Label>
+                            <Switch
+                                id="auto-pomodoro"
+                                checked={settings.autoStartPomodoros}
+                                onCheckedChange={(checked: boolean) => setSettings({ ...settings, autoStartPomodoros: checked })}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="notifications">Enable Notifications</Label>
+                            <Switch
+                                id="notifications"
+                                checked={settings.notifications}
+                                onCheckedChange={(checked: boolean) => {
+                                    if (checked && 'Notification' in window && Notification.permission !== 'granted') {
+                                        Notification.requestPermission();
+                                    }
+                                    setSettings({ ...settings, notifications: checked });
+                                }}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };

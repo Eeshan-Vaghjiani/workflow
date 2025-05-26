@@ -11,10 +11,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ChatController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 /*
@@ -53,7 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dynamic group assignments redirect - uses first group the user is a member of
     Route::get('/group-assignments', function() {
         // Get the first group the user is a member of, or redirect to groups list if none
-        $user = auth()->user();
+        $user = Auth::user();
         $group = $user->groups()->first();
 
         if ($group) {
@@ -66,7 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dynamic assignments redirect - uses first group the user is a member of
     Route::get('/assignments', function() {
         // Get the first group the user is a member of, or redirect to groups list if none
-        $user = auth()->user();
+        $user = Auth::user();
         $group = $user->groups()->first();
 
         if ($group) {
@@ -112,6 +112,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // AI Task Assignment
     Route::get('/groups/{group}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'index'])->name('ai-tasks.index');
     Route::get('/groups/{group}/assignments/{assignment}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'forAssignment'])->name('ai-tasks.for-assignment');
+
+    // AI Task API endpoints with web middleware to ensure proper session handling
+    Route::post('/groups/{group}/ai-tasks/generate', [App\Http\Controllers\API\AITaskController::class, 'generateTasks'])->name('ai-tasks.generate');
+    Route::post('/groups/{group}/ai-tasks/distribute', [App\Http\Controllers\API\AITaskController::class, 'autoDistributeTasks'])->name('ai-tasks.distribute');
+    Route::post('/groups/{group}/assignments/ai-create', [App\Http\Controllers\API\AITaskController::class, 'createAssignment'])->name('ai-tasks.create-assignment');
+    Route::post('/groups/{group}/assignments/{assignment}/tasks/ai-create', [App\Http\Controllers\API\AITaskController::class, 'addTasksToAssignment'])->name('ai-tasks.add-tasks');
 
     // Group Tasks
     Route::get('/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index');
@@ -161,6 +167,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'messages']);
         Route::post('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'store']);
     });
+
+    // Calendar, Pomodoro, and Study Planner
+    Route::get('/study-planner', [\App\Http\Controllers\StudyPlannerController::class, 'index'])->name('study-planner.index');
+    Route::get('/pomodoro', [\App\Http\Controllers\PomodoroController::class, 'index'])->name('pomodoro.index');
+    Route::get('/ai-tasks', [\App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
 });
 
 // Add API web fallback routes with explicit session auth
@@ -664,6 +675,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('/groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks'])
         ->name('task-assignments.distribute');
+});
+
+// Study Planner and Pomodoro Timer protected routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/study-planner', [App\Http\Controllers\StudyPlannerController::class, 'index'])->name('study-planner.index');
+    Route::get('/pomodoro', [App\Http\Controllers\PomodoroController::class, 'index'])->name('pomodoro.index');
+    Route::get('/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
 });
 
 require __DIR__.'/settings.php';

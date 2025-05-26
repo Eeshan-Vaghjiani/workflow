@@ -16,6 +16,8 @@ use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\your_generic_secret;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\SearchController;
+use App\Http\Controllers\StudyPlannerController;
+use App\Http\Controllers\PomodoroController;
 
 /*
 |your_generic_secretyour_generic_secretyour_generic_secret--
@@ -573,3 +575,16 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\your_generic_secret::class, 'getAssignmentStats']);
     Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks']);
 });
+
+// Study Planner API Routes
+Route::post('/study-sessions', [StudyPlannerController::class, 'storeSession']);
+Route::put('/study-sessions/{session}', [StudyPlannerController::class, 'updateSession']);
+Route::delete('/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession']);
+Route::post('/study-tasks', [StudyPlannerController::class, 'storeTask']);
+Route::put('/study-tasks/{task}', [StudyPlannerController::class, 'updateTask']);
+Route::delete('/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask']);
+
+// Pomodoro Timer API Routes
+Route::post('/pomodoro/settings', [PomodoroController::class, 'updateSettings']);
+Route::post('/pomodoro/sessions', [PomodoroController::class, 'recordSession']);
+Route::get('/pomodoro/stats', [PomodoroController::class, 'getStats']);

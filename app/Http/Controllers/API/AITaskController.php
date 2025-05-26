@@ -9,6 +9,8 @@ use App\Models\GroupTask;
 use App\Services\AIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AITaskController extends Controller
@@ -26,21 +28,20 @@ class AITaskController extends Controller
     public function index(Request $request, Group $group)
     {
         // Check if user is member of the group
-        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+        if (!$group->members()->where('user_id', Auth::id())->exists()) {
             abort(403, 'You are not a member of this group');
         }
+
+        // Get the group members with their user data
+        $members = $group->members()
+            ->select('users.id', 'users.name', 'users.email')
+            ->get();
 
         return Inertia::render('Groups/AITaskAssignment', [
             'group' => [
                 'id' => $group->id,
                 'name' => $group->name,
-                'members' => $group->members()->with('user:id,name,email')->get()->map(function ($member) {
-                    return [
-                        'id' => $member->user->id,
-                        'name' => $member->user->name,
-                        'email' => $member->user->email
-                    ];
-                })
+                'members' => $members
             ]
         ]);
     }
@@ -51,7 +52,7 @@ class AITaskController extends Controller
     public function forAssignment(Request $request, Group $group, GroupAssignment $assignment)
     {
         // Check if user is member of the group
-        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+        if (!$group->members()->where('user_id', Auth::id())->exists()) {
             abort(403, 'You are not a member of this group');
         }
 
@@ -60,17 +61,16 @@ class AITaskController extends Controller
             abort(404, 'Assignment not found in this group');
         }
 
+        // Get the group members with their user data
+        $members = $group->members()
+            ->select('users.id', 'users.name', 'users.email')
+            ->get();
+
         return Inertia::render('Groups/AITaskAssignment', [
             'group' => [
                 'id' => $group->id,
                 'name' => $group->name,
-                'members' => $group->members()->with('user:id,name,email')->get()->map(function ($member) {
-                    return [
-                        'id' => $member->user->id,
-                        'name' => $member->user->name,
-                        'email' => $member->user->email
-                    ];
-                })
+                'members' => $members
             ],
             'assignment' => [
                 'id' => $assignment->id,
@@ -84,9 +84,40 @@ class AITaskController extends Controller
      */
     public function generateTasks(Request $request, Group $group)
     {
-        // Check if user is member of the group
-        if (!$group->members()->where('user_id', auth()->id())->exists()) {
-            return response()->json(['error' => 'You are not a member of this group'], 403);
+        // Detailed authentication check with logging
+        if (!Auth::check()) {
+            Log::warning('AI Task Generation: Unauthenticated access attempt', [
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return response()->json([
+                'error' => 'Authentication required. Please log in to continue.',
+                'auth_status' => false,
+                'redirect' => '/login'
+            ], 401);
+        }
+
+        // Log the authenticated user making the request
+        Log::info('AI Task Generation: Request received', [
+            'user_id' => Auth::id(),
+            'user_email' => Auth::user()->email,
+            'group_id' => $group->id,
+            'assignment_id' => $request->input('assignment_id'),
+        ]);
+
+        // Check if user is member of the group with detailed response
+        if (!$group->members()->where('user_id', Auth::id())->exists()) {
+            Log::warning('AI Task Generation: Non-member access attempt', [
+                'user_id' => Auth::id(),
+                'group_id' => $group->id,
+            ]);
+
+            return response()->json([
+                'error' => 'You are not a member of this group.',
+                'auth_status' => true,
+                'permission' => false
+            ], 403);
         }
 
         $request->validate([
@@ -95,19 +126,52 @@ class AITaskController extends Controller
         ]);
 
         try {
+            // Log the prompt being processed
+            Log::info('AI Task Generation: Processing prompt', [
+                'prompt_length' => strlen($request->prompt),
+                'user_id' => Auth::id(),
+                'group_id' => $group->id,
+            ]);
+
             $result = $this->aiService->processTaskPrompt(
                 $request->prompt,
-                auth()->id(),
+                Auth::id(),
                 $group->id
             );
 
             if (isset($result['error'])) {
+                Log::error('AI Task Generation: Service error', [
+                    'error' => $result['error'],
+                    'user_id' => Auth::id(),
+                    'group_id' => $group->id,
+                ]);
+
                 return response()->json(['error' => $result['error']], 500);
             }
 
+            // Log successful processing
+            Log::info('AI Task Generation: Successful processing', [
+                'user_id' => Auth::id(),
+                'group_id' => $group->id,
+                'task_count' => count($result['tasks'] ?? []),
+            ]);
+
             return response()->json($result);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to process task prompt: ' . $e->getMessage()], 500);
+            Log::error('AI Task Generation: Exception', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id(),
+                'group_id' => $group->id,
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to process task prompt: ' . $e->getMessage(),
+                'trace' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
     }
 
@@ -117,7 +181,7 @@ class AITaskController extends Controller
     public function createAssignment(Request $request, Group $group)
     {
         // Check if user is member of the group
-        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+        if (!$group->members()->where('user_id', Auth::id())->exists()) {
             return response()->json(['error' => 'You are not a member of this group'], 403);
         }
 
@@ -153,7 +217,7 @@ class AITaskController extends Controller
                 'end_date' => $validated['assignment']['due_date'],
                 'due_date' => $validated['assignment']['due_date'],
                 'status' => 'active',
-                'created_by' => auth()->id(),
+                'created_by' => Auth::id(),
             ]);
 
             // Create tasks
@@ -162,14 +226,16 @@ class AITaskController extends Controller
                 $assignedUserId = null;
 
                 if (!empty($taskData['assigned_to_name'])) {
-                    $member = $group->members()
-                        ->whereHas('user', function ($query) use ($taskData) {
-                            $query->where('name', $taskData['assigned_to_name']);
-                        })
+                    // Direct query for user by name and group membership
+                    $member = DB::table('users')
+                        ->join('group_user', 'users.id', '=', 'group_user.user_id')
+                        ->where('group_user.group_id', $group->id)
+                        ->where('users.name', $taskData['assigned_to_name'])
+                        ->select('users.id')
                         ->first();
 
                     if ($member) {
-                        $assignedUserId = $member->user_id;
+                        $assignedUserId = $member->id;
                     }
                 }
 
@@ -184,7 +250,7 @@ class AITaskController extends Controller
                     'effort_hours' => $taskData['effort_hours'],
                     'importance' => $taskData['importance'],
                     'assigned_user_id' => $assignedUserId,
-                    'created_by' => auth()->id(),
+                    'created_by' => Auth::id(),
                 ]);
             }
 
@@ -210,7 +276,7 @@ class AITaskController extends Controller
     public function addTasksToAssignment(Request $request, Group $group, GroupAssignment $assignment)
     {
         // Check if user is member of the group
-        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+        if (!$group->members()->where('user_id', Auth::id())->exists()) {
             return response()->json(['error' => 'You are not a member of this group'], 403);
         }
 
@@ -242,14 +308,16 @@ class AITaskController extends Controller
                 $assignedUserId = null;
 
                 if (!empty($taskData['assigned_to_name'])) {
-                    $member = $group->members()
-                        ->whereHas('user', function ($query) use ($taskData) {
-                            $query->where('name', $taskData['assigned_to_name']);
-                        })
+                    // Direct query for user by name and group membership
+                    $member = DB::table('users')
+                        ->join('group_user', 'users.id', '=', 'group_user.user_id')
+                        ->where('group_user.group_id', $group->id)
+                        ->where('users.name', $taskData['assigned_to_name'])
+                        ->select('users.id')
                         ->first();
 
                     if ($member) {
-                        $assignedUserId = $member->user_id;
+                        $assignedUserId = $member->id;
                     }
                 }
 
@@ -264,7 +332,7 @@ class AITaskController extends Controller
                     'effort_hours' => $taskData['effort_hours'],
                     'importance' => $taskData['importance'],
                     'assigned_user_id' => $assignedUserId,
-                    'created_by' => auth()->id(),
+                    'created_by' => Auth::id(),
                 ]);
             }
 
@@ -290,7 +358,7 @@ class AITaskController extends Controller
     public function autoDistributeTasks(Request $request, Group $group)
     {
         // Check if user is member of the group
-        if (!$group->members()->where('user_id', auth()->id())->exists()) {
+        if (!$group->members()->where('user_id', Auth::id())->exists()) {
             return response()->json(['error' => 'You are not a member of this group'], 403);
         }
 
@@ -322,5 +390,37 @@ class AITaskController extends Controller
                 'error' => 'Failed to distribute tasks: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Display the AI Task dashboard
+     */
+    public function dashboard()
+    {
+        $user = Auth::user();
+
+        // Get groups the user is a member of with direct SQL join to avoid relationship issues
+        $groups = Group::join('group_user', 'groups.id', '=', 'group_user.group_id')
+            ->where('group_user.user_id', $user->id)
+            ->select('groups.*')
+            ->distinct()
+            ->get();
+
+        // Get AI-generated assignments for these groups with explicit loads
+        $aiAssignments = \App\Models\AIGeneratedAssignment::whereIn('group_id', $groups->pluck('id'))
+            ->with([
+                'group',
+                'assignment',
+                'creator' => function($query) {
+                    $query->select('id', 'name', 'email');
+                }
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return Inertia::render('AI/Dashboard', [
+            'groups' => $groups,
+            'aiAssignments' => $aiAssignments
+        ]);
     }
 }

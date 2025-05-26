@@ -73,16 +73,16 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     try {
       // First try to check auth status using web route
       const response = await axios.get('/auth/status');
-      
+
       if (response.data.authenticated) {
         console.log('User authenticated:', response.data.user?.name);
         return true;
       }
-      
+
       // If not authenticated, try to refresh the session
       console.log('Not authenticated, trying to refresh session...');
-      const refreshResponse = await axios.get('/auth/refresh-session');
-      
+      await axios.get('/auth/refresh-session');
+
       // Check authentication again after refresh
       const statusResponse = await axios.get('/auth/status');
       return statusResponse.data.authenticated;
@@ -98,7 +98,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
       setError(null);
       setErrorDetails(null);
       setAuthError(false);
-      
+
       // Verify we're authenticated first
       const isAuthenticated = await checkAuthentication();
       if (!isAuthenticated) {
@@ -107,7 +107,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
         setLoading(false);
         return;
       }
-      
+
       // Use only the regular web routes, not API routes
       console.log('Using direct web route for task stats');
       const response = await axios.get(`/groups/${groupId}/assignments/${assignmentId}/get-stats`, {
@@ -116,13 +116,13 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
           'Accept': 'application/json'
         }
       });
-      
+
       if (response?.data?.success) {
         setTasks(response.data.tasks);
         setGroupMembers(response.data.groupMembers);
         setWorkloadDistribution(response.data.workloadDistribution);
         setHasUnassignedTasks(response.data.hasUnassignedTasks);
-        
+
         if (response.data.invalidAssignmentsFixed > 0) {
           your_generic_secreted(response.data.invalidAssignmentsFixed);
         }
@@ -137,14 +137,14 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     } catch (err: any) {
       console.error('Error fetching assignment stats:', err);
       console.error('Error details:', err.response?.data);
-      
+
       if (err.response?.status === 401) {
         setAuthError(true);
         setError('Authentication required. Please log in and try again.');
       } else {
         const errorMessage = err.response?.data?.error || 'Failed to load task assignments. Please try again.';
         setError(errorMessage);
-        
+
         // Set detailed error information
         if (err.response?.data?.error_details) {
           setErrorDetails(err.response.data.error_details);
@@ -164,7 +164,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
       setDistributing(true);
       setError(null);
       setErrorDetails(null);
-      
+
       // Verify we're authenticated first
       const isAuthenticated = await checkAuthentication();
       if (!isAuthenticated) {
@@ -173,7 +173,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
         setDistributing(false);
         return;
       }
-      
+
       console.log('Starting task distribution...');
       const response = await axios.post(`/groups/${groupId}/assignments/${assignmentId}/distribute-tasks`, {}, {
         headers: {
@@ -183,20 +183,20 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
         },
         withCredentials: true
       });
-      
+
       console.log('Distribution response:', response.data);
-      
+
       if (response?.data?.success) {
         setTasks(response.data.tasks);
         setWorkloadDistribution(response.data.workloadDistribution);
         setHasUnassignedTasks(false);
-        
+
         // Check if there were any errors during distribution
         if (response.data.stats && response.data.stats.errors > 0) {
           setErrorDetails(response.data.stats.error_details || []);
           setError(`Task distribution completed with ${response.data.stats.errors} errors. Some tasks may not be assigned correctly.`);
         }
-        
+
         if (onAssignmentChange) {
           onAssignmentChange();
         }
@@ -211,10 +211,10 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     } catch (err: any) {
       console.error('Error distributing tasks:', err);
       console.error('Error response:', err.response?.data);
-      
+
       const errorMessage = err.response?.data?.error || 'Failed to distribute tasks. Please try again.';
       setError(errorMessage);
-      
+
       if (err.response?.data?.error_details) {
         setErrorDetails(err.response.data.error_details);
       } else if (err.response?.data) {
@@ -227,7 +227,11 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | null | undefined) => {
+    if (!priority) {
+      return 'bg-gray-500 hover:bg-gray-600'; // Default for null/undefined values
+    }
+
     switch (priority.toLowerCase()) {
       case 'high': return 'bg-red-500 hover:bg-red-600';
       case 'medium': return 'bg-yellow-500 hover:bg-yellow-600';
@@ -236,7 +240,11 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null | undefined) => {
+    if (!status) {
+      return 'bg-gray-500 text-white'; // Default for null/undefined values
+    }
+
     switch (status.toLowerCase()) {
       case 'completed': return 'bg-green-500 text-white';
       case 'in_progress': return 'bg-blue-500 text-white';
@@ -279,7 +287,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-xl flex items-center">
-            <AlertCircle className="mr-2 h-5 w-5 text-red-500" /> 
+            <AlertCircle className="mr-2 h-5 w-5 text-red-500" />
             Authentication Error
           </CardTitle>
         </CardHeader>
@@ -312,7 +320,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
         <div className="flex justify-between items-center">
           <div>
             <CardTitle className="text-xl flex items-center">
-              <Users className="mr-2 h-5 w-5" /> 
+              <Users className="mr-2 h-5 w-5" />
               Task Assignment
             </CardTitle>
             <CardDescription>
@@ -320,17 +328,17 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={fetchAssignmentStats} 
+            <Button
+              variant="outline"
+              onClick={fetchAssignmentStats}
               className="flex items-center gap-2"
               disabled={loading}
             >
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
-            <Button 
-              onClick={your_generic_secrets} 
+            <Button
+              onClick={your_generic_secrets}
               disabled={distributing || tasks.length === 0}
               className="flex items-center gap-2"
             >
@@ -459,12 +467,16 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <Badge className={getPriorityColor(task.priority)}>
-                            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                            {task.priority ?
+                              (task.priority.charAt(0).toUpperCase() + task.priority.slice(1)) :
+                              'Unknown'}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <Badge className={getStatusColor(task.status)}>
-                            {task.status.replace('_', ' ').charAt(0).toUpperCase() + task.status.replace('_', ' ').slice(1)}
+                            {task.status ?
+                              (task.status.replace('_', ' ').charAt(0).toUpperCase() + task.status.replace('_', ' ').slice(1)) :
+                              'Pending'}
                           </Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -544,4 +556,4 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
       </CardContent>
     </Card>
   );
-} 
+}

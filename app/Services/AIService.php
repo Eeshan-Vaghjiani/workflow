@@ -478,6 +478,7 @@ class AIService
 
     protected function robustJsonDecode(string $json)
     {
+        // Try the original JSON string first
         $cleaned = trim($json);
         $decoded = json_decode($cleaned, true);
 
@@ -485,15 +486,54 @@ class AIService
             return $decoded;
         }
 
-        // Try to clean up the JSON by removing any markdown code block syntax
-        $cleaned = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $cleaned);
-        $decoded = json_decode($cleaned, true);
+        // Try removing any markdown code block markers
+        $cleanedMarkdown = preg_replace('/```(?:json)?\s*(.*?)\s*```/s', '$1', $cleaned);
+        $decoded = json_decode($cleanedMarkdown, true);
 
         if (json_last_error() === JSON_ERROR_NONE) {
             return $decoded;
         }
 
-        // Try fallback decoding methods if needed
+        // Try fixing common JSON syntax errors
+        $fixedJson = $this->attemptToFixJsonSyntax($cleaned);
+        $decoded = json_decode($fixedJson, true);
+
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+
+        // If all attempts failed, log the JSON and return null
+        Log::error('Failed to parse JSON', [
+            'original' => $json,
+            'cleaned' => $cleaned,
+            'cleaned_markdown' => $cleanedMarkdown,
+            'fixed_json' => $fixedJson,
+            'last_error' => json_last_error_msg()
+        ]);
+
         return null;
+    }
+
+    /**
+     * Attempt to fix common JSON syntax errors
+     */
+    private function attemptToFixJsonSyntax(string $json): string
+    {
+        // Remove any non-JSON content before or after the actual JSON object
+        if (preg_match('/(\{.*\})/s', $json, $matches)) {
+            $json = $matches[1];
+        }
+
+        // Replace single quotes with double quotes (common mistake)
+        $json = str_replace("'", '"', $json);
+
+        // Remove trailing commas in objects and arrays
+        $json = preg_replace('/,\s*}/', '}', $json);
+        $json = preg_replace('/,\s*]/', ']', $json);
+
+        // Try to handle unquoted property names
+        $json = preg_replace('/(\{|\,)\s*([a-zA-Z0-9_]+)\s*:/', '$1"$2":', $json);
+
+        return $json;
     }
 }

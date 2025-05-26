@@ -1,7 +1,8 @@
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
 
 interface Assignment {
     id: number;
@@ -48,10 +49,11 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
         priority: 'medium',
     });
 
+    const selectedAssignment = assignments.find(a => a.id.toString() === selectedAssignmentId?.toString());
+
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (data.assignment_id) {
-            // Find the assignment to get its group_id
             const selectedAssignment = assignments.find(a => a.id.toString() === data.assignment_id);
             if (selectedAssignment) {
                 post(route('group-tasks.store', {
@@ -85,8 +87,7 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                 <input
                                     type="text"
                                     id="title"
-                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.title ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.title ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                     value={data.title}
                                     onChange={e => setData('title', e.target.value)}
                                     required
@@ -101,8 +102,7 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                 <textarea
                                     id="description"
                                     rows={4}
-                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.description ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.description ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                     value={data.description}
                                     onChange={e => setData('description', e.target.value)}
                                 />
@@ -116,8 +116,7 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                 <input
                                     type="date"
                                     id="end_date"
-                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.end_date ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.end_date ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                     value={data.end_date}
                                     onChange={e => setData('end_date', e.target.value)}
                                     required
@@ -135,23 +134,21 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                         id="effort_hours"
                                         min="1"
                                         max="100"
-                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.effort_hours ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                            }`}
+                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.effort_hours ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                         value={data.effort_hours}
                                         onChange={e => setData('effort_hours', e.target.value)}
                                     />
                                     {errors.effort_hours && <div className="text-red-500 text-sm mt-1">{errors.effort_hours}</div>}
                                     <p className="text-xs text-gray-500 mt-1">Estimated hours to complete</p>
                                 </div>
-                                
+
                                 <div>
                                     <label htmlFor="importance" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Importance
                                     </label>
                                     <select
                                         id="importance"
-                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.importance ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                            }`}
+                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.importance ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                         value={data.importance}
                                         onChange={e => setData('importance', e.target.value)}
                                     >
@@ -164,15 +161,14 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                     {errors.importance && <div className="text-red-500 text-sm mt-1">{errors.importance}</div>}
                                     <p className="text-xs text-gray-500 mt-1">Task importance level</p>
                                 </div>
-                                
+
                                 <div>
                                     <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                         Priority
                                     </label>
                                     <select
                                         id="priority"
-                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.priority ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                            }`}
+                                        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.priority ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                         value={data.priority}
                                         onChange={e => setData('priority', e.target.value)}
                                     >
@@ -191,16 +187,15 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                 </label>
                                 <select
                                     id="assignment_id"
-                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.assignment_id ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.assignment_id ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                     value={data.assignment_id}
                                     onChange={e => setData('assignment_id', e.target.value)}
                                     required
                                 >
                                     <option value="">Select an assignment</option>
-                                    {assignments.map(assignment => (
-                                        <option key={assignment.id} value={assignment.id}>
-                                            {assignment.title} ({assignment.group.name})
+                                    {assignments.map((assignment) => (
+                                        <option key={assignment.id} value={assignment.id.toString()}>
+                                            {assignment.title}
                                         </option>
                                     ))}
                                 </select>
@@ -208,38 +203,25 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                             </div>
 
                             <div className="flex justify-end">
-                                <a
-                                    href={route('group-tasks.index')}
-                                    className="inline-flex items-center px-4 py-2 mr-3 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50"
-                                >
-                                    Cancel
-                                </a>
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50"
-                                >
+                                {selectedAssignment && (
+                                    <Link href={route('group-assignments.index', { group: selectedAssignment.group.id })}>
+                                        <Button variant="outline" className="mr-2">
+                                            Cancel
+                                        </Button>
+                                    </Link>
+                                )}
+                                <Button type="submit" disabled={processing}>
                                     Create Task
-                                </button>
+                                </Button>
                             </div>
                         </form>
                     </div>
                 ) : (
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[50vh] flex items-center justify-center overflow-hidden rounded-xl border">
-                        <div className="text-center">
-                            <h3 className="text-xl font-semibold mb-2">No Assignments Available</h3>
-                            <p className="text-gray-500 mb-4">You need to create an assignment before you can add tasks.</p>
-                            <a
-                                href={route('group-assignments.create')}
-                                className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
-                            >
-                                Create an Assignment
-                            </a>
-                        </div>
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
+                    <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700 text-center">
+                        <p className="text-gray-500">No assignments available. Please create an assignment first.</p>
                     </div>
                 )}
             </div>
         </AppLayout>
     );
-} 
+}

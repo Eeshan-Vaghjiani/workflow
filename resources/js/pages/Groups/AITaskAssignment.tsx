@@ -5,11 +5,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BrainCircuit, Loader2, Sparkles, CalendarRange, Clock, AlertCircle, RefreshCw } from 'lucide-react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { useToast } from '@/components/ui/use-toast';
 import { type BreadcrumbItem } from '@/types';
 
@@ -55,6 +54,12 @@ interface AITaskAssignmentProps {
         id: number;
         title: string;
     };
+}
+
+interface ErrorResponse {
+    error?: string;
+    auth_status?: boolean;
+    redirect?: string;
 }
 
 export default function AITaskAssignment({ group, assignment }: AITaskAssignmentProps) {
@@ -103,13 +108,40 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
         setError(null);
 
         try {
-            const response = await axios.post(`/api/groups/${group.id}/ai-tasks/generate`, {
+            // First ensure CSRF token is refreshed
+            await axios.get('/sanctum/csrf-cookie');
+
+            // Use web route instead of API route
+            const response = await axios.post(`/groups/${group.id}/ai-tasks/generate`, {
                 prompt,
                 assignment_id: assignment?.id,
+            }, {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
             });
 
             if (response.data.error) {
                 setError(response.data.error);
+
+                // Check if authentication issue
+                if (response.data.auth_status === false) {
+                    toast({
+                        title: 'Authentication Error',
+                        description: 'Please log in again to continue.',
+                        variant: 'destructive',
+                    });
+
+                    // Redirect to login after a brief delay
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    return;
+                }
             } else {
                 setResult(response.data);
                 toast({
@@ -117,13 +149,32 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
                     description: 'AI has generated tasks based on your description',
                 });
             }
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'An error occurred while generating tasks');
-            toast({
-                title: 'Error',
-                description: 'Failed to generate tasks. Please try again.',
-                variant: 'destructive',
-            });
+        } catch (err: unknown) {
+            console.error('API Error:', err);
+            const error = err as AxiosError<ErrorResponse>;
+            const errorMessage = error.response?.data?.error || 'An error occurred while generating tasks';
+            setError(errorMessage);
+
+            // Check for specific authentication errors
+            if (error.response?.status === 401) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'Your session has expired. Please log in again.',
+                    variant: 'destructive',
+                });
+
+                // Redirect to login after a brief delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            } else {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to generate tasks. Please try again.',
+                    variant: 'destructive',
+                });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -135,11 +186,23 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
         setIsLoading(true);
 
         try {
-            const url = assignment
-                ? `/api/groups/${group.id}/assignments/${assignment.id}/tasks/ai-create`
-                : `/api/groups/${group.id}/assignments/ai-create`;
+            // First ensure CSRF token is refreshed
+            await axios.get('/sanctum/csrf-cookie');
 
-            const response = await axios.post(url, result);
+            // Use web route instead of API route
+            const url = assignment
+                ? `/groups/${group.id}/assignments/${assignment.id}/tasks/ai-create`
+                : `/groups/${group.id}/assignments/ai-create`;
+
+            const response = await axios.post(url, result, {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
 
             toast({
                 title: 'Success!',
@@ -150,13 +213,31 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
             if (response.data.redirect_url) {
                 window.location.href = response.data.redirect_url;
             }
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'An error occurred while saving the assignment');
-            toast({
-                title: 'Error',
-                description: 'Failed to save the assignment. Please try again.',
-                variant: 'destructive',
-            });
+        } catch (err: unknown) {
+            console.error('Save Error:', err);
+            const error = err as AxiosError<ErrorResponse>;
+            const errorMessage = error.response?.data?.error || 'An error occurred while saving the assignment';
+            setError(errorMessage);
+
+            // Check for specific authentication errors
+            if (error.response?.status === 401) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'Your session has expired. Please log in again.',
+                    variant: 'destructive',
+                });
+
+                // Redirect to login after a brief delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to save the assignment. Please try again.',
+                    variant: 'destructive',
+                });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -168,9 +249,21 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
         setIsReassigning(true);
 
         try {
-            const response = await axios.post(`/api/groups/${group.id}/ai-tasks/distribute`, {
+            // First ensure CSRF token is refreshed
+            await axios.get('/sanctum/csrf-cookie');
+
+            // Use web route instead of API route
+            const response = await axios.post(`/groups/${group.id}/ai-tasks/distribute`, {
                 tasks: result.tasks,
                 members: group.members
+            }, {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
             });
 
             if (response.data.tasks) {
@@ -184,12 +277,29 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
                     description: 'Tasks have been automatically distributed among team members',
                 });
             }
-        } catch (err: any) {
-            toast({
-                title: 'Error',
-                description: 'Failed to redistribute tasks. Please try again.',
-                variant: 'destructive',
-            });
+        } catch (err: unknown) {
+            console.error('Distribution Error:', err);
+            const error = err as AxiosError<ErrorResponse>;
+
+            // Check for specific authentication errors
+            if (error.response?.status === 401) {
+                toast({
+                    title: 'Authentication Error',
+                    description: 'Your session has expired. Please log in again.',
+                    variant: 'destructive',
+                });
+
+                // Redirect to login after a brief delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                toast({
+                    title: 'Error',
+                    description: 'Failed to redistribute tasks. Please try again.',
+                    variant: 'destructive',
+                });
+            }
         } finally {
             setIsReassigning(false);
         }
@@ -226,20 +336,30 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
                             {assignment ? 'Add AI-Generated Tasks to Assignment' : 'Create New Assignment with AI'}
                         </CardTitle>
                         <CardDescription>
-                            Describe the assignment and tasks you need to create. The AI will generate structured tasks and distribute them among team members.
+                            Describe the assignment and tasks in detail. The AI will generate structured tasks based on your description and distribute them among team members.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Textarea
-                                    placeholder="Describe the assignment and what tasks are needed. For example: 'Create a website with a homepage, about page, and contact form. The site should be responsive and include a navigation menu.'"
+                                    placeholder={`You are an expert educator and task designer. Create a structured, student-friendly assignment based on the following inputs:
+
+Topic: [Insert topic]
+Subject: [Insert subject]
+Grade/Level: [Insert level]
+Assignment Type: [Insert type]
+Learning Outcome/Objective: [Describe the main goal]
+Word Count/Length Limit: [e.g., 300–500 words]
+Deadline: [Optional, for time-based task breakdowns]
+
+Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, Assessment Criteria, and Optional Resources.`}
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
-                                    className="h-32"
+                                    className="h-64"
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    Be specific about what the assignment entails, including requirements, technologies, and any other relevant details.
+                                    Be specific about what the assignment entails, including requirements, format, learning objectives, and any other relevant details.
                                 </p>
                             </div>
 

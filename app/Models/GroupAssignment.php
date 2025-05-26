@@ -16,12 +16,22 @@ class GroupAssignment extends Model
         'unit_name',
         'priority',
         'due_date',
+        'start_date',
+        'end_date',
+        'status',
         'description',
         'created_by',
     ];
 
     protected $casts = [
         'due_date' => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
+
+    protected $attributes = [
+        'status' => 'active',
+        'priority' => 'medium',
     ];
 
     public function group()

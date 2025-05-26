@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Folder, LayoutGrid, Users, ClipboardList, CheckSquare, Calendar, GitBranch, Bell, MessageCircle } from 'lucide-react';
+import { Folder, LayoutGrid, Users, ClipboardList, CheckSquare, Calendar, GitBranch, Bell, MessageCircle, BookOpen, Timer, BrainCircuit } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -37,6 +37,21 @@ const mainNavItems: NavItem[] = [
         title: 'Gantt Chart',
         href: '/dashboard/gantt',
         icon: GitBranch,
+    },
+    {
+        title: 'Study Planner',
+        href: '/study-planner',
+        icon: BookOpen,
+    },
+    {
+        title: 'Pomodoro Timer',
+        href: '/pomodoro',
+        icon: Timer,
+    },
+    {
+        title: 'AI Tasks',
+        href: '/ai-tasks',
+        icon: BrainCircuit,
     },
     {
         title: 'Chat',

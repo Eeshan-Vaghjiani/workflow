@@ -62,4 +62,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Notification::class);
     }
+
+    public function user()
+    {
+        // This is a self-referential relationship, needed for compatibility
+        return $this->belongsTo(User::class);
+    }
 }

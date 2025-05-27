@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Play, Pause, RotateCcw, Coffee, BookOpen, Bell, BellOff } from 'lucide-react';
+import axios from 'axios';
 
 interface PomodoroTimerProps {
     userId: number;
@@ -46,6 +47,36 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
     const timerRef = useRef<number | null>(null);
     const { toast } = useToast();
 
+    // Load user settings from server on mount
+    useEffect(() => {
+        if (!userId) return;
+
+        // Try to load user's settings from server
+        const loadUserSettings = async () => {
+            try {
+                axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                axios.defaults.withCredentials = true;
+
+                const response = await axios.get(`/api/web/pomodoro/settings/${userId}`);
+                if (response.data && response.data.settings) {
+                    setSettings({
+                        focusMinutes: response.data.settings.focus_minutes || defaultSettings.focusMinutes,
+                        shortBreakMinutes: response.data.settings.short_break_minutes || defaultSettings.shortBreakMinutes,
+                        longBreakMinutes: response.data.settings.long_break_minutes || defaultSettings.longBreakMinutes,
+                        longBreakInterval: response.data.settings.long_break_interval || defaultSettings.longBreakInterval,
+                        autoStartBreaks: response.data.settings.auto_start_breaks ?? defaultSettings.autoStartBreaks,
+                        autoStartPomodoros: response.data.settings.auto_start_pomodoros ?? defaultSettings.autoStartPomodoros,
+                        notifications: response.data.settings.notifications_enabled ?? defaultSettings.notifications
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading pomodoro settings:', error);
+            }
+        };
+
+        loadUserSettings();
+    }, [userId]);
+
     // Initialize the timer with the correct mode duration
     useEffect(() => {
         if (mode === 'focus') {
@@ -81,6 +112,9 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
             const newCompletedCount = completedPomodoros + 1;
             setCompletedPomodoros(newCompletedCount);
 
+            // Save completed pomodoro session to the database
+            savePomodoroSession('focus', settings.focusMinutes);
+
             if (newCompletedCount % settings.longBreakInterval === 0) {
                 setMode('longBreak');
                 toast({
@@ -101,6 +135,13 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                 setIsActive(false);
             }
         } else {
+            // Save break session to the database
+            if (mode === 'shortBreak') {
+                savePomodoroSession('short_break', settings.shortBreakMinutes);
+            } else {
+                savePomodoroSession('long_break', settings.longBreakMinutes);
+            }
+
             setMode('focus');
             toast({
                 title: "Break complete!",
@@ -113,6 +154,38 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                 setIsActive(false);
             }
         }
+    };
+
+    // New function to save pomodoro session to the database
+    const savePomodoroSession = (type: string, durationMinutes: number) => {
+        // Setup authentication headers
+        axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        axios.defaults.withCredentials = true;
+
+        console.log('Saving pomodoro session:', { type, durationMinutes, userId });
+
+        axios.post('/api/web/pomodoro/sessions', {
+            type: type,
+            duration_minutes: durationMinutes,
+            task_id: null // Can be updated if you want to link pomodoro to specific tasks
+        })
+            .then(response => {
+                console.log('Pomodoro session saved:', response.data);
+            })
+            .catch(error => {
+                console.error('Error saving pomodoro session:', error);
+                console.error('Error details:', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    data: error.response?.data,
+                    headers: error.response?.headers
+                });
+                toast({
+                    title: "Error",
+                    description: "Failed to save your pomodoro session",
+                    variant: "destructive"
+                });
+            });
     };
 
     // Notification and sound helpers

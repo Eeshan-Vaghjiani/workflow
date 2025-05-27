@@ -577,14 +577,16 @@ Route::middleware(['web', 'auth'])->group(function () {
 });
 
 // Study Planner API Routes
-Route::post('/study-sessions', [StudyPlannerController::class, 'storeSession']);
-Route::put('/study-sessions/{session}', [StudyPlannerController::class, 'updateSession']);
-Route::delete('/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession']);
-Route::post('/study-tasks', [StudyPlannerController::class, 'storeTask']);
-Route::put('/study-tasks/{task}', [StudyPlannerController::class, 'updateTask']);
-Route::delete('/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask']);
+Route::get('/study-sessions', [StudyPlannerController::class, 'getSessions'])->middleware(['auth:sanctum']);
+Route::get('/study-tasks', [StudyPlannerController::class, 'getTasks'])->middleware(['auth:sanctum']);
+Route::post('/study-sessions', [StudyPlannerController::class, 'storeSession'])->middleware(['auth:sanctum']);
+Route::put('/study-sessions/{session}', [StudyPlannerController::class, 'updateSession'])->middleware(['auth:sanctum']);
+Route::delete('/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession'])->middleware(['auth:sanctum']);
+Route::post('/study-tasks', [StudyPlannerController::class, 'storeTask'])->middleware(['auth:sanctum']);
+Route::put('/study-tasks/{task}', [StudyPlannerController::class, 'updateTask'])->middleware(['auth:sanctum']);
+Route::delete('/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask'])->middleware(['auth:sanctum']);
 
 // Pomodoro Timer API Routes
-Route::post('/pomodoro/settings', [PomodoroController::class, 'updateSettings']);
-Route::post('/pomodoro/sessions', [PomodoroController::class, 'recordSession']);
-Route::get('/pomodoro/stats', [PomodoroController::class, 'getStats']);
+Route::post('/pomodoro/settings', [PomodoroController::class, 'updateSettings'])->middleware(['auth:sanctum']);
+Route::post('/pomodoro/sessions', [PomodoroController::class, 'recordSession'])->middleware(['auth:sanctum']);
+Route::get('/pomodoro/stats', [PomodoroController::class, 'getStats'])->middleware(['auth:sanctum']);

@@ -172,6 +172,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/study-planner', [\App\Http\Controllers\StudyPlannerController::class, 'index'])->name('study-planner.index');
     Route::get('/pomodoro', [\App\Http\Controllers\PomodoroController::class, 'index'])->name('pomodoro.index');
     Route::get('/ai-tasks', [\App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
+
+    // Pomodoro routes with web middleware
+    Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession']);
+    Route::get('/pomodoro/stats', [App\Http\Controllers\PomodoroController::class, 'getStats']);
+    Route::get('/pomodoro/settings/{userId?}', [App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
 });
 
 // Add API web fallback routes with explicit session auth
@@ -179,6 +184,21 @@ Route::prefix('api/web')->middleware(['web', 'auth'])->group(function() {
     // Direct message fallback routes with web middleware
     Route::get('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'messages']);
     Route::post('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'store']);
+
+    // Study Planner routes with web middleware
+    Route::get('/study-sessions', [App\Http\Controllers\StudyPlannerController::class, 'getSessions']);
+    Route::get('/study-tasks', [App\Http\Controllers\StudyPlannerController::class, 'getTasks']);
+    Route::post('/study-sessions', [App\Http\Controllers\StudyPlannerController::class, 'storeSession']);
+    Route::put('/study-sessions/{session}', [App\Http\Controllers\StudyPlannerController::class, 'updateSession']);
+    Route::delete('/study-sessions/{session}', [App\Http\Controllers\StudyPlannerController::class, 'deleteSession']);
+    Route::post('/study-tasks', [App\Http\Controllers\StudyPlannerController::class, 'storeTask']);
+    Route::put('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'updateTask']);
+    Route::delete('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'deleteTask']);
+
+    // Pomodoro routes with web middleware
+    Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession']);
+    Route::get('/pomodoro/stats', [App\Http\Controllers\PomodoroController::class, 'getStats']);
+    Route::get('/pomodoro/settings/{userId?}', [App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
 });
 
 // Add broadcasting authentication route
@@ -248,32 +268,18 @@ Route::get('/test-openrouter', function() {
 
 // Add a debug route for logs (only for development)
 Route::get('/debug-logs', function() {
-    if (app()->environment('production')) {
-        return 'Not available in production.';
-    }
-
-    $logFile = storage_path('logs/laravel.log');
-
-    if (!file_exists($logFile)) {
-        return 'Log file does not exist.';
-    }
-
-    // Get the last 50 lines
     $logs = [];
-    $file = new \SplFileObject($logFile, 'r');
-    $file->seek(PHP_INT_MAX);
-    $totalLines = $file->key();
-
-    $startLine = max(0, $totalLines - 50);
-    $file->seek($startLine);
-
-    while (!$file->eof()) {
-        $logs[] = $file->current();
-        $file->next();
+    try {
+        $logFile = storage_path('logs/laravel.log');
+        if (file_exists($logFile)) {
+            $logs = array_slice(file($logFile), -100);
+        }
+    } catch (\Exception $e) {
+        $logs = ['Error reading logs: ' . $e->getMessage()];
     }
 
-    return view('debug.logs', [
-        'logs' => implode('', $logs)
+    return response()->json([
+        'logs' => $logs
     ]);
 });
 

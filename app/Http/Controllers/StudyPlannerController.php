@@ -15,11 +15,48 @@ class StudyPlannerController extends Controller
      */
     public function index(Request $request)
     {
-        return Inertia::render('StudyPlanner/Index', [
-            'userId' => Auth::id(),
-            'studySessions' => [], // These would be loaded from the database in a real implementation
-            'studyTasks' => [],    // These would be loaded from the database in a real implementation
-        ]);
+        // Add debug logging
+        \Illuminate\Support\Facades\Log::info('StudyPlannerController::index called');
+
+        try {
+            // Get the authenticated user's study sessions and tasks
+            $studySessions = StudySession::where('user_id', Auth::id())
+                ->orderBy('session_date', 'asc')
+                ->orderBy('start_time', 'asc')
+                ->get();
+
+            \Illuminate\Support\Facades\Log::info('Study sessions loaded', [
+                'count' => $studySessions->count(),
+                'user_id' => Auth::id()
+            ]);
+
+            $studyTasks = StudyTask::where('user_id', Auth::id())
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            \Illuminate\Support\Facades\Log::info('Study tasks loaded', [
+                'count' => $studyTasks->count(),
+                'user_id' => Auth::id()
+            ]);
+
+            return Inertia::render('StudyPlanner/Index', [
+                'userId' => Auth::id(),
+                'studySessions' => $studySessions,
+                'studyTasks' => $studyTasks,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in StudyPlannerController::index', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return Inertia::render('StudyPlanner/Index', [
+                'userId' => Auth::id(),
+                'studySessions' => [],
+                'studyTasks' => [],
+                'error' => 'Failed to load study data: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -44,10 +81,18 @@ class StudyPlannerController extends Controller
             'session_date' => $validated['session_date'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
-            'group_id' => $validated['group_id'],
-            'assignment_id' => $validated['assignment_id'],
+            'group_id' => $validated['group_id'] ?? null,
+            'assignment_id' => $validated['assignment_id'] ?? null,
             'completed' => false,
         ]);
+
+        // Check if request wants JSON response (API call)
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'session' => $session
+            ]);
+        }
 
         return redirect()->route('study-planner.index');
     }
@@ -66,10 +111,18 @@ class StudyPlannerController extends Controller
         $task = StudyTask::create([
             'user_id' => Auth::id(),
             'title' => $validated['title'],
-            'description' => $validated['description'],
-            'study_session_id' => $validated['study_session_id'],
+            'description' => $validated['description'] ?? null,
+            'study_session_id' => $validated['study_session_id'] ?? null,
             'completed' => false,
         ]);
+
+        // Check if request wants JSON response (API call)
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'task' => $task
+            ]);
+        }
 
         return redirect()->route('study-planner.index');
     }
@@ -97,6 +150,14 @@ class StudyPlannerController extends Controller
 
         $session->update($validated);
 
+        // Check if request wants JSON response (API call)
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'session' => $session
+            ]);
+        }
+
         return redirect()->route('study-planner.index');
     }
 
@@ -119,6 +180,14 @@ class StudyPlannerController extends Controller
 
         $task->update($validated);
 
+        // Check if request wants JSON response (API call)
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'task' => $task
+            ]);
+        }
+
         return redirect()->route('study-planner.index');
     }
 
@@ -133,6 +202,14 @@ class StudyPlannerController extends Controller
         }
 
         $session->delete();
+
+        // Check if request wants JSON response (API call)
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Session deleted successfully'
+            ]);
+        }
 
         return redirect()->route('study-planner.index');
     }
@@ -149,6 +226,39 @@ class StudyPlannerController extends Controller
 
         $task->delete();
 
+        // Check if request wants JSON response (API call)
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Task deleted successfully'
+            ]);
+        }
+
         return redirect()->route('study-planner.index');
+    }
+
+    /**
+     * Get all study sessions for the authenticated user.
+     */
+    public function getSessions(Request $request)
+    {
+        $sessions = StudySession::where('user_id', Auth::id())
+            ->orderBy('session_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->get();
+
+        return response()->json($sessions);
+    }
+
+    /**
+     * Get all study tasks for the authenticated user.
+     */
+    public function getTasks(Request $request)
+    {
+        $tasks = StudyTask::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($tasks);
     }
 }

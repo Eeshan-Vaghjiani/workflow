@@ -11,6 +11,16 @@ import { BrainCircuit, Loader2, Sparkles, CalendarRange, Clock, AlertCircle, Ref
 import axios, { AxiosError } from 'axios';
 import { useToast } from '@/components/ui/use-toast';
 import { type BreadcrumbItem } from '@/types';
+import { format, parseISO } from 'date-fns';
+
+// Helper function to format dates in DD/MM/YYYY format
+const formatDate = (dateString: string): string => {
+    try {
+        return format(parseISO(dateString), 'dd/MM/yyyy');
+    } catch {
+        return dateString;
+    }
+};
 
 interface GroupMember {
     id: number;
@@ -194,7 +204,13 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
                 ? `/groups/${group.id}/assignments/${assignment.id}/tasks/ai-create`
                 : `/groups/${group.id}/assignments/ai-create`;
 
-            const response = await axios.post(url, result, {
+            // Include the original prompt in the data
+            const dataToSend = {
+                ...result,
+                prompt: prompt
+            };
+
+            const response = await axios.post(url, dataToSend, {
                 withCredentials: true,
                 headers: {
                     'Content-Type': 'application/json',
@@ -406,7 +422,7 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                                             <CalendarRange className="h-4 w-4" />
-                                            <span>Due: {new Date(result.assignment.due_date).toLocaleDateString()}</span>
+                                            <span>Due: {formatDate(result.assignment.due_date)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -457,7 +473,7 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                                         group.members.find(m => m.id === task.assigned_user_id)?.name
                                                     ) || 'Unassigned'}
                                                 </TableCell>
-                                                <TableCell>{new Date(task.end_date).toLocaleDateString()}</TableCell>
+                                                <TableCell>{formatDate(task.end_date)}</TableCell>
                                                 <TableCell>
                                                     <Badge className={getPriorityColor(task.priority)}>
                                                         {task.priority}

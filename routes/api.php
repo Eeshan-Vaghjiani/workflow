@@ -268,10 +268,6 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
             ], 500);
         }
 
-        // Sanitize dates and ensure all required fields exist
-        $aiResponse = sanitizeAiResponseDates($aiResponse);
-
-        // Begin transaction to create assignment and tasks
         try {
             \Illuminate\Support\Facades\DB::beginTransaction();
 
@@ -281,56 +277,63 @@ Route::post('/no-auth/ai/tasks', function(Illuminate\Http\Request $request) {
                 'title' => $aiResponse['assignment']['title'],
                 'unit_name' => $aiResponse['assignment']['unit_name'] ?? 'General',
                 'description' => $aiResponse['assignment']['description'] ?? '',
-                'start_date' => $aiResponse['assignment']['start_date'] ?? now(),
-                'end_date' => $aiResponse['assignment']['end_date'] ?? now()->addWeeks(2),
-                'due_date' => $aiResponse['assignment']['due_date'] ?? now()->addWeeks(2),
-                'priority' => $aiResponse['assignment']['priority'] ?? 'medium',
+                'start_date' => now(),
+                'end_date' => isset($aiResponse['assignment']['due_date']) ? $aiResponse['assignment']['due_date'] : now()->addWeeks(2),
+                'due_date' => isset($aiResponse['assignment']['due_date']) ? $aiResponse['assignment']['due_date'] : now()->addWeeks(2),
                 'status' => 'active',
                 'created_by' => $userId,
             ]);
 
-            // Process tasks
+            // Get the model used
+            $modelUsed = $aiService->getWorkingModel();
+
+            // Create an entry in the AI generated assignments table
+            $aiGeneratedAssignment = \App\Models\AIGeneratedAssignment::create([
+                'group_id' => $groupId,
+                'assignment_id' => $assignment->id,
+                'original_prompt' => $request->prompt,
+                'ai_response' => json_encode($aiResponse),
+                'model_used' => $modelUsed,
+                'created_by' => $userId,
+            ]);
+
+            // Create tasks
             $createdTasks = [];
             foreach ($aiResponse['tasks'] as $taskData) {
-                // Find user by name if assigned_to_name is provided
-                $assignedUserId = $userId; // Default to the current user
-                if (isset($taskData['assigned_to_name'])) {
-                    $assignedUser = \App\Models\User::whereHas('groups', function ($query) use ($groupId) {
-                        $query->where('group_id', $groupId);
-                    })
-                    ->where(function ($query) use ($taskData) {
-                        $name = $taskData['assigned_to_name'];
-                        $query->where('name', 'like', "%{$name}%")
-                            ->orWhere('email', 'like', "{$name}%");
-                    })
-                    ->first();
-
-                    if ($assignedUser) {
-                        $assignedUserId = $assignedUser->id;
+                // Find the user ID based on the name
+                $assignedUserId = null;
+                if (!empty($taskData['assigned_to_name'])) {
+                    $user = $group->members()
+                        ->where('users.name', 'like', '%' . $taskData['assigned_to_name'] . '%')
+                        ->first();
+                    if ($user) {
+                        $assignedUserId = $user->id;
                     }
                 }
 
-                // Create task
+                // Default dates if not provided
+                $startDate = $taskData['start_date'] ?? now();
+                $endDate = $taskData['end_date'] ?? now()->addDays(7);
+
                 $task = \App\Models\GroupTask::create([
                     'assignment_id' => $assignment->id,
                     'title' => $taskData['title'],
-                    'description' => $taskData['description'] ?? '',
-                    'assigned_to' => $assignedUserId,
-                    'start_date' => $taskData['start_date'] ?? now(),
-                    'end_date' => $taskData['end_date'] ?? now()->addWeeks(1),
+                    'description' => $taskData['description'],
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
                     'status' => 'pending',
                     'priority' => $taskData['priority'] ?? 'medium',
+                    'effort_hours' => $taskData['effort_hours'] ?? 1,
+                    'importance' => $taskData['importance'] ?? 3,
+                    'assigned_user_id' => $assignedUserId,
                     'created_by' => $userId,
-                    'order_index' => count($createdTasks),
                 ]);
 
-                $task->load('assignedUser');
                 $createdTasks[] = $task;
             }
 
             \Illuminate\Support\Facades\DB::commit();
 
-            // Return the created assignment and tasks
             return response()->json([
                 'success' => true,
                 'assignment' => $assignment,

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrainCircuit, CalendarRange, Plus } from 'lucide-react';
-import { Link } from '@inertiajs/react';
+import { formatDistanceToNow, format, parseISO } from 'date-fns';
 
 interface Group {
     id: number;
@@ -15,6 +15,11 @@ interface Group {
 interface Assignment {
     id: number;
     title: string;
+    description: string;
+    due_date: string;
+    start_date: string;
+    end_date: string;
+    status: string;
 }
 
 interface AIAssignment {
@@ -30,89 +35,171 @@ interface AIAssignment {
     };
 }
 
-interface Props {
-    groups: Group[];
-    aiAssignments: AIAssignment[];
+interface AIPrompt {
+    id: number;
+    prompt: string;
+    response: string;
+    model_used: string;
+    success: boolean;
+    created_at: string;
+    user: {
+        id: number;
+        name: string;
+    };
+    group?: Group;
+    metadata?: {
+        response_time_ms?: number;
+        [key: string]: unknown;
+    };
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/dashboard',
-    },
-    {
-        title: 'AI Tasks',
-        href: '/ai-tasks',
-    },
-];
+interface DashboardProps {
+    groups: Group[];
+    aiAssignments: AIAssignment[];
+    aiPrompts: AIPrompt[];
+}
 
-export default function Dashboard({ groups, aiAssignments }: Props) {
+// Helper function to format dates in DD/MM/YYYY format
+const formatDate = (dateString: string): string => {
+    try {
+        return format(parseISO(dateString), 'dd/MM/yyyy');
+    } catch {
+        return dateString;
+    }
+};
+
+export default function Dashboard({ aiAssignments, aiPrompts }: DashboardProps) {
+    const [expandedPrompt, setExpandedPrompt] = useState<number | null>(null);
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="AI Task Management" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">AI Task Management</h1>
-                    <div className="flex gap-2">
-                        {groups.length > 0 && (
-                            <Button asChild>
-                                <Link href={`/groups/${groups[0].id}/ai-tasks`}>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create AI Tasks
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </div>
+        <AppLayout>
+            <Head title="AI Tasks Dashboard" />
+            <div className="py-12">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <h1 className="text-3xl font-bold mb-6">AI Tasks Dashboard</h1>
 
-                {aiAssignments.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {aiAssignments.map((item) => (
-                            <Card key={item.id}>
-                                <CardHeader className="pb-2">
-                                    <CardTitle className="text-lg">{item.assignment.title}</CardTitle>
-                                    <CardDescription>{item.group.name}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="text-sm line-clamp-2">{item.original_prompt}</div>
-                                        <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                                            <CalendarRange className="h-3.5 w-3.5" />
-                                            <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <BrainCircuit className="h-3.5 w-3.5" />
-                                            <span>{item.model_used || 'Unknown Model'}</span>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                <CardFooter>
-                                    <Button variant="outline" size="sm" asChild className="w-full">
-                                        <Link href={`/groups/${item.group.id}/assignments/${item.assignment.id}`}>
-                                            View Assignment
-                                        </Link>
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex h-96 flex-col items-center justify-center rounded-xl border border-dashed p-8 text-center">
-                        <BrainCircuit className="h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-semibold">No AI-Generated Tasks Yet</h3>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Use AI to automatically generate and distribute tasks for your assignments.
-                        </p>
-                        {groups.length > 0 && (
-                            <Button className="mt-4" asChild>
-                                <Link href={`/groups/${groups[0].id}/ai-tasks`}>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Create Your First AI Tasks
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                )}
+                    <Tabs defaultValue="assignments">
+                        <TabsList className="mb-6">
+                            <TabsTrigger value="assignments">AI Generated Assignments</TabsTrigger>
+                            <TabsTrigger value="prompts">AI Prompts History</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="assignments">
+                            <div className="grid gap-6">
+                                {aiAssignments.length > 0 ? (
+                                    aiAssignments.map((aiAssignment) => (
+                                        <Card key={aiAssignment.id}>
+                                            <CardHeader>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <CardTitle>{aiAssignment.assignment.title}</CardTitle>
+                                                        <CardDescription>
+                                                            Group: {aiAssignment.group.name} |
+                                                            Created by: {aiAssignment.creator.name} |
+                                                            {formatDistanceToNow(new Date(aiAssignment.created_at), { addSuffix: true })}
+                                                        </CardDescription>
+                                                    </div>
+                                                    <Badge variant="outline">{aiAssignment.model_used}</Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="mb-4">
+                                                    <h3 className="text-sm font-medium text-gray-500">Original Prompt:</h3>
+                                                    <p className="mt-1 text-sm">{aiAssignment.original_prompt}</p>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                        <span>Due: {formatDate(aiAssignment.assignment.due_date)}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-end">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => window.location.href = `/groups/${aiAssignment.group.id}/assignments/${aiAssignment.assignment.id}`}
+                                                    >
+                                                        View Assignment
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <Card>
+                                        <CardContent className="py-6">
+                                            <p className="text-center text-gray-500">No AI-generated assignments found.</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="prompts">
+                            <div className="grid gap-6">
+                                {aiPrompts.length > 0 ? (
+                                    aiPrompts.map((prompt) => (
+                                        <Card key={prompt.id}>
+                                            <CardHeader>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <CardTitle className="text-lg">
+                                                            {prompt.prompt.length > 60
+                                                                ? prompt.prompt.substring(0, 60) + '...'
+                                                                : prompt.prompt}
+                                                        </CardTitle>
+                                                        <CardDescription>
+                                                            User: {prompt.user.name} |
+                                                            {prompt.group ? ` Group: ${prompt.group.name} |` : ''}
+                                                            {formatDistanceToNow(new Date(prompt.created_at), { addSuffix: true })}
+                                                            {prompt.metadata?.response_time_ms ?
+                                                                ` | Response time: ${prompt.metadata.response_time_ms}ms` :
+                                                                ''}
+                                                        </CardDescription>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Badge variant={prompt.success ? "default" : "destructive"}>
+                                                            {prompt.success ? 'Success' : 'Failed'}
+                                                        </Badge>
+                                                        <Badge variant="outline">{prompt.model_used}</Badge>
+                                                    </div>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="mb-4">
+                                                    <h3 className="text-sm font-medium text-gray-500">Prompt:</h3>
+                                                    <p className="mt-1 text-sm">{prompt.prompt}</p>
+                                                </div>
+
+                                                {expandedPrompt === prompt.id && (
+                                                    <div className="mb-4">
+                                                        <h3 className="text-sm font-medium text-gray-500">Response:</h3>
+                                                        <pre className="mt-1 text-xs p-4 bg-gray-50 rounded overflow-auto max-h-60">
+                                                            {prompt.response}
+                                                        </pre>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex justify-end">
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => setExpandedPrompt(expandedPrompt === prompt.id ? null : prompt.id)}
+                                                    >
+                                                        {expandedPrompt === prompt.id ? 'Hide Response' : 'View Response'}
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))
+                                ) : (
+                                    <Card>
+                                        <CardContent className="py-6">
+                                            <p className="text-center text-gray-500">No AI prompts history found.</p>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
         </AppLayout>
     );

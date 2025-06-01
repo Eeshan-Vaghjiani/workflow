@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AIPrompt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -41,7 +42,7 @@ class AIService
     /**
      * Get a working model from available free models
      */
-    protected function getWorkingModel()
+    public function getWorkingModel()
     {
         // If model is already set and not empty, return it
         if (!empty($this->model)) {
@@ -87,6 +88,9 @@ class AIService
     public function processTaskPrompt(string $prompt, int $userId, int $groupId): array
     {
         try {
+            // Start timing the response
+            $startTime = microtime(true);
+
             $groupMembers = [];
             try {
                 $group = \App\Models\Group::with('members')->find($groupId);
@@ -126,13 +130,21 @@ class AIService
             - Title (short but descriptive)
             - Description (more details)
             - Who it is assigned to (choose from the available group members)
-            - Start date (relative to now)
-            - End date (absolute date or relative to start date)
+            - Start date (relative to now, must not be in the past)
+            - End date (absolute date or relative to start date, must be between start date and assignment due date)
             - Priority (low, medium, or high)
             - Effort hours (estimated time needed to complete the task, from 1-20 hours)
             - Importance (scale of 1-5, where 5 is most important)
 
             CRITICAL: Your entire response must ONLY be valid JSON with no additional text before or after. DO NOT include markdown backticks, explanations, or any other text.
+
+            IMPORTANT DATE RULES:
+            - Today's date is " . now()->format('Y-m-d') . "
+            - All task start dates must be today or in the future, never in the past
+            - All task end dates must be before or on the assignment due date
+            - For simple tasks (1-3 effort hours), end dates should be within 1-3 days of start date
+            - For medium tasks (4-8 effort hours), end dates should be within 3-7 days of start date
+            - For complex tasks (9-20 effort hours), end dates should be within 7-14 days of start date
 
             The JSON structure must be:
             {
@@ -185,6 +197,19 @@ class AIService
                 'prompt_length' => strlen($prompt),
             ]);
 
+            // Create a record in the AI prompts table
+            $aiPrompt = AIPrompt::create([
+                'user_id' => $userId,
+                'group_id' => $groupId,
+                'prompt' => $prompt,
+                'model_used' => $modelToUse,
+                'endpoint' => 'processTaskPrompt',
+                'success' => false,  // Will update after successful response
+                'metadata' => [
+                    'request_start_time' => $startTime
+                ]
+            ]);
+
             $response = $http->post($this->baseUrl . '/chat/completions', [
                 'model' => $modelToUse,
                 'messages' => [
@@ -195,28 +220,43 @@ class AIService
                 'response_format' => ["type" => "json_object"],
             ]);
 
+            // Calculate response time
+            $endTime = microtime(true);
+            $responseTime = round(($endTime - $startTime) * 1000); // in milliseconds
+
             if ($response->failed()) {
                 Log::error('OpenRouter API request failed', [
                     'status' => $response->status(),
                     'reason' => $response->reason(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
+                    'response_time_ms' => $responseTime
                 ]);
-                return [
-                    'error' => 'OpenRouter API request failed: ' . $response->status() . ' ' . $response->reason(),
-                    'details' => $response->body()
-                ];
+
+                // Update the AI prompt record with failure details
+                $aiPrompt->update([
+                    'response' => $response->body(),
+                    'response_time_ms' => $responseTime,
+                    'metadata' => [
+                        'status' => $response->status(),
+                        'reason' => $response->reason(),
+                        'response_time_ms' => $responseTime
+                    ]
+                ]);
+
+                return ['error' => 'OpenRouter API request failed: ' . $response->reason()];
             }
 
             $data = $response->json();
 
-            Log::info('OpenRouter API response', [
-                'status_code' => $response->status(),
-                'headers' => $response->headers(),
-                'data' => $data,
-            ]);
-
             if (!isset($data['choices'][0]['message']['content'])) {
                 Log::error('Invalid AI response', ['response' => $data]);
+
+                // Update the AI prompt record with failure details
+                $aiPrompt->update([
+                    'response' => json_encode($data),
+                    'metadata' => ['error' => 'Invalid AI response structure']
+                ]);
+
                 return ['error' => 'Invalid AI response: ' . json_encode($data)];
             }
 
@@ -237,8 +277,27 @@ class AIService
                     'raw_content' => $rawContent,
                     'json_content' => $jsonContent
                 ]);
+
+                // Update the AI prompt record with failure details
+                $aiPrompt->update([
+                    'response' => $rawContent,
+                    'metadata' => ['error' => 'Failed to parse JSON response']
+                ]);
+
                 return ['error' => 'Failed to parse AI response: Syntax error'];
             }
+
+            // Update the AI prompt record with success
+            $aiPrompt->update([
+                'response' => $rawContent,
+                'success' => true,
+                'response_time_ms' => $responseTime,
+                'metadata' => [
+                    'model' => $modelToUse,
+                    'parsed' => true,
+                    'response_time_ms' => $responseTime
+                ]
+            ]);
 
             return $content;
         } catch (\Exception $e) {
@@ -246,6 +305,19 @@ class AIService
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+
+            // Update the AI prompt record with exception details if it exists
+            if (isset($aiPrompt)) {
+                $aiPrompt->update([
+                    'response' => $e->getMessage(),
+                    'metadata' => [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]
+                ]);
+            }
+
             return [
                 'error' => 'AI Service Error: ' . $e->getMessage(),
                 'debug' => [

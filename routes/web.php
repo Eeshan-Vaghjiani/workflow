@@ -113,6 +113,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/groups/{group}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'index'])->name('ai-tasks.index');
     Route::get('/groups/{group}/assignments/{assignment}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'forAssignment'])->name('ai-tasks.for-assignment');
 
+    // AI Tasks Dashboard - shows all AI generated tasks across groups
+    Route::get('/ai-tasks/dashboard', [App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
+
+    // AI Assignment Edit
+    Route::get('/groups/{group}/assignments/{assignment}/ai-edit', [App\Http\Controllers\API\AITaskController::class, 'editAssignment'])->name('ai-tasks.edit');
+    Route::post('/groups/{group}/assignments/{assignment}/ai-update', [App\Http\Controllers\API\AITaskController::class, 'updateAssignment'])->name('ai-tasks.update');
+
     // AI Task API endpoints with web middleware to ensure proper session handling
     Route::post('/groups/{group}/ai-tasks/generate', [App\Http\Controllers\API\AITaskController::class, 'generateTasks'])->name('ai-tasks.generate');
     Route::post('/groups/{group}/ai-tasks/distribute', [App\Http\Controllers\API\AITaskController::class, 'autoDistributeTasks'])->name('ai-tasks.distribute');

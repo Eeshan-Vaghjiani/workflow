@@ -1,0 +1,104 @@
+//// DBML representation for ERD (Optimized for layout)
+//// Focus: Most important fields and relationships only
+
+// Center of ERD - Core Entity
+Table users {
+  id int [pk, increment]
+  name varchar
+  email varchar
+  password varchar
+  created_at datetime
+}
+
+// Study Groups and Memberships
+Table study_groups {
+  id int [pk, increment]
+  name varchar
+  description text
+  owner_id int [ref: > users.id]
+  created_at datetime
+}
+
+Table group_memberships {
+  group_id int
+  user_id int
+  role varchar
+  joined_at datetime
+
+  indexes {
+    (group_id, user_id) [pk]
+  }
+}
+
+Ref: group_memberships.group_id > study_groups.id
+Ref: group_memberships.user_id > users.id
+
+// Messaging System (Unified)
+Table messages {
+  id int [pk, increment]
+  sender_id int [ref: > users.id]
+  receiver_id int [ref: > users.id, null]
+  group_id int [ref: > study_groups.id, null]
+  content text
+  is_read boolean
+  created_at datetime
+}
+
+// Task Management (Unified)
+Table tasks {
+  id int [pk, increment]
+  title varchar
+  description text
+  due_date datetime
+  status varchar
+  priority varchar
+  creator_id int [ref: > users.id]
+  assignee_id int [ref: > users.id, null]
+  group_id int [ref: > study_groups.id, null]
+  created_at datetime
+}
+
+// Study Sessions
+Table study_sessions {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  title varchar
+  start_time datetime
+  end_time datetime
+  is_completed boolean
+  created_at datetime
+}
+
+// Pomodoro System
+Table pomodoro_sessions {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  task_id int [ref: > tasks.id, null]
+  session_type varchar
+  start_time datetime
+  duration_minutes int
+  is_completed boolean
+}
+
+Table user_settings {
+  user_id int [pk, ref: > users.id]
+  work_duration_minutes int
+  short_break_minutes int
+  long_break_minutes int
+  your_generic_secreteak int
+  notifications_enabled boolean
+}
+
+// Subscription Management
+Table subscriptions {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  plan_name varchar
+  start_date datetime
+  end_date datetime
+  is_active boolean
+  payment_id varchar
+}
+
+// Relationships between tables are defined with references
+// Tables are positioned for optimal ERD layout

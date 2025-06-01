@@ -33,6 +33,7 @@ interface Assignment {
         id: number;
         name: string;
     };
+    is_ai_generated?: boolean;
 }
 
 interface Props {
@@ -76,6 +77,14 @@ export default function Show({ assignment, isLeader }: Props) {
                                 >
                                     Edit
                                 </Link>
+                                {assignment.is_ai_generated && (
+                                    <Link
+                                        href={route('ai-tasks.edit', { group: assignment.group.id, assignment: assignment.id })}
+                                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md font-semibold text-xs text-purple-700 uppercase tracking-widest hover:bg-purple-50"
+                                    >
+                                        Edit AI Assignment
+                                    </Link>
+                                )}
                                 <button
                                     onClick={handleDelete}
                                     className="inline-flex items-center px-3 py-2 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest bg-red-600 hover:bg-red-700"
@@ -160,8 +169,8 @@ export default function Show({ assignment, isLeader }: Props) {
                                         <div className="flex items-center space-x-2">
                                             {task.status === 'pending' && (
                                                 <button
-                                                    onClick={() => router.post(route('group-tasks.complete', { 
-                                                        group: assignment.group.id, 
+                                                    onClick={() => router.post(route('group-tasks.complete', {
+                                                        group: assignment.group.id,
                                                         assignment: assignment.id,
                                                         task: task.id
                                                     }))}
@@ -182,4 +191,4 @@ export default function Show({ assignment, isLeader }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

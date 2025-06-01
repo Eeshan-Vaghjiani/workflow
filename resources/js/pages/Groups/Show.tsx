@@ -1,11 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Plus, Settings, MessageCircle } from 'lucide-react';
-import ChatBox from '@/components/Chat/ChatBox';
+import { Users, Plus, Settings, Sparkles } from 'lucide-react';
 
 interface Member {
     id: number;
@@ -44,16 +42,9 @@ interface Props {
         };
         created_at: string;
     }[];
-    auth: {
-        user: {
-            id: number;
-        };
-    };
 }
 
-export default function GroupShow({ group, isLeader, joinRequests = [], auth }: Props) {
-    const [showChat, setShowChat] = useState(false);
-
+export default function GroupShow({ group, isLeader, joinRequests = [] }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Groups',
@@ -77,13 +68,12 @@ export default function GroupShow({ group, isLeader, joinRequests = [], auth }: 
                         )}
                     </div>
                     <div className="flex gap-2">
-                        <Button
-                            variant={showChat ? "default" : "outline"}
-                            onClick={() => setShowChat(!showChat)}
-                        >
-                            <MessageCircle className="w-4 h-4 mr-2" />
-                            {showChat ? 'Hide Chat' : 'Show Chat'}
-                        </Button>
+                        <Link href={route('ai-tasks.index', group.id)}>
+                            <Button>
+                                <Sparkles className="w-4 h-4 mr-2" />
+                                AI Tasks
+                            </Button>
+                        </Link>
                         {isLeader && (
                             <>
                                 <Link href={route('groups.members.invite', group.id)}>
@@ -146,7 +136,7 @@ export default function GroupShow({ group, isLeader, joinRequests = [], auth }: 
                                                             href={route('groups.approve-join', group.id)}
                                                             method="post"
                                                             data={{ user_id: request.user.id }}
-                                                            as="button" 
+                                                            as="button"
                                                             className="px-2 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
                                                             preserveScroll
                                                         >
@@ -212,15 +202,8 @@ export default function GroupShow({ group, isLeader, joinRequests = [], auth }: 
                             )}
                         </CardContent>
                     </Card>
-
-                    {/* Right Column - Chat */}
-                    {showChat && (
-                        <div className="lg:col-span-1">
-                            <ChatBox groupId={group.id} currentUserId={auth.user.id} />
-                        </div>
-                    )}
                 </div>
             </div>
         </AppLayout>
     );
-} 
+}

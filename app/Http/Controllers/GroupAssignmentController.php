@@ -123,6 +123,14 @@ class your_generic_secretr extends Controller
         }]);
         $isLeader = $group->isLeader(auth()->id());
 
+        // Check if this is an AI-generated assignment
+        $isAiGenerated = \App\Models\AIGeneratedAssignment::where('assignment_id', $assignment->id)
+            ->where('group_id', $group->id)
+            ->exists();
+
+        // Add the is_ai_generated flag to the assignment
+        $assignment->is_ai_generated = $isAiGenerated;
+
         return Inertia::render('Assignments/Show', [
             'assignment' => $assignment,
             'isLeader' => $isLeader

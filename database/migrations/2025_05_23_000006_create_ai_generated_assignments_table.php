@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('assignment_id')->constrained('group_assignments')->onDelete('cascade');
             $table->text('original_prompt');
             $table->text('ai_response')->nullable();
-            $table->string('model_used')->nullable();
+            $table->string('model_used');
             $table->json('task_distribution')->nullable();
             $table->foreignId('created_by')->constrained('users');
             $table->timestamps();

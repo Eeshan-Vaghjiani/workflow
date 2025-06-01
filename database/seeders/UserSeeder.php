@@ -15,7 +15,7 @@ class UserSeeder extends Seeder
     {
         // Create main test user
         User::create([
-            'name' => 'Eva Ghjiani',
+            'name' => 'Eeshan vaghjiani',
             'email' => 'evaghjiani@gmail.com',
             'password' => Hash::make('password'),
             'email_verified_at' => now(),
@@ -39,6 +39,10 @@ class UserSeeder extends Seeder
                 'name' => 'Sarah Williams',
                 'email' => 'sarah@example.com',
             ],
+            [
+                'name' => 'Dhruvin Bhudia',
+                'email' => 'dhruvinbhudiael11@gmail.com',
+            ],
         ];
 
         foreach ($users as $user) {
@@ -50,4 +54,4 @@ class UserSeeder extends Seeder
             ]);
         }
     }
-} 
+}

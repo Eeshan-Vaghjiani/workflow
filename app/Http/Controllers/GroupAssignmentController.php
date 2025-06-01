@@ -12,10 +12,13 @@ class your_generic_secretr extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Group $group = null)
+    public function index(Request $request, Group $group = null)
     {
         // Start with a query that always includes group data
-        $query = GroupAssignment::query()->with('group');
+        $query = GroupAssignment::query()
+            ->with(['group', 'tasks' => function($query) {
+                $query->select('id', 'assignment_id'); // Only get the count
+            }]);
 
         // Filter by group if one is provided
         if ($group) {
@@ -31,16 +34,66 @@ class your_generic_secretr extends Controller
             });
         }
 
-        $assignments = $query->latest()->get();
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('unit_name', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by group ID from query params
+        if ($request->has('group_id') && !empty($request->group_id) && $request->group_id !== 'all') {
+            $query->where('group_id', $request->group_id);
+        }
+
+        // Filter by status
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        // Default sort by due date (closest first)
+        $sort = $request->input('sort', 'due_date');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort field
+        $validSortFields = ['due_date', 'title', 'created_at', 'unit_name'];
+        if (!in_array($sort, $validSortFields)) {
+            $sort = 'due_date';
+        }
+
+        // Validate direction
+        if (!in_array($direction, ['asc', 'desc'])) {
+            $direction = 'asc';
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $assignments = $query->get();
 
         // Filter out any assignments with null groups (shouldn't happen, but just in case)
         $assignments = $assignments->filter(function ($assignment) {
             return $assignment->group !== null;
         });
 
+        // Get all groups the user is a member of for filtering
+        $userGroups = \App\Models\Group::whereHas('members', function($query) {
+            $query->where('user_id', auth()->id());
+        })->get(['id', 'name']);
+
         return Inertia::render('Assignments/Index', [
             'assignments' => $assignments,
-            'group' => $group
+            'group' => $group,
+            'userGroups' => $userGroups,
+            'filters' => [
+                'search' => $request->search,
+                'group_id' => $request->group_id,
+                'status' => $request->status,
+                'sort' => $sort,
+                'direction' => $direction
+            ]
         ]);
     }
 

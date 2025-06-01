@@ -17,4 +17,11 @@ export interface BreadcrumbItem {
     href: string
 }
 
+export interface NavItem {
+    title: string
+    href: string
+    icon?: React.ComponentType<{ className?: string }>
+    children?: NavItem[]
+}
+
 // Removed SharedData interface as it was redundant

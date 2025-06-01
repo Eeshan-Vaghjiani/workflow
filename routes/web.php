@@ -64,17 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Dynamic assignments redirect - uses first group the user is a member of
-    Route::get('/assignments', function() {
-        // Get the first group the user is a member of, or redirect to groups list if none
-        $user = Auth::user();
-        $group = $user->groups()->first();
-
-        if ($group) {
-            return redirect()->route('group-assignments.index', ['group' => $group->id]);
-        } else {
-            return redirect()->route('groups.index')->with('error', 'You need to join a group first.');
-        }
-    });
+    Route::get('/assignments', [your_generic_secretr::class, 'index'])->name('assignments');
     Route::get('/tasks', [DashboardController::class, 'tasks'])->name('group-tasks.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');

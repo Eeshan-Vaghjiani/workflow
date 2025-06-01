@@ -101,14 +101,14 @@ export default function Dashboard(props: Props) {
         your_generic_secret = 0,
         auth
     } = props;
-    
+
     const [groups, setGroups] = useState<Group[]>(initialGroups);
 
     // Memoize the upcoming tasks calculation
     const upcomingTasks = useMemo(() => {
         try {
             if (!Array.isArray(tasks)) return [];
-            
+
             const today = new Date();
             const threeDaysFromNow = new Date(today);
             threeDaysFromNow.setDate(today.getDate() + 3);
@@ -116,7 +116,7 @@ export default function Dashboard(props: Props) {
             return tasks.filter(task => {
                 if (!task || typeof task !== 'object') return false;
                 if (!task.end_date || !task.status) return false;
-                
+
                 try {
                     const dueDate = new Date(task.end_date);
                     return task.status !== 'completed' && dueDate <= threeDaysFromNow;
@@ -152,7 +152,7 @@ export default function Dashboard(props: Props) {
             if (channel) {
                 channel.listen('NewGroupMessage', (event) => {
                     console.log('Received message event:', event);
-                    
+
                     // If we have the chat open, add new message
                     if (selectedChatId === event.groupId) {
                         setMessages(prev => [...prev, {
@@ -163,7 +163,7 @@ export default function Dashboard(props: Props) {
                             isSystemMessage: event.message.is_system_message
                         }]);
                     }
-                    
+
                     // Update unread count for the group
                     setGroups(prev => prev.map(group => {
                         if (group.id === event.groupId && event.message.sender.id !== auth.user.id) {
@@ -235,7 +235,7 @@ export default function Dashboard(props: Props) {
     }
 
     return (
-        <ErrorBoundary 
+        <ErrorBoundary
             FallbackComponent={ErrorFallback}
             onReset={() => window.location.reload()}
         >
@@ -340,7 +340,7 @@ export default function Dashboard(props: Props) {
                             <CardHeader>
                                 <div className="flex justify-between items-center">
                                     <CardTitle>Recent Assignments</CardTitle>
-                                    <Link href="/group-assignments">
+                                    <Link href="/assignments">
                                         <Button variant="ghost" size="sm">View All</Button>
                                     </Link>
                                 </div>
@@ -439,12 +439,12 @@ export default function Dashboard(props: Props) {
                             onChatSelect={async (chatId) => {
                                 setIsLoading(true);
                                 setSelectedChatId(chatId);
-                                
+
                                 try {
                                     // Fetch messages from the API
                                     const response = await fetch(`/api/web/groups/${chatId}/messages`);
                                     if (!response.ok) throw new Error('Failed to load messages');
-                                    
+
                                     const data = await response.json();
                                     // Convert messages to the format expected by ChatWindow
                                     const formattedMessages = data.map(msg => ({
@@ -458,9 +458,9 @@ export default function Dashboard(props: Props) {
                                         timestamp: new Date(msg.created_at).toLocaleTimeString(),
                                         isSystemMessage: msg.is_system_message
                                     }));
-                                    
+
                                     setMessages(formattedMessages);
-                                    
+
                                     // Reset unread count for this group
                                     setGroups(prev => prev.map(g => {
                                         if (g.id === chatId) {
@@ -493,7 +493,7 @@ export default function Dashboard(props: Props) {
                                 currentUserId={auth.user.id}
                                 onSendMessage={async (content) => {
                                     if (!selectedChatId) return;
-                                    
+
                                     try {
                                         setIsLoading(true);
                                         const response = await fetch(`/api/web/groups/${selectedChatId}/messages`, {
@@ -504,11 +504,11 @@ export default function Dashboard(props: Props) {
                                             },
                                             body: JSON.stringify({ message: content })
                                         });
-                                        
+
                                         if (!response.ok) throw new Error('Failed to send message');
-                                        
+
                                         const newMessage = await response.json();
-                                        
+
                                         // Add the new message to the messages array
                                         setMessages(prev => [...prev, {
                                             id: newMessage.id,
@@ -521,7 +521,7 @@ export default function Dashboard(props: Props) {
                                             timestamp: new Date(newMessage.created_at).toLocaleTimeString(),
                                             isSystemMessage: newMessage.is_system_message
                                         }]);
-                                        
+
                                     } catch (e) {
                                         console.error('Error sending message:', e);
                                         toast({

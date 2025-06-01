@@ -20,7 +20,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Assignments',
-        href: '/group-assignments',
+        href: '/assignments',
         icon: ClipboardList,
     },
     {

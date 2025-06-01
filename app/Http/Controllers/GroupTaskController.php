@@ -94,7 +94,7 @@ class GroupTaskController extends Controller
 
         return redirect()->route('group-tasks.show', [
             'group' => $assignment->group_id,
-            'assignment' => $validated['assignment_id'],
+            'assignment' => $assignment->id,
             'task' => $task->id
         ]);
     }
@@ -102,37 +102,47 @@ class GroupTaskController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(GroupTask $groupTask)
+    public function show($group, $assignment, GroupTask $task)
     {
         // Load the task with its relationships to ensure they exist
-        $groupTask->load(['assignment.group', 'assigned_user']);
+        $task->load(['assignment.group', 'assigned_user']);
 
-        if (!$groupTask->assignment || !$groupTask->assignment->group) {
+        if (!$task->assignment || !$task->assignment->group) {
             abort(404, 'Task, assignment or group not found');
         }
 
-        if (!$groupTask->assignment->group->members()->where('user_id', auth()->id())->exists()) {
+        // Verify the task belongs to the specified assignment and group
+        if ($task->assignment->id != $assignment || $task->assignment->group->id != $group) {
+            abort(404, 'Task does not belong to the specified assignment or group');
+        }
+
+        if (!$task->assignment->group->members()->where('user_id', auth()->id())->exists()) {
             abort(403, 'You are not a member of this group');
         }
 
         return Inertia::render('tasks/Show', [
-            'task' => $groupTask
+            'task' => $task
         ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(GroupTask $groupTask)
+    public function edit($group, $assignment, GroupTask $task)
     {
-        if (!$groupTask->assignment->group->isLeader(auth()->id())) {
+        if (!$task->assignment->group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to edit this task');
         }
 
-        $groupMembers = $groupTask->assignment->group->members()->with('user')->get()->pluck('user');
+        // Verify the task belongs to the specified assignment and group
+        if ($task->assignment->id != $assignment || $task->assignment->group->id != $group) {
+            abort(404, 'Task does not belong to the specified assignment or group');
+        }
+
+        $groupMembers = $task->assignment->group->members()->with('user')->get()->pluck('user');
 
         return Inertia::render('tasks/Edit', [
-            'task' => $groupTask,
+            'task' => $task,
             'group_members' => $groupMembers
         ]);
     }
@@ -165,15 +175,23 @@ class GroupTaskController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(GroupTask $groupTask)
+    public function destroy($group, $assignment, GroupTask $task)
     {
-        if (!$groupTask->assignment->group->isLeader(auth()->id())) {
+        if (!$task->assignment->group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to delete this task');
         }
 
-        $groupTask->delete();
+        // Verify the task belongs to the specified assignment and group
+        if ($task->assignment->id != $assignment || $task->assignment->group->id != $group) {
+            abort(404, 'Task does not belong to the specified assignment or group');
+        }
 
-        return redirect()->route('group-tasks.index');
+        $task->delete();
+
+        return redirect()->route('group-assignments.show', [
+            'group' => $group,
+            'assignment' => $assignment
+        ]);
     }
 
     /**
@@ -239,12 +257,18 @@ class GroupTaskController extends Controller
         $task->load('assignment.group');
 
         if ($task->assignment === null || $task->assignment->group === null) {
-            abort(404, 'Assignment or group not found');
+            return Inertia::render('Error', [
+                'status' => 404,
+                'message' => 'Assignment or group not found'
+            ])->toResponse(request())->setStatusCode(404);
         }
 
         // Either the task is assigned to the current user or they are a group leader
         if ($task->assigned_user_id !== auth()->id() && !$task->assignment->group->isLeader(auth()->id())) {
-            abort(403, 'You are not authorized to mark this task as complete');
+            return Inertia::render('Error', [
+                'status' => 403,
+                'message' => 'You are not authorized to mark this task as complete'
+            ])->toResponse(request())->setStatusCode(403);
         }
 
         $task->update([
@@ -262,12 +286,18 @@ class GroupTaskController extends Controller
         $task->load('assignment.group');
 
         if ($task->assignment === null || $task->assignment->group === null) {
-            abort(404, 'Assignment or group not found');
+            return Inertia::render('Error', [
+                'status' => 404,
+                'message' => 'Assignment or group not found'
+            ])->toResponse(request())->setStatusCode(404);
         }
 
         // Either the task is assigned to the current user or they are a group leader
         if ($task->assigned_user_id !== auth()->id() && !$task->assignment->group->isLeader(auth()->id())) {
-            abort(403, 'You are not authorized to mark this task as complete');
+            return Inertia::render('Error', [
+                'status' => 403,
+                'message' => 'You are not authorized to mark this task as complete'
+            ])->toResponse(request())->setStatusCode(403);
         }
 
         $task->update([
@@ -285,11 +315,17 @@ class GroupTaskController extends Controller
         $task->load('assignment.group');
 
         if ($task->assignment === null || $task->assignment->group === null) {
-            abort(404, 'Assignment or group not found');
+            return Inertia::render('Error', [
+                'status' => 404,
+                'message' => 'Assignment or group not found'
+            ])->toResponse(request())->setStatusCode(404);
         }
 
         if (!$task->assignment->group->isLeader(auth()->id())) {
-            abort(403, 'You are not authorized to update this task');
+            return Inertia::render('Error', [
+                'status' => 403,
+                'message' => 'You are not authorized to update this task'
+            ])->toResponse(request())->setStatusCode(403);
         }
 
         $validated = $request->validate([

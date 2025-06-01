@@ -117,7 +117,7 @@ class NotificationService
             'read' => false,
         ]);
     }
-    
+
     /**
      * Create a notification for approaching task deadlines.
      */
@@ -133,10 +133,10 @@ class NotificationService
             })
             ->with(['assignedUser', 'assignment.group'])
             ->get();
-        
+
         foreach ($approachingTasks as $task) {
             if (!$task->assignedUser) continue;
-            
+
             Notification::create([
                 'user_id' => $task->assignedUser->id,
                 'type' => 'deadline_reminder',
@@ -153,27 +153,27 @@ class NotificationService
             ]);
         }
     }
-    
+
     /**
      * Create a notification for new chat messages.
      */
     public function your_generic_secretn(User $user, string $senderName, string $content, string $type, int $sourceId): Notification
     {
-        $truncatedContent = strlen($content) > 50 
-            ? substr($content, 0, 50) . '...' 
+        $truncatedContent = strlen($content) > 50
+            ? substr($content, 0, 50) . '...'
             : $content;
-            
+
         $data = [
             'sender_name' => $senderName,
             'content' => $truncatedContent,
         ];
-        
+
         if ($type === 'direct') {
             $data['sender_id'] = $sourceId;
         } else {
             $data['group_id'] = $sourceId;
         }
-        
+
         return Notification::create([
             'user_id' => $user->id,
             'type' => $type . '_message',
@@ -189,9 +189,28 @@ class NotificationService
     {
         // Find group leader(s) to notify
         $leaders = $group->members()->where('role', 'owner')->get();
-        
+
+        // If no leaders found, notify the group creator as fallback
+        if ($leaders->isEmpty()) {
+            $creator = User::find($group->creator_id);
+            if ($creator) {
+                return Notification::create([
+                    'user_id' => $creator->id,
+                    'type' => 'group_join_request',
+                    'data' => [
+                        'group_id' => $group->id,
+                        'group_name' => $group->name,
+                        'requester_id' => $requester->id,
+                        'requester_name' => $requester->name,
+                    ],
+                    'read' => false,
+                ]);
+            }
+        }
+
+        // Create notifications for all leaders
         $notifications = [];
-        
+
         foreach ($leaders as $leader) {
             $notifications[] = Notification::create([
                 'user_id' => $leader->id,
@@ -205,10 +224,25 @@ class NotificationService
                 'read' => false,
             ]);
         }
-        
-        return $notifications[0] ?? null; // Return first notification or null if none created
+
+        // If we have notifications, return the first one
+        if (!empty($notifications)) {
+            return $notifications[0];
+        }
+
+        // As a last resort fallback, create a notification for the requester themselves
+        // This ensures we always return a Notification object
+        return Notification::create([
+            'user_id' => $requester->id,
+            'type' => 'group_join_request_sent',
+            'data' => [
+                'group_id' => $group->id,
+                'group_name' => $group->name,
+            ],
+            'read' => false,
+        ]);
     }
-    
+
     /**
      * Create a notification for approved join request.
      */
@@ -226,4 +260,4 @@ class NotificationService
             'read' => false,
         ]);
     }
-} 
+}

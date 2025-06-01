@@ -396,7 +396,9 @@ export default function Dashboard(props: Props) {
                                             return (
                                                 <div key={task.id} className="p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md">
                                                     <div className="flex justify-between">
-                                                        <Link href={route('group-tasks.show', { group: groupId, assignment: task.assignment.id, task: task.id })} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                        <Link href={groupId
+                                                            ? route('group-tasks.show', { group: groupId, assignment: task.assignment.id, task: task.id })
+                                                            : `/tasks/${task.id}`} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
                                                             {task.title}
                                                         </Link>
                                                         <span className={`px-2 py-0.5 rounded-full text-xs ${task.status === 'completed'

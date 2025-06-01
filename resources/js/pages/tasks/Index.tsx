@@ -74,6 +74,36 @@ const formatDate = (dateString: string): string => {
     }
 };
 
+// Helper function to format time distance in a more readable way
+const formatTimeDistance = (dateString: string): string => {
+    try {
+        const date = parseISO(dateString);
+        const now = new Date();
+        const diffInMs = Math.abs(date.getTime() - now.getTime());
+
+        // If less than 1 minute, show milliseconds or seconds
+        if (diffInMs < 60000) {
+            if (diffInMs < 1000) {
+                return `${diffInMs}ms`;
+            } else {
+                return `${Math.floor(diffInMs / 1000)}s`;
+            }
+        }
+        // If less than 1 hour, show minutes
+        else if (diffInMs < 3600000) {
+            return `${Math.floor(diffInMs / 60000)}m`;
+        }
+        // If less than 1 day, show hours
+        else if (diffInMs < 86400000) {
+            return `${Math.floor(diffInMs / 3600000)}h`;
+        }
+        // Otherwise use the formatDistanceToNow function
+        return formatDistanceToNow(date, { addSuffix: true });
+    } catch {
+        return 'Invalid date';
+    }
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'My Tasks',
@@ -510,7 +540,7 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                                     </span>
                                                     <span className="flex items-center">
                                                         <Clock className="mr-1 h-4 w-4" />
-                                                        {formatDistanceToNow(parseISO(task.end_date), { addSuffix: true })}
+                                                        {formatTimeDistance(task.end_date)}
                                                     </span>
                                                 </div>
                                             </CardContent>
@@ -612,7 +642,7 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                                     </span>
                                                     <span className="flex items-center">
                                                         <Clock className="mr-1 h-4 w-4" />
-                                                        {formatDistanceToNow(parseISO(task.end_date), { addSuffix: true })}
+                                                        {formatTimeDistance(task.end_date)}
                                                     </span>
                                                 </div>
                                             </CardContent>

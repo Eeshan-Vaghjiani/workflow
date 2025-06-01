@@ -6,6 +6,7 @@ use App\Models\GroupAssignment;
 use App\Models\Group;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Carbon\Carbon;
 
 class your_generic_secretr extends Controller
 {
@@ -17,7 +18,7 @@ class your_generic_secretr extends Controller
         // Start with a query that always includes group data
         $query = GroupAssignment::query()
             ->with(['group', 'tasks' => function($query) {
-                $query->select('id', 'assignment_id'); // Only get the count
+                $query->select('id', 'assignment_id', 'status', 'title', 'description', 'assigned_user_id');
             }]);
 
         // Filter by group if one is provided
@@ -72,6 +73,17 @@ class your_generic_secretr extends Controller
         $query->orderBy($sort, $direction);
 
         $assignments = $query->get();
+
+        // Update status for overdue assignments in the response data (not saving to DB)
+        $today = Carbon::now()->startOfDay();
+        foreach ($assignments as $key => $assignment) {
+            $dueDate = Carbon::parse($assignment->due_date)->startOfDay();
+
+            // If the assignment is active and past due date, mark as 'due' in the response
+            if ($assignment->status === 'active' && $dueDate->lt($today)) {
+                $assignments[$key]->status = 'due';
+            }
+        }
 
         // Filter out any assignments with null groups (shouldn't happen, but just in case)
         $assignments = $assignments->filter(function ($assignment) {

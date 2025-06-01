@@ -20,7 +20,13 @@ interface Assignment {
     status: string;
     unit_name: string;
     created_at: string;
-    tasks: { id: number }[];
+    tasks: {
+        id: number;
+        status: string;
+        title?: string;
+        description?: string | null;
+        assigned_user_id?: number | null;
+    }[];
     group: {
         id: number;
         name: string;
@@ -132,6 +138,8 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
                 return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
             case 'active':
                 return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+            case 'due':
+                return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
             case 'archived':
                 return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100';
             default:
@@ -146,15 +154,56 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
         const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
         if (daysUntilDue < 0) {
-            return 'text-red-500'; // Overdue
-        } else if (daysUntilDue <= 3) {
-            return 'text-orange-500'; // Due soon
-        } else if (daysUntilDue <= 7) {
-            return 'text-yellow-500'; // Due this week
+            return 'text-red-600 dark:text-red-400 font-semibold'; // Overdue
+        } else if (daysUntilDue === 0) {
+            return 'text-orange-600 dark:text-orange-400 font-semibold'; // Due today
+        } else if (daysUntilDue <= 2) {
+            return 'text-amber-600 dark:text-amber-400'; // Due very soon (1-2 days)
+        } else if (daysUntilDue <= 5) {
+            return 'text-yellow-600 dark:text-yellow-400'; // Due soon (3-5 days)
+        } else if (daysUntilDue <= 14) {
+            return 'text-lime-600 dark:text-lime-400'; // Due in a couple weeks
         } else {
-            return 'text-green-500'; // Due later
+            return 'text-green-600 dark:text-green-400'; // Due later
         }
     };
+
+    // Get border color based on task completion and due date
+    const getBorderColor = (assignment: Assignment) => {
+        const now = new Date();
+        const due = parseISO(assignment.due_date);
+        const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Check if all tasks are completed
+        const hasCompletableTasks = assignment.tasks.length > 0;
+        const allTasksCompleted = hasCompletableTasks &&
+            assignment.tasks.every(task => task.status === 'completed');
+
+        if (allTasksCompleted) {
+            return 'border-green-500 dark:border-green-600'; // All tasks completed
+        } else if (daysUntilDue < 0 && assignment.status !== 'completed') {
+            return 'border-red-500 dark:border-red-600'; // Overdue and not all tasks completed
+        } else {
+            return 'border-gray-200 dark:border-gray-700'; // Default border
+        }
+    };
+
+    // Process assignments to mark overdue ones as 'due'
+    const processedAssignments = assignments.map(assignment => {
+        const now = new Date();
+        const due = parseISO(assignment.due_date);
+        const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        // Create a shallow copy of the assignment
+        const processedAssignment = { ...assignment };
+
+        // If the assignment is active but past due date, mark as 'due'
+        if (processedAssignment.status === 'active' && daysUntilDue < 0) {
+            processedAssignment.status = 'due';
+        }
+
+        return processedAssignment;
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -226,6 +275,7 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
                                     <SelectContent>
                                         <SelectItem value="all">All Statuses</SelectItem>
                                         <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="due">Due</SelectItem>
                                         <SelectItem value="completed">Completed</SelectItem>
                                         <SelectItem value="archived">Archived</SelectItem>
                                     </SelectContent>
@@ -301,10 +351,13 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
                     </Button>
                 </div>
 
-                {assignments.length > 0 ? (
+                {processedAssignments.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {assignments.map((assignment) => (
-                            <Card key={assignment.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                        {processedAssignments.map((assignment) => (
+                            <Card
+                                key={assignment.id}
+                                className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(assignment)}`}
+                            >
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-start">
                                         <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })}>

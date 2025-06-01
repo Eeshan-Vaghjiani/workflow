@@ -13,6 +13,7 @@ import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import _ from 'lodash';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Task {
     id: number;
@@ -89,6 +90,7 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
     const [sort, setSort] = useState(filters.sort || 'end_date');
     const [direction, setDirection] = useState(filters.direction || 'asc');
     const [viewAll, setViewAll] = useState(filters.view_all === 'true');
+    const [activeTab, setActiveTab] = useState('uncompleted');
 
     // Debounced search function
     const debouncedSearch = _.debounce((value: string) => {
@@ -441,111 +443,215 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                     </Button>
                 </div>
 
-                {tasks.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {tasks.map((task) => (
-                            <Card
-                                key={task.id}
-                                className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(task)}`}
-                            >
-                                <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start">
-                                        {task.assignment && task.assignment.group ? (
-                                            <Link href={route('group-tasks.show', {
-                                                group: task.assignment.group.id,
-                                                assignment: task.assignment.id,
-                                                task: task.id
-                                            })}>
-                                                <CardTitle className="text-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1">{task.title}</CardTitle>
-                                            </Link>
-                                        ) : (
-                                            <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
-                                        )}
-                                        <div className="flex gap-2">
-                                            <Badge className={getPriorityColor(task.priority)}>
-                                                {task.priority}
-                                            </Badge>
-                                            <Badge className={getStatusColor(task.status)}>
-                                                {task.status.replace('_', ' ')}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    {task.assignment && (
-                                        <CardDescription>
-                                            {task.assignment.title}
-                                        </CardDescription>
-                                    )}
-                                </CardHeader>
-                                <CardContent className="pb-2">
-                                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="flex items-center">
-                                            <CalendarIcon className="mr-1 h-4 w-4" />
-                                            <span className={getDueDateColor(task.end_date)}>
-                                                {formatDate(task.end_date)}
-                                            </span>
-                                        </span>
-                                        <span className="flex items-center">
-                                            <Clock className="mr-1 h-4 w-4" />
-                                            {formatDistanceToNow(parseISO(task.end_date), { addSuffix: true })}
-                                        </span>
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="pt-2 flex justify-between items-center border-t">
-                                    <div className="flex items-center">
-                                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                                            {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
-                                        </span>
-                                    </div>
-                                    {task.assigned_user && (
-                                        <Badge variant="outline">
-                                            {task.assigned_user.name}
-                                        </Badge>
-                                    )}
-                                </CardFooter>
-                                {task.status !== 'completed' && (
-                                    <div className="px-4 pb-4">
-                                        <Link
-                                            href={route('group-tasks.complete-simple', task.id)}
-                                            method="post"
-                                            as="button"
-                                            className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"
+                {/* Tabs for completed/uncompleted tasks */}
+                <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                        <TabsTrigger value="uncompleted">
+                            Uncompleted Tasks
+                            <Badge variant="outline" className="ml-2">
+                                {tasks.filter(task => task.status !== 'completed').length}
+                            </Badge>
+                        </TabsTrigger>
+                        <TabsTrigger value="completed">
+                            Completed Tasks
+                            <Badge variant="outline" className="ml-2">
+                                {tasks.filter(task => task.status === 'completed').length}
+                            </Badge>
+                        </TabsTrigger>
+                    </TabsList>
+
+                    {/* Uncompleted Tasks Tab */}
+                    <TabsContent value="uncompleted">
+                        {tasks.filter(task => task.status !== 'completed').length > 0 ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {tasks
+                                    .filter(task => task.status !== 'completed')
+                                    .map((task) => (
+                                        <Card
+                                            key={task.id}
+                                            className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(task)}`}
                                         >
-                                            Mark as Complete
+                                            <CardHeader className="pb-2">
+                                                <div className="flex justify-between items-start">
+                                                    {task.assignment && task.assignment.group ? (
+                                                        <Link href={route('group-tasks.show', {
+                                                            group: task.assignment.group.id,
+                                                            assignment: task.assignment.id,
+                                                            task: task.id
+                                                        })}>
+                                                            <CardTitle className="text-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1">{task.title}</CardTitle>
+                                                        </Link>
+                                                    ) : (
+                                                        <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
+                                                    )}
+                                                    <div className="flex gap-2">
+                                                        <Badge className={getPriorityColor(task.priority)}>
+                                                            {task.priority}
+                                                        </Badge>
+                                                        <Badge className={getStatusColor(task.status)}>
+                                                            {task.status.replace('_', ' ')}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                                {task.assignment && (
+                                                    <CardDescription>
+                                                        {task.assignment.title}
+                                                    </CardDescription>
+                                                )}
+                                            </CardHeader>
+                                            <CardContent className="pb-2">
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="flex items-center">
+                                                        <CalendarIcon className="mr-1 h-4 w-4" />
+                                                        <span className={getDueDateColor(task.end_date)}>
+                                                            {formatDate(task.end_date)}
+                                                        </span>
+                                                    </span>
+                                                    <span className="flex items-center">
+                                                        <Clock className="mr-1 h-4 w-4" />
+                                                        {formatDistanceToNow(parseISO(task.end_date), { addSuffix: true })}
+                                                    </span>
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
+                                                <div className="flex items-center">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
+                                                    </span>
+                                                </div>
+                                                {task.assigned_user && (
+                                                    <Badge variant="outline">
+                                                        {task.assigned_user.name}
+                                                    </Badge>
+                                                )}
+                                            </CardFooter>
+                                            <div className="px-4 pb-4">
+                                                <Link
+                                                    href={route('group-tasks.complete-simple', task.id)}
+                                                    method="post"
+                                                    as="button"
+                                                    className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"
+                                                >
+                                                    Mark as Complete
+                                                </Link>
+                                            </div>
+                                        </Card>
+                                    ))}
+                            </div>
+                        ) : (
+                            <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border">
+                                <div className="text-center">
+                                    <h3 className="text-xl font-semibold mb-2">No Uncompleted Tasks</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                        {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
+                                            ? 'Try adjusting your filters to see more tasks.'
+                                            : 'All your tasks are completed. Great job!'}
+                                    </p>
+                                    {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') ? (
+                                        <Button onClick={resetFilters} variant="outline">
+                                            <X className="mr-2 h-4 w-4" />
+                                            Reset Filters
+                                        </Button>
+                                    ) : (
+                                        <Link
+                                            href={route('group-tasks.create')}
+                                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                                        >
+                                            Create Task
                                         </Link>
-                                    </div>
-                                )}
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[50vh] flex items-center justify-center overflow-hidden rounded-xl border">
-                        <div className="text-center">
-                            <h3 className="text-xl font-semibold mb-2">No Tasks Found</h3>
-                            <p className="text-gray-500 dark:text-gray-400 mb-4">
-                                {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
-                                    ? 'Try adjusting your filters to see more tasks.'
-                                    : viewAll
-                                        ? 'There are no tasks in your groups.'
-                                        : 'You have no tasks assigned to you at the moment.'}
-                            </p>
-                            {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') ? (
-                                <Button onClick={resetFilters} variant="outline">
-                                    <X className="mr-2 h-4 w-4" />
-                                    Reset Filters
-                                </Button>
-                            ) : (
-                                <Link
-                                    href={route('group-tasks.create')}
-                                    className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
-                                >
-                                    Create Task
-                                </Link>
-                            )}
-                        </div>
-                        <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
-                    </div>
-                )}
+                                    )}
+                                </div>
+                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
+                            </div>
+                        )}
+                    </TabsContent>
+
+                    {/* Completed Tasks Tab */}
+                    <TabsContent value="completed">
+                        {tasks.filter(task => task.status === 'completed').length > 0 ? (
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {tasks
+                                    .filter(task => task.status === 'completed')
+                                    .map((task) => (
+                                        <Card
+                                            key={task.id}
+                                            className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(task)}`}
+                                        >
+                                            <CardHeader className="pb-2">
+                                                <div className="flex justify-between items-start">
+                                                    {task.assignment && task.assignment.group ? (
+                                                        <Link href={route('group-tasks.show', {
+                                                            group: task.assignment.group.id,
+                                                            assignment: task.assignment.id,
+                                                            task: task.id
+                                                        })}>
+                                                            <CardTitle className="text-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1">{task.title}</CardTitle>
+                                                        </Link>
+                                                    ) : (
+                                                        <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
+                                                    )}
+                                                    <Badge className={getStatusColor(task.status)}>
+                                                        {task.status.replace('_', ' ')}
+                                                    </Badge>
+                                                </div>
+                                                {task.assignment && (
+                                                    <CardDescription>
+                                                        {task.assignment.title}
+                                                    </CardDescription>
+                                                )}
+                                            </CardHeader>
+                                            <CardContent className="pb-2">
+                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className="flex items-center">
+                                                        <CalendarIcon className="mr-1 h-4 w-4" />
+                                                        <span>
+                                                            {formatDate(task.end_date)}
+                                                        </span>
+                                                    </span>
+                                                    <span className="flex items-center">
+                                                        <Clock className="mr-1 h-4 w-4" />
+                                                        {formatDistanceToNow(parseISO(task.end_date), { addSuffix: true })}
+                                                    </span>
+                                                </div>
+                                            </CardContent>
+                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
+                                                <div className="flex items-center">
+                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
+                                                    </span>
+                                                </div>
+                                                {task.assigned_user && (
+                                                    <Badge variant="outline">
+                                                        {task.assigned_user.name}
+                                                    </Badge>
+                                                )}
+                                            </CardFooter>
+                                        </Card>
+                                    ))}
+                            </div>
+                        ) : (
+                            <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border">
+                                <div className="text-center">
+                                    <h3 className="text-xl font-semibold mb-2">No Completed Tasks</h3>
+                                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                        {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
+                                            ? 'Try adjusting your filters to see more tasks.'
+                                            : 'You have not completed any tasks yet.'}
+                                    </p>
+                                    {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') && (
+                                        <Button onClick={resetFilters} variant="outline">
+                                            <X className="mr-2 h-4 w-4" />
+                                            Reset Filters
+                                        </Button>
+                                    )}
+                                </div>
+                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
+                            </div>
+                        )}
+                    </TabsContent>
+                </Tabs>
             </div>
         </AppLayout>
     );

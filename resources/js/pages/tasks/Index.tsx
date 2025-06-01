@@ -1,14 +1,29 @@
+import React, { useState, useEffect } from 'react';
 import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarIcon, ChevronDown, ChevronUp, Clock, Search, X } from 'lucide-react';
+import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import _ from 'lodash';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface Task {
     id: number;
     title: string;
     description: string | null;
     end_date: string;
-    status: 'pending' | 'completed';
+    start_date: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    priority: 'low' | 'medium' | 'high';
+    effort_hours: number;
+    importance: number;
     assignment: {
         id: number;
         title: string;
@@ -17,93 +32,479 @@ interface Task {
             name: string;
         };
     };
-    assignedUser?: {
+    assigned_user?: {
         id: number;
         name: string;
     };
 }
 
+interface Assignment {
+    id: number;
+    title: string;
+}
+
+interface Group {
+    id: number;
+    name: string;
+}
+
 interface Props {
     tasks: Task[];
+    assignments: Assignment[];
+    userGroups: Group[];
+    filters: {
+        search: string;
+        assignment_id: string;
+        group_id: string;
+        status: string;
+        priority: string;
+        sort: string;
+        direction: string;
+        view_all: string;
+    };
 }
+
+// Helper function to format dates in DD/MM/YYYY format
+const formatDate = (dateString: string): string => {
+    try {
+        return format(parseISO(dateString), 'dd/MM/yyyy');
+    } catch {
+        return dateString;
+    }
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Tasks',
+        title: 'My Tasks',
         href: '/group-tasks',
     },
 ];
 
-export default function Index({ tasks }: Props) {
+export default function Index({ tasks, assignments, userGroups, filters }: Props) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [assignmentId, setAssignmentId] = useState(filters.assignment_id || 'all');
+    const [groupId, setGroupId] = useState(filters.group_id || 'all');
+    const [status, setStatus] = useState(filters.status || 'all');
+    const [priority, setPriority] = useState(filters.priority || 'all');
+    const [sort, setSort] = useState(filters.sort || 'end_date');
+    const [direction, setDirection] = useState(filters.direction || 'asc');
+    const [viewAll, setViewAll] = useState(filters.view_all === 'true');
+
+    // Debounced search function
+    const debouncedSearch = _.debounce((value: string) => {
+        updateFilters({ search: value });
+    }, 300);
+
+    useEffect(() => {
+        debouncedSearch(search);
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [search]);
+
+    // Update URL with filters
+    const updateFilters = (newFilters: Partial<Props['filters']>) => {
+        const updatedFilters = {
+            ...filters,
+            ...newFilters
+        };
+
+        // Remove empty filters and convert 'all' to empty string for the backend
+        const processedFilters: Record<string, string> = {};
+        Object.keys(updatedFilters).forEach((key: string) => {
+            const value = updatedFilters[key as keyof Props['filters']];
+            if (value && value !== 'all') {
+                processedFilters[key] = value;
+            }
+        });
+
+        router.get(route('group-tasks.index'), processedFilters, {
+            preserveState: true,
+            replace: true
+        });
+    };
+
+    // Handle sort change
+    const handleSort = (newSort: string) => {
+        let newDirection = 'asc';
+        if (newSort === sort) {
+            newDirection = direction === 'asc' ? 'desc' : 'asc';
+        }
+        setSort(newSort);
+        setDirection(newDirection);
+        updateFilters({ sort: newSort, direction: newDirection });
+    };
+
+    // Reset all filters
+    const resetFilters = () => {
+        setSearch('');
+        setAssignmentId('all');
+        setGroupId('all');
+        setStatus('all');
+        setPriority('all');
+        setSort('end_date');
+        setDirection('asc');
+        setViewAll(false);
+        router.get(route('group-tasks.index'), {}, {
+            preserveState: true,
+            replace: true
+        });
+    };
+
+    // Toggle between viewing all tasks and just assigned tasks
+    const toggleViewAll = () => {
+        const newViewAll = !viewAll;
+        setViewAll(newViewAll);
+        updateFilters({ view_all: newViewAll ? 'true' : 'false' });
+    };
+
+    // Get status badge color
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+            case 'in_progress':
+                return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100';
+            default:
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100';
+        }
+    };
+
+    // Get priority badge color
+    const getPriorityColor = (priority: string) => {
+        switch (priority) {
+            case 'high':
+                return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
+            case 'medium':
+                return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100';
+            case 'low':
+                return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+            default:
+                return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100';
+        }
+    };
+
+    // Get due date color based on proximity
+    const getDueDateColor = (dueDate: string) => {
+        const now = new Date();
+        const due = parseISO(dueDate);
+        const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (daysUntilDue < 0) {
+            return 'text-red-600 dark:text-red-400 font-semibold'; // Overdue
+        } else if (daysUntilDue === 0) {
+            return 'text-orange-600 dark:text-orange-400 font-semibold'; // Due today
+        } else if (daysUntilDue <= 2) {
+            return 'text-amber-600 dark:text-amber-400'; // Due very soon (1-2 days)
+        } else if (daysUntilDue <= 5) {
+            return 'text-yellow-600 dark:text-yellow-400'; // Due soon (3-5 days)
+        } else if (daysUntilDue <= 14) {
+            return 'text-lime-600 dark:text-lime-400'; // Due in a couple weeks
+        } else {
+            return 'text-green-600 dark:text-green-400'; // Due later
+        }
+    };
+
+    // Get border color based on task status and due date
+    const getBorderColor = (task: Task) => {
+        const now = new Date();
+        const due = parseISO(task.end_date);
+        const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+        // First priority: Overdue tasks always get red border
+        if (daysUntilDue < 0) {
+            return 'border-red-500 dark:border-red-600'; // Overdue task
+        }
+
+        if (task.status === 'completed') {
+            return 'border-green-500 dark:border-green-600'; // Completed task
+        } else if (task.priority === 'high') {
+            return 'border-orange-500 dark:border-orange-600'; // High priority task
+        } else {
+            return 'border-gray-200 dark:border-gray-700'; // Default border
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Tasks" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex justify-between mb-4">
-                    <h1 className="text-2xl font-bold">Tasks</h1>
-                    <Link
-                        href={route('group-tasks.create')}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+            <Head title={viewAll ? 'All Tasks' : 'My Tasks'} />
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <div className="flex justify-between items-center mb-4">
+                    <h1 className="text-2xl font-bold">
+                        {viewAll ? 'All Tasks' : 'My Tasks'}
+                    </h1>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="view-all-tasks"
+                                checked={viewAll}
+                                onCheckedChange={toggleViewAll}
+                            />
+                            <Label htmlFor="view-all-tasks" className="text-sm">
+                                {viewAll ? 'Viewing all tasks' : 'Viewing my tasks'}
+                            </Label>
+                        </div>
+                        <Link
+                            href={route('group-tasks.create')}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                        >
+                            Create Task
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Filters */}
+                <Card className="mb-4">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-lg">Filters</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">Search</label>
+                                <div className="relative">
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Search tasks..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        className="pl-8"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">Assignment</label>
+                                <Select
+                                    value={assignmentId}
+                                    onValueChange={(value) => {
+                                        setAssignmentId(value);
+                                        updateFilters({ assignment_id: value });
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Assignments" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Assignments</SelectItem>
+                                        {assignments.map((assignment) => (
+                                            <SelectItem key={assignment.id} value={assignment.id.toString()}>
+                                                {assignment.title}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">Group</label>
+                                <Select
+                                    value={groupId}
+                                    onValueChange={(value) => {
+                                        setGroupId(value);
+                                        updateFilters({ group_id: value });
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Groups" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Groups</SelectItem>
+                                        {userGroups.map((group) => (
+                                            <SelectItem key={group.id} value={group.id.toString()}>
+                                                {group.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">Status</label>
+                                <Select
+                                    value={status}
+                                    onValueChange={(value) => {
+                                        setStatus(value);
+                                        updateFilters({ status: value });
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Statuses" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Statuses</SelectItem>
+                                        <SelectItem value="pending">Pending</SelectItem>
+                                        <SelectItem value="in_progress">In Progress</SelectItem>
+                                        <SelectItem value="completed">Completed</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium">Priority</label>
+                                <Select
+                                    value={priority}
+                                    onValueChange={(value) => {
+                                        setPriority(value);
+                                        updateFilters({ priority: value });
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="All Priorities" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Priorities</SelectItem>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="md:col-span-3 lg:col-span-5 flex justify-end">
+                                <Button
+                                    variant="outline"
+                                    onClick={resetFilters}
+                                    className="w-full md:w-auto"
+                                >
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reset Filters
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Sort Controls */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                    <Button
+                        variant={sort === 'end_date' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSort('end_date')}
+                        className="flex items-center"
                     >
-                        Create Task
-                    </Link>
+                        Due Date
+                        {sort === 'end_date' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="ml-1 h-4 w-4" /> :
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                    </Button>
+                    <Button
+                        variant={sort === 'title' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSort('title')}
+                        className="flex items-center"
+                    >
+                        Title
+                        {sort === 'title' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="ml-1 h-4 w-4" /> :
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                    </Button>
+                    <Button
+                        variant={sort === 'priority' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSort('priority')}
+                        className="flex items-center"
+                    >
+                        Priority
+                        {sort === 'priority' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="ml-1 h-4 w-4" /> :
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                    </Button>
+                    <Button
+                        variant={sort === 'status' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSort('status')}
+                        className="flex items-center"
+                    >
+                        Status
+                        {sort === 'status' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="ml-1 h-4 w-4" /> :
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                    </Button>
+                    <Button
+                        variant={sort === 'effort_hours' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => handleSort('effort_hours')}
+                        className="flex items-center"
+                    >
+                        Effort Hours
+                        {sort === 'effort_hours' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="ml-1 h-4 w-4" /> :
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                        )}
+                    </Button>
                 </div>
 
                 {tasks.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {tasks.map((task) => (
-                            <div key={task.id} className="border rounded-xl p-4 hover:border-blue-500 transition dark:border-neutral-700 bg-white dark:bg-neutral-800">
-                                <div className="flex justify-between items-center mb-2">
-                                    {task.assignment && task.assignment.group ? (
-                                        <Link href={route('group-tasks.show', {
-                                            group: task.assignment.group.id,
-                                            assignment: task.assignment.id,
-                                            task: task.id
-                                        })}>
-                                            <h2 className="text-xl font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">{task.title}</h2>
-                                        </Link>
-                                    ) : (
-                                        <h2 className="text-xl font-semibold">{task.title}</h2>
-                                    )}
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        task.status === 'completed'
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300'
-                                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300'
-                                    }`}>
-                                        {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{task.description || 'No description'}</p>
-                                
-                                <div className="mb-3">
-                                    <p className="text-sm font-medium">Assigned to:</p>
-                                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                                        {task.assignedUser ? task.assignedUser.name : 'Unassigned'}
-                                    </p>
-                                </div>
-                                
-                                {task.assignment && task.assignment.group && (
-                                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                        <div>
-                                            <p className="font-medium">Assignment:</p>
-                                            <Link href={route('group-assignments.show', { group: task.assignment.group.id, assignment: task.assignment.id })} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                                                {task.assignment.title}
+                            <Card
+                                key={task.id}
+                                className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(task)}`}
+                            >
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-start">
+                                        {task.assignment && task.assignment.group ? (
+                                            <Link href={route('group-tasks.show', {
+                                                group: task.assignment.group.id,
+                                                assignment: task.assignment.id,
+                                                task: task.id
+                                            })}>
+                                                <CardTitle className="text-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1">{task.title}</CardTitle>
                                             </Link>
-                                        </div>
-                                        <div>
-                                            <p className="font-medium">Group:</p>
-                                            <Link href={route('groups.show', task.assignment.group.id)} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
-                                                {task.assignment.group.name}
-                                            </Link>
+                                        ) : (
+                                            <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
+                                        )}
+                                        <div className="flex gap-2">
+                                            <Badge className={getPriorityColor(task.priority)}>
+                                                {task.priority}
+                                            </Badge>
+                                            <Badge className={getStatusColor(task.status)}>
+                                                {task.status.replace('_', ' ')}
+                                            </Badge>
                                         </div>
                                     </div>
-                                )}
-                                <div className="mt-3 text-sm">
-                                    <p className="font-medium">Due:</p>
-                                    <p>{new Date(task.end_date).toLocaleDateString()}</p>
-                                </div>
-                                {task.status === 'pending' && (
-                                    <div className="mt-4">
+                                    {task.assignment && (
+                                        <CardDescription>
+                                            {task.assignment.title}
+                                        </CardDescription>
+                                    )}
+                                </CardHeader>
+                                <CardContent className="pb-2">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="flex items-center">
+                                            <CalendarIcon className="mr-1 h-4 w-4" />
+                                            <span className={getDueDateColor(task.end_date)}>
+                                                {formatDate(task.end_date)}
+                                            </span>
+                                        </span>
+                                        <span className="flex items-center">
+                                            <Clock className="mr-1 h-4 w-4" />
+                                            {formatDistanceToNow(parseISO(task.end_date), { addSuffix: true })}
+                                        </span>
+                                    </div>
+                                </CardContent>
+                                <CardFooter className="pt-2 flex justify-between items-center border-t">
+                                    <div className="flex items-center">
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                                            {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
+                                        </span>
+                                    </div>
+                                    {task.assigned_user && (
+                                        <Badge variant="outline">
+                                            {task.assigned_user.name}
+                                        </Badge>
+                                    )}
+                                </CardFooter>
+                                {task.status !== 'completed' && (
+                                    <div className="px-4 pb-4">
                                         <Link
                                             href={route('group-tasks.complete-simple', task.id)}
                                             method="post"
@@ -114,20 +515,33 @@ export default function Index({ tasks }: Props) {
                                         </Link>
                                     </div>
                                 )}
-                            </div>
+                            </Card>
                         ))}
                     </div>
                 ) : (
                     <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[50vh] flex items-center justify-center overflow-hidden rounded-xl border">
                         <div className="text-center">
-                            <h3 className="text-xl font-semibold mb-2">No Tasks Yet</h3>
-                            <p className="text-gray-500 dark:text-gray-400 mb-4">Create a task to start tracking your work.</p>
-                            <Link
-                                href={route('group-tasks.create')}
-                                className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
-                            >
-                                Create Task
-                            </Link>
+                            <h3 className="text-xl font-semibold mb-2">No Tasks Found</h3>
+                            <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
+                                    ? 'Try adjusting your filters to see more tasks.'
+                                    : viewAll
+                                        ? 'There are no tasks in your groups.'
+                                        : 'You have no tasks assigned to you at the moment.'}
+                            </p>
+                            {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') ? (
+                                <Button onClick={resetFilters} variant="outline">
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reset Filters
+                                </Button>
+                            ) : (
+                                <Link
+                                    href={route('group-tasks.create')}
+                                    className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                                >
+                                    Create Task
+                                </Link>
+                            )}
                         </div>
                         <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
                     </div>
@@ -135,4 +549,4 @@ export default function Index({ tasks }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

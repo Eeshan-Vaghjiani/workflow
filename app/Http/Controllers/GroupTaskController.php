@@ -18,11 +18,66 @@ class GroupTaskController extends Controller
     public function index(Request $request)
     {
         $tasksQuery = GroupTask::query()
-            ->with(['assignment.group', 'assigned_user'])
-            ->whereHas('assignment.group.members', function ($query) {
+            ->with(['assignment.group', 'assigned_user']);
+
+        // Default to showing only tasks assigned to the current user
+        // Unless view_all is explicitly set to true
+        if (!$request->has('view_all') || $request->view_all !== 'true') {
+            $tasksQuery->where('assigned_user_id', auth()->id());
+        } else {
+            // If viewing all tasks, only show those from groups the user is a member of
+            $tasksQuery->whereHas('assignment.group.members', function ($query) {
                 $query->where('user_id', auth()->id());
-            })
-            ->latest();
+            });
+        }
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $tasksQuery->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by assignment
+        if ($request->has('assignment_id') && !empty($request->assignment_id) && $request->assignment_id !== 'all') {
+            $tasksQuery->where('assignment_id', $request->assignment_id);
+        }
+
+        // Filter by group (through assignment)
+        if ($request->has('group_id') && !empty($request->group_id) && $request->group_id !== 'all') {
+            $tasksQuery->whereHas('assignment', function($query) use ($request) {
+                $query->where('group_id', $request->group_id);
+            });
+        }
+
+        // Filter by status
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
+            $tasksQuery->where('status', $request->status);
+        }
+
+        // Filter by priority
+        if ($request->has('priority') && !empty($request->priority) && $request->priority !== 'all') {
+            $tasksQuery->where('priority', $request->priority);
+        }
+
+        // Default sort by end_date (closest first)
+        $sort = $request->input('sort', 'end_date');
+        $direction = $request->input('direction', 'asc');
+
+        // Validate sort field
+        $validSortFields = ['end_date', 'title', 'created_at', 'status', 'priority', 'effort_hours'];
+        if (!in_array($sort, $validSortFields)) {
+            $sort = 'end_date';
+        }
+
+        // Validate direction
+        if (!in_array($direction, ['asc', 'desc'])) {
+            $direction = 'asc';
+        }
+
+        $tasksQuery->orderBy($sort, $direction);
 
         $tasks = $tasksQuery->get();
 
@@ -32,8 +87,30 @@ class GroupTaskController extends Controller
                    $task->assignment->group !== null;
         });
 
+        // Get all assignments the user has access to
+        $assignments = GroupAssignment::whereHas('group.members', function ($query) {
+            $query->where('user_id', auth()->id());
+        })->get(['id', 'title']);
+
+        // Get all groups the user is a member of
+        $userGroups = \App\Models\Group::whereHas('members', function($query) {
+            $query->where('user_id', auth()->id());
+        })->get(['id', 'name']);
+
         return Inertia::render('tasks/Index', [
-            'tasks' => $tasks
+            'tasks' => $tasks,
+            'assignments' => $assignments,
+            'userGroups' => $userGroups,
+            'filters' => [
+                'search' => $request->search,
+                'assignment_id' => $request->assignment_id,
+                'group_id' => $request->group_id,
+                'status' => $request->status,
+                'priority' => $request->priority,
+                'sort' => $sort,
+                'direction' => $direction,
+                'view_all' => $request->view_all === 'true' ? 'true' : 'false'
+            ]
         ]);
     }
 

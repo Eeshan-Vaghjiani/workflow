@@ -174,6 +174,11 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
         const due = parseISO(assignment.due_date);
         const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
+        // First priority: Overdue assignments always get red border
+        if (daysUntilDue < 0) {
+            return 'border-red-500 dark:border-red-600'; // Overdue assignment
+        }
+
         // Check if all tasks are completed
         const hasCompletableTasks = assignment.tasks.length > 0;
         const allTasksCompleted = hasCompletableTasks &&
@@ -181,8 +186,6 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
 
         if (allTasksCompleted) {
             return 'border-green-500 dark:border-green-600'; // All tasks completed
-        } else if (daysUntilDue < 0 && assignment.status !== 'completed') {
-            return 'border-red-500 dark:border-red-600'; // Overdue and not all tasks completed
         } else {
             return 'border-gray-200 dark:border-gray-700'; // Default border
         }

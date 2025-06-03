@@ -7,12 +7,12 @@ import { Calendar, Clock, Calendar as CalendarIcon, Plus, Edit, ListTodo, PlusSq
 import { cn } from '@/lib/utils';
 import axios from 'axios';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -96,7 +96,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     const [columnWidth, setColumnWidth] = useState(300);
     const [error, setError] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
-    
+
     // Task creation modal state
     const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
     const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>('');
@@ -109,7 +109,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     const [newTaskEffortHours, setNewTaskEffortHours] = useState('1');
     const [newTaskImportance, setNewTaskImportance] = useState('3');
     const [isCreatingTask, setIsCreatingTask] = useState(false);
-    
+
     // Task edit modal state
     const [isEditTaskModalOpen, setIsEditTaskModalOpen] = useState(false);
     const [isEditingTask, setIsEditingTask] = useState(false);
@@ -185,21 +185,21 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         try {
             // Skip project types (assignments), only update actual tasks
             if (task.type === 'project') return;
-            
+
             // Extract the task ID (remove the string prefix if present)
             const taskId = task.id.toString().replace('task-', '');
-            
+
             // Format dates for the API
             const startDate = task.start.toISOString().split('T')[0];
             const endDate = task.end.toISOString().split('T')[0];
-            
+
             // Send update to the backend
             await axios.put(`/api/tasks/${taskId}`, {
                 start_date: startDate,
                 end_date: endDate,
                 progress: task.progress
             });
-            
+
             console.log('Task updated:', task.id, startDate, endDate);
         } catch (error) {
             console.error('Error updating task:', error);
@@ -212,10 +212,10 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         try {
             // Skip project types (assignments), only update actual tasks
             if (task.type === 'project') return;
-            
+
             // Extract the task ID (remove the string prefix if present)
             const taskId = task.id.toString().replace('task-', '');
-            
+
             // Calculate status based on progress
             let status = 'not_started';
             if (task.progress >= 100) {
@@ -223,28 +223,28 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
             } else if (task.progress > 0) {
                 status = 'in_progress';
             }
-            
+
             // Send update to the backend
             await axios.put(`/api/tasks/${taskId}`, {
                 progress: task.progress,
                 status: status
             });
-            
+
             console.log('Task progress updated:', task.id, task.progress, status);
         } catch (error) {
             console.error('Error updating task progress:', error);
             setError('Failed to update task progress. Please try again.');
         }
     }, []);
-    
+
     // Handle adding a new task
     const handleAddTask = async () => {
         if (!selectedAssignmentId || !newTaskTitle || !newTaskStartDate || !newTaskEndDate) {
             return;
         }
-        
+
         setIsCreatingTask(true);
-        
+
         try {
             await axios.post('/api/tasks', {
                 title: newTaskTitle,
@@ -257,11 +257,11 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                 effort_hours: newTaskEffortHours,
                 importance: newTaskImportance
             });
-            
+
             // Close modal and reset form
             setIsAddTaskModalOpen(false);
             resetTaskForm();
-            
+
             // Refresh the page to show the new task
             router.reload();
         } catch (error) {
@@ -271,16 +271,16 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
             setIsCreatingTask(false);
         }
     };
-    
+
     // Handle editing an existing task
     const handleEditTask = async () => {
         if (!selectedTask) return;
-        
+
         setIsEditingTask(true);
-        
+
         try {
             const taskId = selectedTask.id.toString().replace('task-', '');
-            
+
             await axios.put(`/api/tasks/${taskId}`, {
                 title: newTaskTitle,
                 description: newTaskDescription,
@@ -291,11 +291,11 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                 effort_hours: newTaskEffortHours,
                 importance: newTaskImportance
             });
-            
+
             // Close modal and reset form
             setIsEditTaskModalOpen(false);
             setSelectedTask(null);
-            
+
             // Refresh the page to show the updated task
             router.reload();
         } catch (error) {
@@ -305,7 +305,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
             setIsEditingTask(false);
         }
     };
-    
+
     // Reset the task form
     const resetTaskForm = () => {
         setSelectedAssignmentId('');
@@ -318,7 +318,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         setNewTaskEffortHours('1');
         setNewTaskImportance('3');
     };
-    
+
     // Open edit task modal with task data
     const openEditTaskModal = (task: GanttTask) => {
         setNewTaskTitle(task.name);
@@ -331,7 +331,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         setNewTaskImportance(task.importance?.toString() || '3');
         setIsEditTaskModalOpen(true);
     };
-    
+
     // Create a new assignment
     const handleCreateAssignment = () => {
         router.visit('/group-assignments/create');
@@ -347,16 +347,22 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         try {
             setIsAssigningTasks(true);
             const response = await axios.post(`/api/groups/${groupId}/assignments/${assignmentId}/auto-distribute`);
-            
+
             if (response.data.success) {
                 // Refresh data to show new assignments
                 router.reload();
             } else {
                 setError('Failed to distribute tasks: ' + (response.data.error || 'Unknown error'));
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error distributing tasks:', error);
-            setError('Failed to distribute tasks. Please try again.');
+
+            // Handle API error responses with detailed messages
+            if (axios.isAxiosError(error) && error.response?.data?.error) {
+                setError(error.response.data.error);
+            } else {
+                setError('Failed to distribute tasks. Please try again.');
+            }
         } finally {
             setIsAssigningTasks(false);
         }
@@ -395,15 +401,15 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                             <div className="flex gap-2">
                                 <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:space-x-2 ml-auto">
                                     {/* Add task button */}
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
                                         onClick={() => setIsAddTaskModalOpen(true)}
                                         className="flex items-center gap-1"
                                     >
                                         <Plus className="h-4 w-4" /> Add Task
                                     </Button>
-                                    
+
                                     {/* Add assignment button */}
                                     <Button
                                         variant="outline"
@@ -457,7 +463,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                             </Button>
                                         </div>
                                     )}
-                                    
+
                                     {/* View mode buttons */}
                                     {viewModeOptions.map(({ mode, label, icon: Icon }) => (
                                         <Button
@@ -527,7 +533,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                                     >
                                                         Close
                                                     </Button>
-                                                    
+
                                                     {selectedTask.type !== 'project' && (
                                                         <Button
                                                             onClick={() => openEditTaskModal(selectedTask)}
@@ -549,7 +555,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                     </div>
                 </div>
             </div>
-            
+
             {/* Add Task Modal */}
             <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
@@ -716,7 +722,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-            
+
             {/* Edit Task Modal */}
             <Dialog open={isEditTaskModalOpen} onOpenChange={setIsEditTaskModalOpen}>
                 <DialogContent className="sm:max-w-[500px]">
@@ -865,4 +871,4 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
             </Dialog>
         </AppLayout>
     );
-} 
+}

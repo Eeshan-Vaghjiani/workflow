@@ -31,52 +31,47 @@ class your_generic_secret extends Controller
     public function autoDistributeTasks(Request $request, $groupId, $assignmentId)
     {
         try {
-            $assignment = GroupAssignment::with(['tasks', 'group.members'])
+            // Load assignment
+            $assignment = GroupAssignment::where('id', $assignmentId)
                 ->where('group_id', $groupId)
-                ->where('id', $assignmentId)
                 ->firstOrFail();
 
-            // Add debug logging
-            $userId = auth()->id();
-            $userRole = $assignment->group->members()
-                ->where('user_id', $userId)
-                ->value('role');
-            
-            \Illuminate\Support\Facades\Log::info('Task distribution authorization check', [
-                'user_id' => $userId,
-                'user_role' => $userRole,
-                'group_id' => $groupId,
-                'assignment_id' => $assignmentId,
-                'is_leader' => $assignment->group->isLeader($userId)
-            ]);
-
             // Check if user is authorized
-            if (!$assignment->group->isLeader($userId)) {
-                throw new AuthorizationException('You are not authorized to distribute tasks for this assignment');
+            if (!$assignment->group->isLeader(auth()->id())) {
+                return response()->json(['error' => 'You are not authorized to distribute tasks for this assignment'], 403);
             }
 
-            // Get all tasks and group members
-            $tasks = $assignment->tasks->map(function ($task) {
+            // Check if any tasks have due dates that are not valid
+            $tasks = GroupTask::where('assignment_id', $assignmentId)->get();
+            $assignmentDueDate = $assignment->due_date ? $assignment->due_date->format('Y-m-d') : null;
+            $today = now()->format('Y-m-d');
+
+            $invalidTasks = $tasks->filter(function($task) use ($assignmentDueDate, $today) {
+                if (!$task->end_date) return false;
+
+                $taskDueDate = $task->end_date->format('Y-m-d');
+                return ($assignmentDueDate && $taskDueDate > $assignmentDueDate) || $taskDueDate < $today;
+            });
+
+            if ($invalidTasks->count() > 0) {
+                $invalidTasksList = $invalidTasks->map(function($task) {
+                    return $task->title;
+                })->join(', ');
+
+                return response()->json([
+                    'error' => 'Cannot auto-assign tasks because some tasks have invalid due dates. Please fix the following tasks: ' . $invalidTasksList
+                ], 400);
+            }
+
+            $tasks = $tasks->toArray();
+
+            // Get all group members
+            $groupMembers = $assignment->group->members()->with('user')->get()->map(function($member) {
                 return [
-                    'id' => $task->id,
-                    'title' => $task->title,
-                    'effort_hours' => $task->effort_hours,
-                    'importance' => $task->importance,
-                    'assigned_user_id' => $task->assigned_user_id,
-                    'assigned_to_name' => $task->assigned_user ? $task->assigned_user->name : null
+                    'id' => $member->user_id,
+                    'name' => $member->user->name
                 ];
             })->toArray();
-
-            // Get group members with their user data
-            $groupMembers = $assignment->group->members()
-                ->select('users.id', 'users.name')
-                ->get()
-                ->map(function ($member) {
-                    return [
-                        'id' => $member->id,
-                        'name' => $member->name
-                    ];
-                })->toArray();
 
             // Distribute tasks using AI service
             $distributedTasks = $this->aiService->distributeTasks($tasks, $groupMembers);
@@ -106,7 +101,7 @@ class your_generic_secret extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Get task assignment stats by member for an assignment
      */
@@ -142,7 +137,7 @@ class your_generic_secret extends Controller
 
             // Get tasks with their assignments
             $tasks = $assignment->tasks;
-            
+
             // Get group members
             $groupMembers = $assignment->group->members()
                 ->select('users.id', 'users.name')
@@ -182,7 +177,7 @@ class your_generic_secret extends Controller
             ], 500);
         }
     }
-    
+
     /**
      * Calculate workload distribution statistics
      */

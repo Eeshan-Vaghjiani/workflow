@@ -308,9 +308,29 @@ class GroupTaskController extends Controller
                 return response()->json(['error' => 'You are not authorized to distribute tasks for this assignment'], 403);
             }
 
-            $tasks = GroupTask::where('assignment_id', $assignmentId)->get()->toArray();
+            // Check if any tasks have due dates that are not valid
+            $tasks = GroupTask::where('assignment_id', $assignmentId)->get();
+            $assignmentDueDate = $assignment->due_date ? $assignment->due_date->format('Y-m-d') : null;
+            $today = now()->format('Y-m-d');
 
-            // Get all group members
+            $invalidTasks = $tasks->filter(function($task) use ($assignmentDueDate, $today) {
+                if (!$task->end_date) return false;
+
+                $taskDueDate = $task->end_date->format('Y-m-d');
+                return ($assignmentDueDate && $taskDueDate > $assignmentDueDate) || $taskDueDate < $today;
+            });
+
+            if ($invalidTasks->count() > 0) {
+                $invalidTasksList = $invalidTasks->map(function($task) {
+                    return $task->title;
+                })->join(', ');
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cannot auto-assign tasks because some tasks have invalid due dates. Please fix the following tasks: ' . $invalidTasksList
+                ], 400);
+            }
+
             $groupMembers = $assignment->group->members->map(function($member) {
                 return [
                     'id' => $member->user->id,
@@ -320,7 +340,7 @@ class GroupTaskController extends Controller
 
             // Use AI service to distribute tasks
             $aiService = app(\App\Services\AIService::class);
-            $distributedTasks = $aiService->distributeTasks($tasks, $groupMembers);
+            $distributedTasks = $aiService->distributeTasks($tasks->toArray(), $groupMembers);
 
             // Update tasks with new assignments, but preserve existing due dates
             foreach ($distributedTasks as $task) {

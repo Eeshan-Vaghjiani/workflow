@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { getCsrfToken, refreshCsrfToken, setupCsrfRefresh } from './Utils/csrf.js';
 
 // Set up Axios
 window.axios = axios;
@@ -19,47 +20,34 @@ if (token) {
     console.error('CSRF token not found: https://laravel.com/docs/csrf#csrf-x-csrf-token');
 }
 
-// Function to refresh the CSRF token and session
-async function refreshCSRFToken() {
-    try {
-        console.log('Refreshing CSRF token...');
-        await axios.get('/sanctum/csrf-cookie');
-        
-        // Get the updated token from the meta tag
-        const updatedToken = document.head.querySelector('meta[name="csrf-token"]');
-        if (updatedToken) {
-            window.axios.defaults.headers.common['X-CSRF-TOKEN'] = updatedToken.content;
-            console.log('CSRF token refreshed successfully');
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Failed to refresh CSRF token:', error);
-        return false;
-    }
-}
+// Make the CSRF utility functions available globally
+window.getCsrfToken = getCsrfToken;
+window.refreshCsrfToken = refreshCsrfToken;
+
+// Set up CSRF token refresh on page load
+setupCsrfRefresh();
 
 // Add a request interceptor to ensure CSRF token is always up-to-date
 axios.interceptors.request.use(config => {
-    // Refresh token on each request
-    const token = document.head.querySelector('meta[name="csrf-token"]');
+    // Get the latest token on each request
+    const token = getCsrfToken();
     if (token) {
-        config.headers['X-CSRF-TOKEN'] = token.content;
+        config.headers['X-CSRF-TOKEN'] = token;
     }
-    
+
     // Always include credentials for cross-origin requests
     config.withCredentials = true;
-    
+
     // Always ensure these headers are set for Laravel to recognize it as an XHR
     config.headers['X-Requested-With'] = 'XMLHttpRequest';
     config.headers['Accept'] = 'application/json';
-    
+
     // Log out HTTP requests for debugging
-    console.log(`🚀 Making ${config.method?.toUpperCase()} request to ${config.url}`, { 
+    console.log(`🚀 Making ${config.method?.toUpperCase()} request to ${config.url}`, {
         withCredentials: config.withCredentials,
         hasCsrfToken: !!token
     });
-    
+
     return config;
 }, error => {
     return Promise.reject(error);
@@ -71,15 +59,29 @@ axios.interceptors.response.use(
     async error => {
         // Only retry once to prevent infinite loops
         const originalRequest = error.config;
-        
+
+        if (error.response && error.response.status === 419 && !originalRequest._retry) {
+            console.error('CSRF token mismatch - attempting to refresh token', error.response);
+
+            originalRequest._retry = true;
+
+            // Try to refresh the CSRF token
+            const tokenRefreshed = await refreshCsrfToken();
+
+            if (tokenRefreshed) {
+                // Retry the original request with the new token
+                return axios(originalRequest);
+            }
+        }
+
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
             console.error('Authentication error - attempting to refresh session', error.response);
-            
+
             originalRequest._retry = true;
-            
+
             // Try to refresh the CSRF token
-            const tokenRefreshed = await refreshCSRFToken();
-            
+            const tokenRefreshed = await refreshCsrfToken();
+
             if (tokenRefreshed) {
                 // Retry the original request with the new token
                 return axios(originalRequest);
@@ -110,7 +112,7 @@ console.log('Initializing Echo with:', {
 try {
     // Make sure cookies are sent with the request
     Pusher.logToConsole = true; // Enable Pusher logging for debugging
-    
+
     window.Echo = new Echo({
         broadcaster: 'pusher',
         key: import.meta.env.VITE_PUSHER_APP_KEY || 'your_pusher_app_key',
@@ -123,22 +125,22 @@ try {
         authEndpoint: '/broadcasting/auth',
         auth: {
             headers: {
-                'X-CSRF-TOKEN': token ? token.content : '',
+                'X-CSRF-TOKEN': getCsrfToken() || '',
                 'X-Requested-With': 'XMLHttpRequest'
             }
         }
     });
-    
+
     console.log('Echo initialized successfully');
-    
+
     // Test Echo connection
     window.Echo.connector.pusher.connection.bind('connected', () => {
         console.log('Successfully connected to Pusher');
     });
-    
+
     window.Echo.connector.pusher.connection.bind('error', (err) => {
         console.error('Pusher connection error:', err);
     });
 } catch (error) {
     console.error('Failed to initialize Echo:', error);
-} 
+}

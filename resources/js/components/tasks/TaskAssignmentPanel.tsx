@@ -57,8 +57,9 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
   const [loading, setLoading] = useState(true);
   const [distributing, setDistributing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errorDetails, setErrorDetails] = useState<any[] | null>(null);
+  const [errorDetails, setErrorDetails] = useState<Array<{ task_id?: number; message: string }> | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  // groupMembers is populated from the API response and used in the backend for task distribution
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [workloadDistribution, setWorkloadDistribution] = useState<WorkloadDistribution[]>([]);
   const [hasUnassignedTasks, setHasUnassignedTasks] = useState(false);
@@ -68,6 +69,13 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
   useEffect(() => {
     fetchAssignmentStats();
   }, [groupId, assignmentId]);
+
+  // Log group members when they change (for debugging)
+  useEffect(() => {
+    if (groupMembers.length > 0) {
+      console.debug(`Group has ${groupMembers.length} members available for task assignment`);
+    }
+  }, [groupMembers]);
 
   const checkAuthentication = async () => {
     try {
@@ -134,23 +142,26 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
       } else {
         setError('Failed to fetch assignment statistics. No valid response received.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching assignment stats:', err);
-      console.error('Error details:', err.response?.data);
 
-      if (err.response?.status === 401) {
+      const error = err as { response?: { status?: number; data?: { error?: string; error_details?: Array<{ task_id?: number; message: string }> } } };
+
+      console.error('Error details:', error.response?.data);
+
+      if (error.response?.status === 401) {
         setAuthError(true);
         setError('Authentication required. Please log in and try again.');
       } else {
-        const errorMessage = err.response?.data?.error || 'Failed to load task assignments. Please try again.';
+        const errorMessage = error.response?.data?.error || 'Failed to load task assignments. Please try again.';
         setError(errorMessage);
 
         // Set detailed error information
-        if (err.response?.data?.error_details) {
-          setErrorDetails(err.response.data.error_details);
-        } else if (err.response?.data) {
+        if (error.response?.data?.error_details) {
+          setErrorDetails(error.response.data.error_details);
+        } else if (error.response?.data) {
           setErrorDetails([{
-            message: JSON.stringify(err.response.data, null, 2)
+            message: JSON.stringify(error.response.data, null, 2)
           }]);
         }
       }
@@ -208,18 +219,21 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
       } else {
         setError('Failed to distribute tasks. No valid response received.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error distributing tasks:', err);
-      console.error('Error response:', err.response?.data);
 
-      const errorMessage = err.response?.data?.error || 'Failed to distribute tasks. Please try again.';
+      const error = err as { response?: { status?: number; data?: { error?: string; error_details?: Array<{ task_id?: number; message: string }> } } };
+
+      console.error('Error response:', error.response?.data);
+
+      const errorMessage = error.response?.data?.error || 'Failed to distribute tasks. Please try again.';
       setError(errorMessage);
 
-      if (err.response?.data?.error_details) {
-        setErrorDetails(err.response.data.error_details);
-      } else if (err.response?.data) {
+      if (error.response?.data?.error_details) {
+        setErrorDetails(error.response.data.error_details);
+      } else if (error.response?.data) {
         setErrorDetails([{
-          message: JSON.stringify(err.response.data, null, 2)
+          message: JSON.stringify(error.response.data, null, 2)
         }]);
       }
     } finally {
@@ -503,44 +517,44 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
                 <Users className="mr-2 h-5 w-5" /> Member Workload
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {workloadDistribution.map((member) => (
+                {workloadDistribution && workloadDistribution.map((member) => (
                   <div key={member.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex items-center">
                         <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
-                          {member.name.charAt(0).toUpperCase()}
+                          {member && member.name ? member.name.charAt(0).toUpperCase() : '?'}
                         </div>
-                        <h3 className="font-medium ml-2">{member.name}</h3>
+                        <h3 className="font-medium ml-2">{member && member.name ? member.name : 'Unknown'}</h3>
                       </div>
                       <Badge variant="outline">
-                        {member.taskCount} task{member.taskCount !== 1 ? 's' : ''}
+                        {member && member.taskCount !== undefined ? member.taskCount : 0} task{(!member || member.taskCount !== 1) ? 's' : ''}
                       </Badge>
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>Workload</span>
-                        <span>{member.percentage}%</span>
+                        <span>{member && member.percentage !== undefined ? member.percentage : 0}%</span>
                       </div>
-                      <Progress value={member.percentage} className="h-2" />
+                      <Progress value={member && member.percentage !== undefined ? member.percentage : 0} className="h-2" />
                     </div>
                     <div className="mt-3">
                       <div className="text-sm text-gray-500 mb-1">Task Details:</div>
                       <div className="text-sm">
-                        <span className="font-medium">Total Effort:</span> {member.totalEffort} hours
+                        <span className="font-medium">Total Effort:</span> {member && member.totalEffort !== undefined ? member.totalEffort : 0} hours
                       </div>
                       <div className="text-sm">
-                        <span className="font-medium">Importance Score:</span> {member.totalImportance}
+                        <span className="font-medium">Importance Score:</span> {member && member.totalImportance !== undefined ? member.totalImportance : 0}
                       </div>
                     </div>
-                    {member.tasks.length > 0 && (
+                    {member && member.tasks && member.tasks.length > 0 && (
                       <div className="mt-3">
                         <div className="text-sm text-gray-500 mb-1">Assigned Tasks:</div>
                         <ul className="text-sm space-y-1">
-                          {member.tasks.map((task) => (
-                            <li key={task.id} className="flex items-center justify-between">
-                              <span className="truncate">{task.title}</span>
+                          {member.tasks.map((task, index) => (
+                            <li key={task && task.id ? task.id : index} className="flex items-center justify-between">
+                              <span className="truncate">{task && task.title ? task.title : 'Untitled task'}</span>
                               <span className="text-gray-500 ml-2">
-                                {task.effort}h • {task.importance}/5
+                                {task && task.effort !== undefined ? task.effort : 0}h • {task && task.importance !== undefined ? task.importance : 0}/5
                               </span>
                             </li>
                           ))}

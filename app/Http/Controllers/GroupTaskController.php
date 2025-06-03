@@ -138,18 +138,27 @@ class GroupTaskController extends Controller
      */
     public function store(Request $request)
     {
+        $assignment = GroupAssignment::findOrFail($request->assignment_id);
+        $assignmentDueDate = $assignment->due_date ? $assignment->due_date->format('Y-m-d') : now()->addMonths(1)->format('Y-m-d');
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'end_date' => 'required|date',
+            'end_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . now()->format('Y-m-d'),
+                'before_or_equal:' . $assignmentDueDate
+            ],
             'assignment_id' => 'required|exists:group_assignments,id',
             'assigned_user_id' => 'nullable|exists:users,id',
             'effort_hours' => 'nullable|integer|min:1|max:100',
             'importance' => 'nullable|integer|min:1|max:5',
             'priority' => 'nullable|in:low,medium,high',
+        ], [
+            'end_date.after_or_equal' => 'The due date must be today or in the future.',
+            'end_date.before_or_equal' => 'The due date cannot be after the assignment due date (' . $assignmentDueDate . ').'
         ]);
-
-        $assignment = GroupAssignment::findOrFail($validated['assignment_id']);
 
         if (!$assignment->group->isLeader(auth()->id())) {
             abort(403, 'You are not authorized to create tasks for this assignment');
@@ -229,16 +238,28 @@ class GroupTaskController extends Controller
      */
     public function update(Request $request, GroupTask $task)
     {
+        $task->load('assignment');
+        $assignmentDueDate = $task->assignment->due_date ? $task->assignment->due_date->format('Y-m-d') : now()->addMonths(1)->format('Y-m-d');
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|nullable|string',
             'start_date' => 'sometimes|required|date',
-            'end_date' => 'sometimes|required|date|after_or_equal:start_date',
+            'end_date' => [
+                'sometimes',
+                'required',
+                'date',
+                'after_or_equal:' . now()->format('Y-m-d'),
+                'before_or_equal:' . $assignmentDueDate
+            ],
             'status' => 'sometimes|required|in:pending,in_progress,completed',
             'priority' => 'sometimes|required|in:low,medium,high',
             'assigned_user_id' => 'sometimes|nullable|exists:users,id',
             'effort_hours' => 'sometimes|nullable|numeric|min:0',
             'importance' => 'sometimes|nullable|integer|min:1|max:5'
+        ], [
+            'end_date.after_or_equal' => 'The due date must be today or in the future.',
+            'end_date.before_or_equal' => 'The due date cannot be after the assignment due date (' . $assignmentDueDate . ').'
         ]);
 
         $task->update($validated);
@@ -301,10 +322,13 @@ class GroupTaskController extends Controller
             $aiService = app(\App\Services\AIService::class);
             $distributedTasks = $aiService->distributeTasks($tasks, $groupMembers);
 
-            // Update tasks with new assignments
+            // Update tasks with new assignments, but preserve existing due dates
             foreach ($distributedTasks as $task) {
                 if (isset($task['id']) && isset($task['assigned_user_id'])) {
-                    GroupTask::where('id', $task['id'])->update(['assigned_user_id' => $task['assigned_user_id']]);
+                    // Only update the assigned_user_id field, not any date fields
+                    GroupTask::where('id', $task['id'])->update([
+                        'assigned_user_id' => $task['assigned_user_id']
+                    ]);
                 }
             }
 
@@ -405,15 +429,25 @@ class GroupTaskController extends Controller
             ])->toResponse(request())->setStatusCode(403);
         }
 
+        $assignmentDueDate = $task->assignment->due_date ? $task->assignment->due_date->format('Y-m-d') : now()->addMonths(1)->format('Y-m-d');
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'end_date' => 'required|date',
+            'end_date' => [
+                'required',
+                'date',
+                'after_or_equal:' . now()->format('Y-m-d'),
+                'before_or_equal:' . $assignmentDueDate
+            ],
             'assigned_user_id' => 'nullable|exists:users,id',
             'status' => 'nullable|in:pending,completed',
             'effort_hours' => 'nullable|integer|min:1|max:100',
             'importance' => 'nullable|integer|min:1|max:5',
             'priority' => 'nullable|in:low,medium,high',
+        ], [
+            'end_date.after_or_equal' => 'The due date must be today or in the future.',
+            'end_date.before_or_equal' => 'The due date cannot be after the assignment due date (' . $assignmentDueDate . ').'
         ]);
 
         $task->update([

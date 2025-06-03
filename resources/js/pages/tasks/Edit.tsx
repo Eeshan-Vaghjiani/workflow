@@ -1,6 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 
 interface GroupMember {
     id: number;
@@ -20,6 +21,7 @@ interface Task {
     assignment: {
         id: number;
         group_id: number;
+        due_date?: string;
     };
     assigned_to: number | null;
     effort_hours: number;
@@ -33,6 +35,9 @@ interface Props {
 }
 
 export default function Edit({ task, group_members, errors }: Props) {
+    const today = new Date().toISOString().split('T')[0];
+    const [maxDate, setMaxDate] = useState<string>(task.assignment?.due_date || '');
+
     const { data, setData, put, processing } = useForm({
         title: task.title,
         description: task.description || '',
@@ -44,6 +49,18 @@ export default function Edit({ task, group_members, errors }: Props) {
         importance: task.importance?.toString() || '3',
     });
 
+    // Set the maximum date based on the assignment due date
+    useEffect(() => {
+        if (task.assignment?.due_date) {
+            setMaxDate(task.assignment.due_date);
+        } else {
+            // Default to 1 month from now if no assignment due date
+            const oneMonthLater = new Date();
+            oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+            setMaxDate(oneMonthLater.toISOString().split('T')[0]);
+        }
+    }, [task.assignment]);
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Tasks',
@@ -51,7 +68,7 @@ export default function Edit({ task, group_members, errors }: Props) {
         },
         {
             title: task.title,
-            href: task.assignment && task.assignment.group_id 
+            href: task.assignment && task.assignment.group_id
                 ? route('group-tasks.show', {
                     group: task.assignment.group_id,
                     assignment: task.assignment_id,
@@ -121,9 +138,14 @@ export default function Edit({ task, group_members, errors }: Props) {
                                         className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                         value={data.end_date}
                                         onChange={e => setData('end_date', e.target.value)}
+                                        min={today}
+                                        max={maxDate}
                                         required
                                     />
                                     {errors.end_date && <div className="text-red-500 text-sm mt-1">{errors.end_date}</div>}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Must be between today and the assignment due date ({maxDate})
+                                    </p>
                                 </div>
 
                                 <div>
@@ -225,7 +247,7 @@ export default function Edit({ task, group_members, errors }: Props) {
 
                             <div className="flex justify-end space-x-2">
                                 <a
-                                    href={task.assignment && task.assignment.group_id 
+                                    href={task.assignment && task.assignment.group_id
                                         ? route('group-tasks.show', {
                                             group: task.assignment.group_id,
                                             assignment: task.assignment_id,
@@ -251,4 +273,4 @@ export default function Edit({ task, group_members, errors }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

@@ -1,6 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+import { csrfRequest } from '../../Utils/csrf.js';
 
 interface Task {
     id: number;
@@ -29,6 +32,30 @@ interface Props {
 }
 
 export default function Show({ task }: Props) {
+    // Function to complete a task
+    const completeTask = async (taskId: number) => {
+        try {
+            // Use our csrfRequest utility which handles token refreshing
+            await csrfRequest('post', `/tasks/${taskId}/complete`, {});
+
+            // Show success message
+            toast({
+                title: "Task completed",
+                description: "The task has been marked as complete.",
+            });
+
+            // Refresh the page to show updated data
+            window.location.reload();
+        } catch (error) {
+            console.error('Error completing task:', error);
+            toast({
+                title: "Error",
+                description: "Failed to complete the task. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Tasks',
@@ -36,7 +63,7 @@ export default function Show({ task }: Props) {
         },
         {
             title: task.title,
-            href: task.assignment && task.assignment.group 
+            href: task.assignment && task.assignment.group
                 ? route('group-tasks.show', {
                     group: task.assignment.group.id,
                     assignment: task.assignment.id,
@@ -55,16 +82,16 @@ export default function Show({ task }: Props) {
                         <h1 className="text-2xl font-bold">{task.title}</h1>
                         <div className="flex items-center">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${task.status === 'completed'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
                                 }`}>
                                 {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                             </span>
                             <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${String(task.priority).toLowerCase() === 'high'
-                                    ? 'bg-red-100 text-red-800'
-                                    : String(task.priority).toLowerCase() === 'medium'
-                                        ? 'bg-orange-100 text-orange-800'
-                                        : 'bg-blue-100 text-blue-800'
+                                ? 'bg-red-100 text-red-800'
+                                : String(task.priority).toLowerCase() === 'medium'
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-blue-100 text-blue-800'
                                 }`}>
                                 {task.priority ? String(task.priority).charAt(0).toUpperCase() + String(task.priority).slice(1) : 'Medium'} Priority
                             </span>
@@ -138,14 +165,12 @@ export default function Show({ task }: Props) {
                         </div>
                         <div className="flex space-x-2">
                             {task.status === 'pending' && (
-                                <Link
-                                    href={route('group-tasks.complete-simple', task.id)}
-                                    method="post"
-                                    as="button"
+                                <Button
+                                    onClick={() => completeTask(task.id)}
                                     className="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700"
                                 >
                                     Mark as Complete
-                                </Link>
+                                </Button>
                             )}
                             <Link
                                 href={route('group-tasks.edit-simple', task.id)}
@@ -159,4 +184,4 @@ export default function Show({ task }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

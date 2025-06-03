@@ -14,6 +14,9 @@ import _ from 'lodash';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import axios from 'axios';
+import { toast } from '@/components/ui/use-toast';
+import { getCsrfToken } from '../../Utils/csrf.js';
 
 interface Task {
     id: number;
@@ -121,6 +124,40 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
     const [direction, setDirection] = useState(filters.direction || 'asc');
     const [viewAll, setViewAll] = useState(filters.view_all === 'true');
     const [activeTab, setActiveTab] = useState('uncompleted');
+
+    // Function to complete a task
+    const completeTask = async (taskId: number) => {
+        try {
+            // Get the CSRF token using our utility function
+            const token = getCsrfToken();
+
+            // Make the POST request with proper headers
+            await axios.post(`/tasks/${taskId}/complete`, {}, {
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            // Show success message
+            toast({
+                title: "Task completed",
+                description: "The task has been marked as complete.",
+            });
+
+            // Refresh the page to show updated data
+            window.location.reload();
+        } catch (error) {
+            console.error('Error completing task:', error);
+            toast({
+                title: "Error",
+                description: "Failed to complete the task. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
 
     // Debounced search function
     const debouncedSearch = _.debounce((value: string) => {
@@ -557,14 +594,12 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                                 )}
                                             </CardFooter>
                                             <div className="px-4 pb-4">
-                                                <Link
-                                                    href={route('group-tasks.complete-simple', task.id)}
-                                                    method="post"
-                                                    as="button"
+                                                <Button
+                                                    onClick={() => completeTask(task.id)}
                                                     className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"
                                                 >
                                                     Mark as Complete
-                                                </Link>
+                                                </Button>
                                             </div>
                                         </Card>
                                     ))}

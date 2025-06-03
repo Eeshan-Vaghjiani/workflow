@@ -1,12 +1,13 @@
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
 
 interface Assignment {
     id: number;
     title: string;
+    due_date: string;
     group: {
         id: number;
         name: string;
@@ -39,17 +40,37 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function TasksCreate({ assignments, selectedAssignmentId, errors }: Props) {
+    const today = new Date().toISOString().split('T')[0];
+    const [maxDate, setMaxDate] = useState<string>(today);
+
     const { data, setData, post, processing } = useForm({
         title: '',
         description: '',
-        end_date: '',
+        end_date: today,
         assignment_id: selectedAssignmentId?.toString() || '',
         effort_hours: '1',
         importance: '3',
         priority: 'medium',
     });
 
-    const selectedAssignment = assignments.find(a => a.id.toString() === selectedAssignmentId?.toString());
+    const selectedAssignment = assignments.find(a => a.id.toString() === data.assignment_id);
+
+    // Update max date when assignment changes
+    useEffect(() => {
+        if (selectedAssignment && selectedAssignment.due_date) {
+            setMaxDate(selectedAssignment.due_date);
+
+            // If current end_date is after assignment due date, update it
+            if (data.end_date > selectedAssignment.due_date) {
+                setData('end_date', selectedAssignment.due_date);
+            }
+        } else {
+            // Default to 1 month from now if no assignment selected
+            const oneMonthLater = new Date();
+            oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+            setMaxDate(oneMonthLater.toISOString().split('T')[0]);
+        }
+    }, [data.assignment_id]);
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -110,6 +131,32 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                             </div>
 
                             <div className="mb-6">
+                                <label htmlFor="assignment_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Assignment
+                                </label>
+                                <select
+                                    id="assignment_id"
+                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.assignment_id ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
+                                    value={data.assignment_id}
+                                    onChange={e => setData('assignment_id', e.target.value)}
+                                    required
+                                >
+                                    <option value="">Select an assignment</option>
+                                    {assignments.map((assignment) => (
+                                        <option key={assignment.id} value={assignment.id.toString()}>
+                                            {assignment.title} (Due: {assignment.due_date})
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors.assignment_id && <div className="text-red-500 text-sm mt-1">{errors.assignment_id}</div>}
+                                {selectedAssignment && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Assignment due date: {selectedAssignment.due_date}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="mb-6">
                                 <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Due Date
                                 </label>
@@ -119,9 +166,14 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                     className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.end_date ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
                                     value={data.end_date}
                                     onChange={e => setData('end_date', e.target.value)}
+                                    min={today}
+                                    max={maxDate}
                                     required
                                 />
                                 {errors.end_date && <div className="text-red-500 text-sm mt-1">{errors.end_date}</div>}
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Must be between today and the assignment due date
+                                </p>
                             </div>
 
                             <div className="mb-6 grid grid-cols-3 gap-4">
@@ -179,27 +231,6 @@ export default function TasksCreate({ assignments, selectedAssignmentId, errors 
                                     {errors.priority && <div className="text-red-500 text-sm mt-1">{errors.priority}</div>}
                                     <p className="text-xs text-gray-500 mt-1">Task urgency level</p>
                                 </div>
-                            </div>
-
-                            <div className="mb-6">
-                                <label htmlFor="assignment_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Assignment
-                                </label>
-                                <select
-                                    id="assignment_id"
-                                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 ${errors.assignment_id ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200 focus:border-blue-500'}`}
-                                    value={data.assignment_id}
-                                    onChange={e => setData('assignment_id', e.target.value)}
-                                    required
-                                >
-                                    <option value="">Select an assignment</option>
-                                    {assignments.map((assignment) => (
-                                        <option key={assignment.id} value={assignment.id.toString()}>
-                                            {assignment.title}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.assignment_id && <div className="text-red-500 text-sm mt-1">{errors.assignment_id}</div>}
                             </div>
 
                             <div className="flex justify-end">

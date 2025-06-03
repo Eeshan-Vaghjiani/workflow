@@ -2,6 +2,9 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 import { CheckSquare, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+import { csrfRequest } from '../Utils/csrf.js';
 
 interface Task {
     id: number;
@@ -29,6 +32,30 @@ interface Props {
 }
 
 export default function TaskList({ tasks = [] }: Props) {
+    // Function to complete a task
+    const completeTask = async (taskId: number) => {
+        try {
+            // Use our csrfRequest utility which handles token refreshing
+            await csrfRequest('post', `/tasks/${taskId}/complete`, {});
+
+            // Show success message
+            toast({
+                title: "Task completed",
+                description: "The task has been marked as complete.",
+            });
+
+            // Refresh the page to show updated data
+            window.location.reload();
+        } catch (error) {
+            console.error('Error completing task:', error);
+            toast({
+                title: "Error",
+                description: "Failed to complete the task. Please try again.",
+                variant: "destructive"
+            });
+        }
+    };
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Tasks',
@@ -61,8 +88,8 @@ export default function TaskList({ tasks = [] }: Props) {
                                     <h2 className="text-lg font-medium text-blue-600 dark:text-blue-400">{task.title}</h2>
                                     <span
                                         className={`px-2 py-1 rounded-full text-xs font-medium ${task.status === 'completed'
-                                                ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300'
-                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300'
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300'
+                                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300'
                                             }`}
                                     >
                                         {task.status === 'completed' ? (
@@ -100,7 +127,7 @@ export default function TaskList({ tasks = [] }: Props) {
                                     {task.assignment?.group && (
                                         <div className="flex justify-between text-sm">
                                             <span className="text-gray-600 dark:text-gray-400">Group:</span>
-                                            <Link 
+                                            <Link
                                                 href={route('groups.show', task.assignment.group.id)}
                                                 className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                             >
@@ -113,17 +140,17 @@ export default function TaskList({ tasks = [] }: Props) {
                                 <div className="mt-4 flex space-x-2">
                                     {task.assignment?.group?.id && task.assignment?.id ? (
                                         <Link
-                                            href={route('group-tasks.show', { 
-                                                group: task.assignment.group.id, 
-                                                assignment: task.assignment.id, 
-                                                task: task.id 
+                                            href={route('group-tasks.show', {
+                                                group: task.assignment.group.id,
+                                                assignment: task.assignment.id,
+                                                task: task.id
                                             })}
                                             className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
                                         >
                                             View Details
                                         </Link>
                                     ) : (
-                                        <span 
+                                        <span
                                             className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-400 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest cursor-not-allowed"
                                         >
                                             View Details
@@ -131,14 +158,12 @@ export default function TaskList({ tasks = [] }: Props) {
                                     )}
 
                                     {task.status === 'pending' && (
-                                        <Link
-                                            href={route('group-tasks.complete-simple', task.id)}
-                                            method="post"
-                                            as="button"
+                                        <Button
+                                            onClick={() => completeTask(task.id)}
                                             className="flex-1 inline-flex justify-center items-center px-3 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"
                                         >
                                             Complete
-                                        </Link>
+                                        </Button>
                                     )}
                                 </div>
                             </div>
@@ -162,4 +187,4 @@ export default function TaskList({ tasks = [] }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

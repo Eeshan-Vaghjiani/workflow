@@ -359,11 +359,11 @@ export default function AIAssignmentEdit({ group, assignment, aiGeneratedAssignm
                                                                 </SelectTrigger>
                                                                 <SelectContent>
                                                                     <SelectItem value="">Unassigned</SelectItem>
-                                                                    {group.members.map(member => (
+                                                                    {group && group.members ? group.members.map(member => (
                                                                         <SelectItem key={member.id} value={member.id.toString()}>
                                                                             {member.name}
                                                                         </SelectItem>
-                                                                    ))}
+                                                                    )) : null}
                                                                 </SelectContent>
                                                             </Select>
                                                         </div>

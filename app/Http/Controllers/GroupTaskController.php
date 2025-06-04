@@ -6,6 +6,9 @@ use App\Models\GroupTask;
 use App\Models\GroupAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * @property int $id
@@ -23,11 +26,11 @@ class GroupTaskController extends Controller
         // Default to showing only tasks assigned to the current user
         // Unless view_all is explicitly set to true
         if (!$request->has('view_all') || $request->view_all !== 'true') {
-            $tasksQuery->where('assigned_user_id', auth()->id());
+            $tasksQuery->where('assigned_user_id', Auth::id());
         } else {
             // If viewing all tasks, only show those from groups the user is a member of
             $tasksQuery->whereHas('assignment.group.members', function ($query) {
-                $query->where('user_id', auth()->id());
+                $query->where('user_id', Auth::id());
             });
         }
 
@@ -331,12 +334,27 @@ class GroupTaskController extends Controller
                 ], 400);
             }
 
-            $groupMembers = $assignment->group->members->map(function($member) {
-                return [
-                    'id' => $member->user->id,
-                    'name' => $member->user->name
-                ];
-            })->toArray();
+            // Get all group members - Direct SQL to avoid potential relationship issues
+            $groupMembers = DB::table('users')
+                ->join('group_user', 'users.id', '=', 'group_user.user_id')
+                ->where('group_user.group_id', $groupId)
+                ->select('users.id', 'users.name')
+                ->get()
+                ->map(function($member) {
+                    return [
+                        'id' => $member->id,
+                        'name' => $member->name
+                    ];
+                })
+                ->toArray();
+
+            // Check if there are any valid members to distribute tasks to
+            if (empty($groupMembers)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cannot distribute tasks: No valid group members found'
+                ], 400);
+            }
 
             // Use AI service to distribute tasks
             $aiService = app(\App\Services\AIService::class);
@@ -364,6 +382,10 @@ class GroupTaskController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Error in autoDistributeTasksAPI', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'error' => 'Failed to distribute tasks: ' . $e->getMessage()
             ], 500);

@@ -66,28 +66,56 @@ class your_generic_secret extends Controller
             $tasks = $tasks->toArray();
 
             // Get all group members
-            $groupMembers = $assignment->group->members()->with('user')->get()->map(function($member) {
+            $groupMembers = $assignment->group->members()->get()->map(function($member) {
+                // Add null check for user
+                if (!$member) {
+                    Log::warning('Found null group member');
+                    return null;
+                }
+
                 return [
-                    'id' => $member->user_id,
-                    'name' => $member->user->name
+                    'id' => $member->id,
+                    'name' => $member->name
                 ];
-            })->toArray();
+            })->filter()->toArray();  // Filter out null entries
 
-            // Distribute tasks using AI service
-            $distributedTasks = $this->aiService->distributeTasks($tasks, $groupMembers);
-
-            // Update tasks in database
-            foreach ($distributedTasks as $task) {
-                GroupTask::where('id', $task['id'])->update([
-                    'assigned_user_id' => $task['assigned_user_id']
-                ]);
+            // Check if there are any valid members to distribute tasks to
+            if (empty($groupMembers)) {
+                return response()->json([
+                    'error' => 'Cannot distribute tasks: No valid group members found'
+                ], 400);
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Tasks distributed successfully',
-                'tasks' => $distributedTasks
-            ]);
+            // Distribute tasks using AI service
+            try {
+                $distributedTasks = $this->aiService->distributeTasks($tasks, $groupMembers);
+
+                // Update tasks in database
+                foreach ($distributedTasks as $task) {
+                    if (isset($task['id']) && isset($task['assigned_user_id'])) {
+                        GroupTask::where('id', $task['id'])->update([
+                            'assigned_user_id' => $task['assigned_user_id']
+                        ]);
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tasks distributed successfully',
+                    'tasks' => $distributedTasks
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error distributing tasks', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'group_members' => $groupMembers,
+                    'tasks_count' => count($tasks)
+                ]);
+
+                return response()->json([
+                    'error' => 'Failed to distribute tasks: ' . $e->getMessage()
+                ], 500);
+            }
         } catch (\Exception $e) {
             Log::error('Error in autoDistributeTasks', [
                 'error' => $e->getMessage(),

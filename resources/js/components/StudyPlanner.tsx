@@ -45,17 +45,23 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
     const [isAddingSession, setIsAddingSession] = useState(false);
     const [currentTask, setCurrentTask] = useState('');
     const [studyTasks, setStudyTasks] = useState<StudyTask[]>([]);
+    const [loading, setLoading] = useState(true);
     const { toast } = useToast();
+
+    // Setup axios defaults
+    const setupAxios = () => {
+        axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        axios.defaults.withCredentials = true;
+    };
 
     // Load saved study sessions and tasks
     useEffect(() => {
         // Fetch sessions and tasks from API
         const fetchStudyData = async () => {
-            try {
-                // Setup axios headers
-                axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                axios.defaults.withCredentials = true;
+            setLoading(true);
+            setupAxios();
 
+            try {
                 // Fetch study sessions
                 const sessionsResponse = await axios.get('/api/web/study-sessions');
                 if (sessionsResponse.data) {
@@ -92,44 +98,23 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
                         completed: task.completed
                     })));
                 }
+
+                setLoading(false);
             } catch (error) {
                 console.error('Error fetching study data:', error);
+                setLoading(false);
                 toast({
                     title: "Error",
-                    description: "Failed to load your study data",
+                    description: "Failed to load your study data. Please try refreshing the page.",
                     variant: "destructive"
                 });
-
-                // Fallback to localStorage if API fails
-                const savedSessions = localStorage.getItem(`studySessions-${userId}`);
-                const savedTasks = localStorage.getItem(`studyTasks-${userId}`);
-
-                if (savedSessions) {
-                    const parsedSessions = JSON.parse(savedSessions);
-                    setStudySessions(parsedSessions.map((session: {
-                        id: string;
-                        title: string;
-                        description?: string;
-                        date: string;
-                        startTime: string;
-                        endTime: string;
-                        completed: boolean;
-                    }) => ({
-                        ...session,
-                        date: new Date(session.date)
-                    })));
-                }
-
-                if (savedTasks) {
-                    setStudyTasks(JSON.parse(savedTasks));
-                }
             }
         };
 
         fetchStudyData();
     }, [userId]);
 
-    const handleAddSession = () => {
+    const handleAddSession = async () => {
         if (!sessionTitle) {
             toast({
                 title: "Error",
@@ -139,218 +124,215 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
             return;
         }
 
-        // Create a new session object for the frontend
-        const newSession: StudySession = {
-            id: Date.now().toString(), // Temporary ID until we get response from server
-            title: sessionTitle,
-            description: sessionDescription,
-            date: selectedDate,
-            startTime,
-            endTime,
-            completed: false
-        };
+        setupAxios();
 
-        // Add to state immediately for UI responsiveness
-        setStudySessions([...studySessions, newSession]);
-
-        // Save to backend
-        axios.post('/api/web/study-sessions', {
-            title: sessionTitle,
-            description: sessionDescription,
-            session_date: format(selectedDate, 'yyyy-MM-dd'),
-            start_time: startTime,
-            end_time: endTime,
-        }, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            withCredentials: true
-        })
-            .then(response => {
-                console.log('Study session saved:', response.data);
-                // If needed, update the session ID with the one from the server
-            })
-            .catch(error => {
-                console.error('Error saving study session:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to save your study session to the server",
-                    variant: "destructive"
-                });
-                // Fallback to localStorage
-                localStorage.setItem(`studySessions-${userId}`, JSON.stringify(studySessions));
+        try {
+            // Save to backend first
+            const response = await axios.post('/api/web/study-sessions', {
+                title: sessionTitle,
+                description: sessionDescription,
+                session_date: format(selectedDate, 'yyyy-MM-dd'),
+                start_time: startTime,
+                end_time: endTime,
             });
 
-        setSessionTitle('');
-        setSessionDescription('');
-        setIsAddingSession(false);
+            // Create a new session object using the returned data
+            const newSession: StudySession = {
+                id: response.data.session.id.toString(),
+                title: response.data.session.title,
+                description: response.data.session.description,
+                date: new Date(response.data.session.session_date),
+                startTime: response.data.session.start_time,
+                endTime: response.data.session.end_time,
+                completed: response.data.session.completed
+            };
 
-        toast({
-            title: "Success",
-            description: "Study session added to your schedule",
-        });
+            // Update state with the backend-created session
+            setStudySessions([...studySessions, newSession]);
+
+            setSessionTitle('');
+            setSessionDescription('');
+            setIsAddingSession(false);
+
+            toast({
+                title: "Success",
+                description: "Study session added to your schedule",
+            });
+        } catch (error) {
+            console.error('Error saving study session:', error);
+            toast({
+                title: "Error",
+                description: "Failed to save your study session to the server. Please try again.",
+                variant: "destructive"
+            });
+        }
     };
 
-    const handleAddTask = () => {
+    const handleAddTask = async () => {
         if (!currentTask.trim()) return;
 
-        const newTask: StudyTask = {
-            id: Date.now().toString(), // Temporary ID
-            title: currentTask,
-            completed: false
-        };
+        setupAxios();
 
-        // Add to state immediately for UI responsiveness
-        setStudyTasks([...studyTasks, newTask]);
-
-        // Save to backend
-        axios.post('/api/web/study-tasks', {
-            title: currentTask,
-            description: null,
-            study_session_id: null
-        }, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            withCredentials: true
-        })
-            .then(response => {
-                console.log('Study task saved:', response.data);
-            })
-            .catch(error => {
-                console.error('Error saving study task:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to save your task to the server",
-                    variant: "destructive"
-                });
-                // Fallback to localStorage
-                localStorage.setItem(`studyTasks-${userId}`, JSON.stringify(studyTasks));
+        try {
+            // Save to backend first
+            const response = await axios.post('/api/web/study-tasks', {
+                title: currentTask,
+                description: null,
+                study_session_id: null
             });
 
-        setCurrentTask('');
+            // Add returned task to state
+            const newTask: StudyTask = {
+                id: response.data.task.id.toString(),
+                title: response.data.task.title,
+                completed: response.data.task.completed
+            };
+
+            setStudyTasks([...studyTasks, newTask]);
+            setCurrentTask('');
+
+            toast({
+                title: "Success",
+                description: "Task added successfully",
+            });
+        } catch (error) {
+            console.error('Error saving study task:', error);
+            toast({
+                title: "Error",
+                description: "Failed to save your task to the server. Please try again.",
+                variant: "destructive"
+            });
+        }
     };
 
-    const toggleTaskCompletion = (taskId: string) => {
+    const toggleTaskCompletion = async (taskId: string) => {
+        // Find the task and determine new completion status
+        const task = studyTasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        const newCompletionStatus = !task.completed;
+
         // Update state for immediate UI feedback
         const updatedTasks = studyTasks.map(task =>
-            task.id === taskId ? { ...task, completed: !task.completed } : task
+            task.id === taskId ? { ...task, completed: newCompletionStatus } : task
         );
         setStudyTasks(updatedTasks);
 
-        // Find the updated task
-        const updatedTask = updatedTasks.find(task => task.id === taskId);
+        setupAxios();
 
-        // Update in backend
-        axios.put(`/api/web/study-tasks/${taskId}`, {
-            completed: updatedTask?.completed
-        }, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            withCredentials: true
-        })
-            .catch(error => {
-                console.error('Error updating task:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to update task completion status",
-                    variant: "destructive"
-                });
-                // Fallback to localStorage
-                localStorage.setItem(`studyTasks-${userId}`, JSON.stringify(updatedTasks));
+        try {
+            // Update in backend
+            await axios.put(`/api/web/study-tasks/${taskId}`, {
+                completed: newCompletionStatus
             });
+        } catch (error) {
+            console.error('Error updating task completion status:', error);
+
+            // Revert state if API call fails
+            setStudyTasks(studyTasks);
+
+            toast({
+                title: "Error",
+                description: "Failed to update task status. Please try again.",
+                variant: "destructive"
+            });
+        }
     };
 
-    const deleteTask = (taskId: string) => {
-        // Update state for immediate UI feedback
+    const deleteTask = async (taskId: string) => {
+        if (!confirm('Are you sure you want to delete this task?')) return;
+
+        // Optimistically update UI
         const filteredTasks = studyTasks.filter(task => task.id !== taskId);
         setStudyTasks(filteredTasks);
 
-        // Delete from backend
-        axios.delete(`/api/web/study-tasks/${taskId}`, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            withCredentials: true
-        })
-            .catch(error => {
-                console.error('Error deleting task:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to delete task from the server",
-                    variant: "destructive"
-                });
-                // Fallback to localStorage
-                localStorage.setItem(`studyTasks-${userId}`, JSON.stringify(filteredTasks));
+        setupAxios();
+
+        try {
+            // Delete from backend
+            await axios.delete(`/api/web/study-tasks/${taskId}`);
+
+            toast({
+                title: "Success",
+                description: "Task deleted successfully"
             });
+        } catch (error) {
+            console.error('Error deleting task:', error);
+
+            // Restore state if API call fails
+            setStudyTasks(studyTasks);
+
+            toast({
+                title: "Error",
+                description: "Failed to delete task. Please try again.",
+                variant: "destructive"
+            });
+        }
     };
 
-    const toggleSessionCompletion = (sessionId: string) => {
+    const toggleSessionCompletion = async (sessionId: string) => {
+        // Find the session and determine new completion status
+        const session = studySessions.find(s => s.id === sessionId);
+        if (!session) return;
+
+        const newCompletionStatus = !session.completed;
+
         // Update state for immediate UI feedback
         const updatedSessions = studySessions.map(session =>
-            session.id === sessionId ? { ...session, completed: !session.completed } : session
+            session.id === sessionId ? { ...session, completed: newCompletionStatus } : session
         );
         setStudySessions(updatedSessions);
 
-        // Find the updated session
-        const updatedSession = updatedSessions.find(session => session.id === sessionId);
+        setupAxios();
 
-        // Update in backend
-        axios.put(`/api/web/study-sessions/${sessionId}`, {
-            completed: updatedSession?.completed
-        }, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            withCredentials: true
-        })
-            .catch(error => {
-                console.error('Error updating session:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to update session completion status",
-                    variant: "destructive"
-                });
-                // Fallback to localStorage
-                localStorage.setItem(`studySessions-${userId}`, JSON.stringify(updatedSessions));
+        try {
+            // Update in backend
+            await axios.put(`/api/web/study-sessions/${sessionId}`, {
+                completed: newCompletionStatus
             });
+        } catch (error) {
+            console.error('Error updating session completion status:', error);
+
+            // Revert state if API call fails
+            setStudySessions(studySessions);
+
+            toast({
+                title: "Error",
+                description: "Failed to update session status. Please try again.",
+                variant: "destructive"
+            });
+        }
     };
 
-    const deleteSession = (sessionId: string) => {
-        // Update state for immediate UI feedback
+    const deleteSession = async (sessionId: string) => {
+        if (!confirm('Are you sure you want to delete this study session?')) return;
+
+        // Optimistically update UI
         const filteredSessions = studySessions.filter(session => session.id !== sessionId);
         setStudySessions(filteredSessions);
 
-        // Delete from backend
-        axios.delete(`/api/web/study-sessions/${sessionId}`, {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            withCredentials: true
-        })
-            .catch(error => {
-                console.error('Error deleting session:', error);
-                toast({
-                    title: "Error",
-                    description: "Failed to delete session from the server",
-                    variant: "destructive"
-                });
-                // Fallback to localStorage
-                localStorage.setItem(`studySessions-${userId}`, JSON.stringify(filteredSessions));
+        setupAxios();
+
+        try {
+            // Delete from backend
+            await axios.delete(`/api/web/study-sessions/${sessionId}`);
+
+            toast({
+                title: "Success",
+                description: "Study session deleted successfully"
             });
+        } catch (error) {
+            console.error('Error deleting session:', error);
+
+            // Restore state if API call fails
+            setStudySessions(studySessions);
+
+            toast({
+                title: "Error",
+                description: "Failed to delete study session. Please try again.",
+                variant: "destructive"
+            });
+        }
     };
 
     const upcomingSessions = studySessions.filter(
@@ -363,6 +345,16 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
 
     const activeTasks = studyTasks.filter(task => !task.completed);
     const completedTasks = studyTasks.filter(task => task.completed);
+
+    // Render loading state
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                <span className="ml-3 text-lg text-gray-700">Loading study planner...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full">

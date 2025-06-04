@@ -581,13 +581,27 @@ class AITaskController extends Controller
             // Check if we need to redistribute tasks
             $redistributeTasks = $request->boolean('redistribute_tasks');
             if ($redistributeTasks) {
-                // Get all group members
-                $groupMembers = $group->members()->get()->map(function ($member) {
-                    return [
-                        'id' => $member->id,
-                        'name' => $member->name
-                    ];
-                })->toArray();
+                // Get all group members using direct SQL to avoid relationship issues
+                $groupMembers = \DB::table('users')
+                    ->join('group_user', 'users.id', '=', 'group_user.user_id')
+                    ->where('group_user.group_id', $group->id)
+                    ->select('users.id', 'users.name')
+                    ->get()
+                    ->map(function($member) {
+                        return [
+                            'id' => $member->id,
+                            'name' => $member->name
+                        ];
+                    })
+                    ->toArray();
+
+                // Check if there are any valid members to distribute tasks to
+                if (empty($groupMembers)) {
+                    DB::rollBack();
+                    return response()->json([
+                        'error' => 'Cannot distribute tasks: No valid group members found'
+                    ], 400);
+                }
 
                 // Use the AIService to distribute tasks
                 $distributedTasks = $this->aiService->distributeTasks($tasks, $groupMembers);

@@ -338,9 +338,14 @@ class AIService
     public function distributeTasks(array $tasks, array $groupMembers): array
     {
         try {
+            // Filter out any null or invalid members
+            $groupMembers = array_filter($groupMembers, function($member) {
+                return isset($member['id']) && isset($member['name']) && $member['name'] !== null;
+            });
+
             // If there are no tasks or group members, return tasks unchanged
             if (empty($tasks) || empty($groupMembers)) {
-                Log::warning('Cannot distribute tasks: No tasks or group members provided', [
+                Log::warning('Cannot distribute tasks: No tasks or valid group members provided', [
                     'task_count' => count($tasks),
                     'member_count' => count($groupMembers)
                 ]);
@@ -361,6 +366,10 @@ class AIService
             // Prepare task data for AI processing
             $taskData = [];
             foreach ($tasks as $task) {
+                if (!isset($task['id']) || !isset($task['title'])) {
+                    continue; // Skip invalid tasks
+                }
+
                 $taskData[] = [
                     'id' => $task['id'],
                     'title' => $task['title'],
@@ -369,7 +378,13 @@ class AIService
                 ];
             }
 
-            // Prepare member data
+            // If we have no valid tasks, return original tasks
+            if (empty($taskData)) {
+                Log::warning('No valid tasks found for distribution');
+                return $tasks;
+            }
+
+            // Prepare member data - ensure we only have valid members
             $memberData = [];
             foreach ($groupMembers as $member) {
                 $memberData[] = [

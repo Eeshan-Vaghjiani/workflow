@@ -15,90 +15,135 @@ class GoogleCalendar extends Model
         'token_expires_at',
         'calendar_id',
     ];
-    
+
     protected $casts = [
         'token_expires_at' => 'datetime',
     ];
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function syncEvents($tasks, $assignments)
     {
-        // Check if token needs refresh
-        if ($this->token_expires_at->isPast()) {
-            $this->refreshToken();
-        }
-        
-        // Get existing events from Google Calendar
-        $existingEvents = $this->getExistingEvents();
-        
-        // Sync tasks
-        foreach ($tasks as $task) {
-            $eventId = $this->getEventIdForTask($task);
-            $eventData = $this->createEventData($task);
-            
-            if (isset($existingEvents[$eventId])) {
-                // Update existing event
-                $this->updateEvent($eventId, $eventData);
-            } else {
-                // Create new event
-                $this->createEvent($eventData);
+        try {
+            // Check if token needs refresh
+            if ($this->token_expires_at && $this->token_expires_at->isPast()) {
+                $this->refreshToken();
             }
-        }
-        
-        // Sync assignments
-        foreach ($assignments as $assignment) {
-            $eventId = $this->getEventIdForAssignment($assignment);
-            $eventData = $this->createEventData($assignment);
-            
-            if (isset($existingEvents[$eventId])) {
-                // Update existing event
-                $this->updateEvent($eventId, $eventData);
-            } else {
-                // Create new event
-                $this->createEvent($eventData);
+
+            // Get existing events from Google Calendar
+            $existingEvents = $this->getExistingEvents();
+
+            // Sync tasks
+            foreach ($tasks as $task) {
+                $eventId = $this->getEventIdForTask($task);
+                $eventData = $this->createEventData($task);
+
+                if (isset($existingEvents[$eventId])) {
+                    // Update existing event
+                    $this->updateEvent($eventId, $eventData);
+                } else {
+                    // Create new event
+                    $this->createEvent($eventData);
+                }
             }
-        }
-        
-        // Delete events that no longer exist in our system
-        foreach ($existingEvents as $eventId => $event) {
-            if (!str_starts_with($eventId, 'task_') && !str_starts_with($eventId, 'assignment_')) {
-                continue; // Skip events not created by our app
+
+            // Sync assignments
+            foreach ($assignments as $assignment) {
+                $eventId = $this->getEventIdForAssignment($assignment);
+                $eventData = $this->createEventData($assignment);
+
+                if (isset($existingEvents[$eventId])) {
+                    // Update existing event
+                    $this->updateEvent($eventId, $eventData);
+                } else {
+                    // Create new event
+                    $this->createEvent($eventData);
+                }
             }
-            
-            $id = substr($eventId, strpos($eventId, '_') + 1);
-            $type = str_starts_with($eventId, 'task_') ? 'task' : 'assignment';
-            
-            if ($type === 'task' && !$tasks->contains('id', $id)) {
-                $this->deleteEvent($eventId);
-            } elseif ($type === 'assignment' && !$assignments->contains('id', $id)) {
-                $this->deleteEvent($eventId);
+
+            // Delete events that no longer exist in our system
+            foreach ($existingEvents as $eventId => $event) {
+                if (!str_starts_with($eventId, 'task_') && !str_starts_with($eventId, 'assignment_')) {
+                    continue; // Skip events not created by our app
+                }
+
+                $id = substr($eventId, strpos($eventId, '_') + 1);
+                $type = str_starts_with($eventId, 'task_') ? 'task' : 'assignment';
+
+                if ($type === 'task' && !$tasks->contains('id', $id)) {
+                    $this->deleteEvent($eventId);
+                } elseif ($type === 'assignment' && !$assignments->contains('id', $id)) {
+                    $this->deleteEvent($eventId);
+                }
             }
+
+            // Log successful sync
+            \Illuminate\Support\Facades\Log::info('Google Calendar sync successful', [
+                'user_id' => $this->user_id,
+                'tasks_count' => count($tasks),
+                'assignments_count' => count($assignments)
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            // Log detailed error
+            \Illuminate\Support\Facades\Log::error('Google Calendar sync failed', [
+                'user_id' => $this->user_id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
         }
     }
-    
+
     private function refreshToken()
     {
-        $response = Http::post('https://oauth2.googleapis.com/token', [
-            'client_id' => config('services.google.client_id'),
-            'client_secret' => config('services.google.client_secret'),
-            'refresh_token' => $this->refresh_token,
-            'grant_type' => 'refresh_token',
-        ]);
-        
-        if ($response->successful()) {
-            $data = $response->json();
-            $this->access_token = $data['access_token'];
-            $this->token_expires_at = Carbon::now()->addSeconds($data['expires_in']);
-            $this->save();
-        } else {
-            throw new \Exception('Failed to refresh Google Calendar token');
+        try {
+            \Illuminate\Support\Facades\Log::info('Refreshing Google Calendar token', [
+                'user_id' => $this->user_id
+            ]);
+
+            $response = Http::post('https://oauth2.googleapis.com/token', [
+                'client_id' => config('services.google.client_id'),
+                'client_secret' => config('services.google.client_secret'),
+                'refresh_token' => $this->refresh_token,
+                'grant_type' => 'refresh_token',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $this->access_token = $data['access_token'];
+                $this->token_expires_at = Carbon::now()->addSeconds($data['expires_in']);
+                $this->save();
+
+                \Illuminate\Support\Facades\Log::info('Google Calendar token refreshed successfully', [
+                    'user_id' => $this->user_id,
+                    'expires_at' => $this->token_expires_at
+                ]);
+            } else {
+                // Log detailed error response
+                \Illuminate\Support\Facades\Log::error('Failed to refresh Google Calendar token', [
+                    'user_id' => $this->user_id,
+                    'status' => $response->status(),
+                    'response' => $response->json() ?? $response->body()
+                ]);
+
+                throw new \Exception('Failed to refresh Google Calendar token: ' . ($response->json()['error_description'] ?? $response->reason()));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Exception during token refresh', [
+                'user_id' => $this->user_id,
+                'error' => $e->getMessage()
+            ]);
+
+            throw $e;
         }
     }
-    
+
     private function getExistingEvents()
     {
         $response = Http::withToken($this->access_token)
@@ -108,39 +153,39 @@ class GoogleCalendar extends Model
                 'singleEvents' => true,
                 'orderBy' => 'startTime',
             ]);
-            
+
         if (!$response->successful()) {
             throw new \Exception('Failed to fetch Google Calendar events');
         }
-        
+
         $events = [];
         foreach ($response->json()['items'] as $event) {
-            if (isset($event['extendedProperties']['private']['appSource']) && 
+            if (isset($event['extendedProperties']['private']['appSource']) &&
                 $event['extendedProperties']['private']['appSource'] === 'workflow') {
                 $events[$event['id']] = $event;
             }
         }
-        
+
         return $events;
     }
-    
+
     private function getEventIdForTask($task)
     {
         return 'task_' . $task->id;
     }
-    
+
     private function getEventIdForAssignment($assignment)
     {
         return 'assignment_' . $assignment->id;
     }
-    
+
     private function createEventData($item)
     {
         $isTask = $item instanceof \App\Models\Task;
-        
+
         $eventData = [
             'summary' => $item->title,
-            'description' => $isTask 
+            'description' => $isTask
                 ? "Task: {$item->title}\nPriority: {$item->priority}\nStatus: {$item->status}\nProgress: {$item->progress}%"
                 : "Assignment: {$item->title}",
             'start' => [
@@ -160,48 +205,48 @@ class GoogleCalendar extends Model
                 ]
             ]
         ];
-        
+
         if ($isTask) {
             $eventData['extendedProperties']['private']['progress'] = $item->progress;
         }
-        
+
         return $eventData;
     }
-    
+
     private function createEvent($eventData)
     {
         $response = Http::withToken($this->access_token)
             ->post("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events", $eventData);
-            
+
         if (!$response->successful()) {
             throw new \Exception('Failed to create Google Calendar event');
         }
-        
+
         return $response->json();
     }
-    
+
     private function updateEvent($eventId, $eventData)
     {
         $response = Http::withToken($this->access_token)
             ->put("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}", $eventData);
-            
+
         if (!$response->successful()) {
             throw new \Exception('Failed to update Google Calendar event');
         }
-        
+
         return $response->json();
     }
-    
+
     private function deleteEvent($eventId)
     {
         $response = Http::withToken($this->access_token)
             ->delete("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}");
-            
+
         if (!$response->successful()) {
             throw new \Exception('Failed to delete Google Calendar event');
         }
     }
-    
+
     private function getColorIdForPriority($priority)
     {
         return match ($priority) {
@@ -211,4 +256,4 @@ class GoogleCalendar extends Model
             default => '1', // Blue
         };
     }
-} 
+}

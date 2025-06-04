@@ -235,6 +235,48 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
+    // Add a new function to save settings to the database
+    const saveSettings = async () => {
+        try {
+            // Setup authentication headers
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            axios.defaults.withCredentials = true;
+
+            await axios.post('/api/web/pomodoro/settings', {
+                focus_minutes: settings.focusMinutes,
+                short_break_minutes: settings.shortBreakMinutes,
+                long_break_minutes: settings.longBreakMinutes,
+                long_break_interval: settings.longBreakInterval,
+                auto_start_breaks: settings.autoStartBreaks,
+                auto_start_pomodoros: settings.autoStartPomodoros,
+                notifications_enabled: settings.notifications
+            });
+
+            toast({
+                title: "Settings Saved",
+                description: "Your pomodoro settings have been saved successfully",
+            });
+        } catch (error) {
+            console.error('Error saving pomodoro settings:', error);
+            toast({
+                title: "Error",
+                description: "Failed to save your pomodoro settings",
+                variant: "destructive"
+            });
+        }
+    };
+
+    // Helper function to update settings with save
+    const updateSettings = (newSettings: Partial<TimerSettings>) => {
+        const updatedSettings = { ...settings, ...newSettings };
+        setSettings(updatedSettings);
+        // Debounce the save to reduce API calls
+        clearTimeout(timerRef.current as unknown as number);
+        timerRef.current = window.setTimeout(() => {
+            saveSettings();
+        }, 1000) as unknown as number;
+    };
+
     return (
         <div className="w-full max-w-md mx-auto">
             <Card className="overflow-hidden">
@@ -299,8 +341,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setSettings({
-                                ...settings,
+                            onClick={() => updateSettings({
                                 notifications: !settings.notifications
                             })}
                         >
@@ -335,7 +376,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                                 min={5}
                                 max={60}
                                 step={5}
-                                onValueChange={(value) => setSettings({ ...settings, focusMinutes: value[0] })}
+                                onValueChange={(value) => updateSettings({ focusMinutes: value[0] })}
                             />
                         </div>
 
@@ -348,7 +389,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                                 min={1}
                                 max={15}
                                 step={1}
-                                onValueChange={(value) => setSettings({ ...settings, shortBreakMinutes: value[0] })}
+                                onValueChange={(value) => updateSettings({ shortBreakMinutes: value[0] })}
                             />
                         </div>
 
@@ -361,7 +402,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                                 min={5}
                                 max={30}
                                 step={5}
-                                onValueChange={(value) => setSettings({ ...settings, longBreakMinutes: value[0] })}
+                                onValueChange={(value) => updateSettings({ longBreakMinutes: value[0] })}
                             />
                         </div>
 
@@ -374,7 +415,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                                 min={2}
                                 max={6}
                                 step={1}
-                                onValueChange={(value) => setSettings({ ...settings, longBreakInterval: value[0] })}
+                                onValueChange={(value) => updateSettings({ longBreakInterval: value[0] })}
                             />
                         </div>
 
@@ -383,7 +424,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                             <Switch
                                 id="auto-break"
                                 checked={settings.autoStartBreaks}
-                                onCheckedChange={(checked: boolean) => setSettings({ ...settings, autoStartBreaks: checked })}
+                                onCheckedChange={(checked: boolean) => updateSettings({ autoStartBreaks: checked })}
                             />
                         </div>
 
@@ -392,7 +433,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                             <Switch
                                 id="auto-pomodoro"
                                 checked={settings.autoStartPomodoros}
-                                onCheckedChange={(checked: boolean) => setSettings({ ...settings, autoStartPomodoros: checked })}
+                                onCheckedChange={(checked: boolean) => updateSettings({ autoStartPomodoros: checked })}
                             />
                         </div>
 
@@ -405,11 +446,16 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
                                     if (checked && 'Notification' in window && Notification.permission !== 'granted') {
                                         Notification.requestPermission();
                                     }
-                                    setSettings({ ...settings, notifications: checked });
+                                    updateSettings({ notifications: checked });
                                 }}
                             />
                         </div>
                     </CardContent>
+                    <CardFooter>
+                        <Button onClick={saveSettings} className="ml-auto">
+                            Save Settings
+                        </Button>
+                    </CardFooter>
                 </Card>
             )}
         </div>

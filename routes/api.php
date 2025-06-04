@@ -4,8 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\GroupMemberController;
-use App\Http\Controllers\API\your_generic_secretr;
-use App\Http\Controllers\API\GroupTaskController;
+use App\Http\Controllers\your_generic_secretr;
+use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\API\TaskController;
 use App\Http\Controllers\API\GroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
@@ -590,6 +590,7 @@ Route::put('/study-tasks/{task}', [StudyPlannerController::class, 'updateTask'])
 Route::delete('/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask'])->middleware(['auth:sanctum']);
 
 // Pomodoro Timer API Routes
-Route::post('/pomodoro/settings', [PomodoroController::class, 'updateSettings'])->middleware(['auth:sanctum']);
-Route::post('/pomodoro/sessions', [PomodoroController::class, 'recordSession'])->middleware(['auth:sanctum']);
-Route::get('/pomodoro/stats', [PomodoroController::class, 'getStats'])->middleware(['auth:sanctum']);
+Route::post('/web/pomodoro/settings', [PomodoroController::class, 'updateSettings'])->middleware(['auth:sanctum']);
+Route::get('/web/pomodoro/settings/{userId?}', [PomodoroController::class, 'getUserSettings'])->middleware(['auth:sanctum']);
+Route::post('/web/pomodoro/sessions', [PomodoroController::class, 'recordSession'])->middleware(['auth:sanctum']);
+Route::get('/web/pomodoro/stats', [PomodoroController::class, 'getStats'])->middleware(['auth:sanctum']);

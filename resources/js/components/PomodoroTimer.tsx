@@ -156,6 +156,63 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
         }
     };
 
+    // Add a new function to save settings to the database
+    const saveSettings = async () => {
+        try {
+            // Setup authentication headers
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            axios.defaults.withCredentials = true;
+
+            const settingsData = {
+                focus_minutes: settings.focusMinutes,
+                short_break_minutes: settings.shortBreakMinutes,
+                long_break_minutes: settings.longBreakMinutes,
+                long_break_interval: settings.longBreakInterval,
+                auto_start_breaks: settings.autoStartBreaks,
+                auto_start_pomodoros: settings.autoStartPomodoros,
+                notifications_enabled: settings.notifications
+            };
+
+            // First try the API endpoint
+            try {
+                const response = await axios.post('/api/web/pomodoro/settings', settingsData);
+                console.log('Settings saved via API:', response.data);
+
+                toast({
+                    title: "Settings Saved",
+                    description: "Your pomodoro settings have been saved successfully",
+                });
+
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                const fallbackResponse = await axios.post('/pomodoro/settings', settingsData);
+                console.log('Settings saved via web route:', fallbackResponse.data);
+
+                toast({
+                    title: "Settings Saved",
+                    description: "Your pomodoro settings have been saved successfully",
+                });
+            }
+        } catch (error) {
+            console.error('Error saving pomodoro settings:', error);
+            console.error('Error details:', {
+                status: (error as any).response?.status,
+                statusText: (error as any).response?.statusText,
+                data: (error as any).response?.data,
+                headers: (error as any).response?.headers
+            });
+
+            toast({
+                title: "Error",
+                description: "Failed to save your pomodoro settings",
+                variant: "destructive"
+            });
+        }
+    };
+
     // New function to save pomodoro session to the database
     const savePomodoroSession = (type: string, durationMinutes: number) => {
         // Setup authentication headers
@@ -164,27 +221,41 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
 
         console.log('Saving pomodoro session:', { type, durationMinutes, userId });
 
+        // First try the API endpoint
         axios.post('/api/web/pomodoro/sessions', {
             type: type,
             duration_minutes: durationMinutes,
             task_id: null // Can be updated if you want to link pomodoro to specific tasks
         })
             .then(response => {
-                console.log('Pomodoro session saved:', response.data);
+                console.log('Pomodoro session saved via API:', response.data);
             })
             .catch(error => {
-                console.error('Error saving pomodoro session:', error);
-                console.error('Error details:', {
-                    status: error.response?.status,
-                    statusText: error.response?.statusText,
-                    data: error.response?.data,
-                    headers: error.response?.headers
-                });
-                toast({
-                    title: "Error",
-                    description: "Failed to save your pomodoro session",
-                    variant: "destructive"
-                });
+                console.error('API endpoint failed, trying direct web route:', error);
+
+                // Try the direct web route (non-API)
+                axios.post('/pomodoro/sessions', {
+                    type: type,
+                    duration_minutes: durationMinutes,
+                    task_id: null
+                })
+                    .then(fallbackResponse => {
+                        console.log('Pomodoro session saved via web route:', fallbackResponse.data);
+                    })
+                    .catch(fallbackError => {
+                        console.error('Error saving pomodoro session:', fallbackError);
+                        console.error('Error details:', {
+                            status: fallbackError.response?.status,
+                            statusText: fallbackError.response?.statusText,
+                            data: fallbackError.response?.data,
+                            headers: fallbackError.response?.headers
+                        });
+                        toast({
+                            title: "Error",
+                            description: "Failed to save your pomodoro session",
+                            variant: "destructive"
+                        });
+                    });
             });
     };
 
@@ -233,37 +304,6 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = ({ userId }) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    // Add a new function to save settings to the database
-    const saveSettings = async () => {
-        try {
-            // Setup authentication headers
-            axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            axios.defaults.withCredentials = true;
-
-            await axios.post('/api/web/pomodoro/settings', {
-                focus_minutes: settings.focusMinutes,
-                short_break_minutes: settings.shortBreakMinutes,
-                long_break_minutes: settings.longBreakMinutes,
-                long_break_interval: settings.longBreakInterval,
-                auto_start_breaks: settings.autoStartBreaks,
-                auto_start_pomodoros: settings.autoStartPomodoros,
-                notifications_enabled: settings.notifications
-            });
-
-            toast({
-                title: "Settings Saved",
-                description: "Your pomodoro settings have been saved successfully",
-            });
-        } catch (error) {
-            console.error('Error saving pomodoro settings:', error);
-            toast({
-                title: "Error",
-                description: "Failed to save your pomodoro settings",
-                variant: "destructive"
-            });
-        }
     };
 
     // Helper function to update settings with save

@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -31,26 +32,38 @@ class your_generic_secretroller extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse|Response
+    public function store(LoginRequest $request)
     {
         try {
             // Log request headers for debugging
-            \Log::debug('Login Request Headers', [
+            Log::debug('Login Request Headers', [
                 'headers' => $request->headers->all(),
                 'has_csrf' => $request->hasHeader('X-CSRF-TOKEN'),
                 'csrf_token' => $request->header('X-CSRF-TOKEN'),
                 'session_token' => session()->token(),
-                'matches' => $request->header('X-CSRF-TOKEN') === session()->token()
+                'matches' => $request->header('X-CSRF-TOKEN') === session()->token(),
+                'accepts_json' => $request->expectsJson()
             ]);
-            
+
             $request->authenticate();
             $request->session()->regenerate();
 
             // Check if this is the user's first login
-            $user = auth()->user();
+            $user = Auth::user();
             if (!$user->last_login_at) {
                 $user->last_login_at = now();
                 $user->save();
+            }
+
+            // Return JSON response for API requests
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => true,
+                    'user' => $user,
+                    'csrf_token' => csrf_token(),
+                    'session_id' => session()->getId(),
+                    'message' => 'Successfully authenticated'
+                ]);
             }
 
             // Always redirect to dashboard after successful login
@@ -60,11 +73,20 @@ class your_generic_secretroller extends Controller
 
             return redirect()->route('dashboard');
         } catch (\Exception $e) {
-            \Log::error('Login Error', [
+            Log::error('Login Error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
+            // Return JSON error for API requests
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The provided credentials do not match our records.',
+                    'error' => $e->getMessage()
+                ], 401);
+            }
+
             if ($request->header('X-Inertia')) {
                 return Inertia::render('auth/login', [
                     'errors' => [
@@ -91,4 +113,4 @@ class your_generic_secretroller extends Controller
 
         return redirect('/');
     }
-} 
+}

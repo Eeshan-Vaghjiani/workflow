@@ -341,10 +341,10 @@ class GroupTaskController extends Controller
                 ->select('users.id', 'users.name')
                 ->get()
                 ->map(function($member) {
-                    return [
+                return [
                         'id' => $member->id,
                         'name' => $member->name
-                    ];
+                ];
                 })
                 ->toArray();
 

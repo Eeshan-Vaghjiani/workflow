@@ -18,6 +18,7 @@ class PomodoroSession extends Model
         'duration_minutes',
         'completed',
         'task_id',
+        'is_deleted',
     ];
 
     protected $casts = [
@@ -25,6 +26,7 @@ class PomodoroSession extends Model
         'ended_at' => 'datetime',
         'duration_minutes' => 'integer',
         'completed' => 'boolean',
+        'is_deleted' => 'boolean',
     ];
 
     public function user()

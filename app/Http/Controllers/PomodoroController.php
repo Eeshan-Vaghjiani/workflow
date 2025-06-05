@@ -7,9 +7,19 @@ use Inertia\Inertia;
 use App\Models\PomodoroSetting;
 use App\Models\PomodoroSession;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class PomodoroController extends Controller
 {
+    /**
+     * Constructor to apply auth middleware
+     */
+    public function __construct()
+    {
+        $this->middleware(['web', 'auth']);
+    }
+
     /**
      * Display the pomodoro timer page.
      */
@@ -55,22 +65,92 @@ class PomodoroController extends Controller
      */
     public function updateSettings(Request $request)
     {
-        $validated = $request->validate([
-            'focus_minutes' => 'required|integer|min:1|max:120',
-            'short_break_minutes' => 'required|integer|min:1|max:30',
-            'long_break_minutes' => 'required|integer|min:1|max:60',
-            'long_break_interval' => 'required|integer|min:1|max:10',
-            'auto_start_breaks' => 'required|boolean',
-            'auto_start_pomodoros' => 'required|boolean',
-            'notifications_enabled' => 'required|boolean',
+        Log::info('PomodoroController::updateSettings called', [
+            'request_data' => $request->all(),
+            'user_id' => Auth::id(),
+            'is_api' => $request->is('api/*'),
+            'route' => $request->route()->getName(),
+            'path' => $request->path(),
+            'method' => $request->method(),
+            'auth_check' => Auth::check(),
+            'accept_header' => $request->header('Accept'),
+            'csrf_token' => $request->header('X-CSRF-TOKEN'),
+            'session_id' => session()->getId()
         ]);
 
-        PomodoroSetting::updateOrCreate(
-            ['user_id' => Auth::id()],
-            $validated
-        );
+        try {
+            $validated = $request->validate([
+                'focus_minutes' => 'required|integer|min:1|max:120',
+                'short_break_minutes' => 'required|integer|min:1|max:30',
+                'long_break_minutes' => 'required|integer|min:1|max:60',
+                'long_break_interval' => 'required|integer|min:1|max:10',
+                'auto_start_breaks' => 'required|boolean',
+                'auto_start_pomodoros' => 'required|boolean',
+                'notifications_enabled' => 'required|boolean',
+            ]);
 
-        return redirect()->route('pomodoro.index');
+            // Add is_deleted = false to ensure it's never deleted
+            $validated['is_deleted'] = false;
+            $validated['user_id'] = Auth::id();
+
+            // Use transaction for database reliability
+            DB::beginTransaction();
+            try {
+                // Try to find existing settings first
+                $settings = PomodoroSetting::where('user_id', Auth::id())->first();
+
+                if ($settings) {
+                    // Update existing settings
+                    $settings->fill($validated);
+                    $saved = $settings->save();
+                } else {
+                    // Create new settings
+                    $settings = new PomodoroSetting($validated);
+                    $saved = $settings->save();
+                }
+
+                if (!$saved) {
+                    throw new \Exception('Failed to save settings to database');
+                }
+
+                DB::commit();
+
+                Log::info('Pomodoro settings saved', [
+                    'settings_id' => $settings->id,
+                    'user_id' => $settings->user_id,
+                    'db_connection' => $settings->getConnectionName(),
+                    'saved' => $saved
+                ]);
+
+                // Return appropriate response based on request type
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Settings saved successfully',
+                        'settings' => $settings
+                    ]);
+                }
+
+                return redirect()->route('pomodoro.index');
+            } catch (\Exception $dbError) {
+                DB::rollBack();
+                throw $dbError;
+            }
+        } catch (\Exception $e) {
+            Log::error('Error in PomodoroController::updateSettings', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to save settings: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->withErrors(['error' => 'Failed to save settings: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -78,9 +158,17 @@ class PomodoroController extends Controller
      */
     public function recordSession(Request $request)
     {
-        \Illuminate\Support\Facades\Log::info('PomodoroController::recordSession called', [
+        Log::info('PomodoroController::recordSession called', [
             'request_data' => $request->all(),
-            'user_id' => Auth::id()
+            'user_id' => Auth::id(),
+            'is_api' => $request->is('api/*'),
+            'route' => $request->route()->getName(),
+            'path' => $request->path(),
+            'method' => $request->method(),
+            'auth_check' => Auth::check(),
+            'accept_header' => $request->header('Accept'),
+            'csrf_token' => $request->header('X-CSRF-TOKEN'),
+            'session_id' => session()->getId()
         ]);
 
         try {
@@ -90,28 +178,45 @@ class PomodoroController extends Controller
                 'task_id' => 'nullable|exists:group_tasks,id',
             ]);
 
-            $session = PomodoroSession::create([
-                'user_id' => Auth::id(),
-                'started_at' => now()->subMinutes($validated['duration_minutes']),
-                'ended_at' => now(),
-                'type' => $validated['type'],
-                'duration_minutes' => $validated['duration_minutes'],
-                'completed' => true,
-                'task_id' => $validated['task_id'],
-            ]);
+            // Manually create the model with connection handling
+            $session = new PomodoroSession();
+            $session->user_id = Auth::id();
+            $session->started_at = now()->subMinutes($validated['duration_minutes']);
+            $session->ended_at = now();
+            $session->type = $validated['type'];
+            $session->duration_minutes = $validated['duration_minutes'];
+            $session->completed = true;
+            $session->task_id = $validated['task_id'];
+            $session->is_deleted = false;
 
-            \Illuminate\Support\Facades\Log::info('Pomodoro session created', [
-                'session_id' => $session->id,
-                'type' => $session->type,
-                'duration' => $session->duration_minutes
-            ]);
+            // Force save to the database with transaction handling
+            DB::beginTransaction();
+            try {
+                $saved = $session->save();
+                DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'session' => $session
-            ]);
+                if (!$saved) {
+                    throw new \Exception('Failed to save Pomodoro session to database');
+                }
+
+                Log::info('Pomodoro session created', [
+                    'session_id' => $session->id,
+                    'type' => $session->type,
+                    'duration' => $session->duration_minutes,
+                    'db_connection' => $session->getConnectionName(),
+                    'saved' => $saved
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'session' => $session
+                ]);
+            } catch (\Exception $dbError) {
+                DB::rollBack();
+                throw $dbError;
+            }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error in PomodoroController::recordSession', [
+            Log::error('Error in PomodoroController::recordSession', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -192,6 +297,7 @@ class PomodoroController extends Controller
                 'auto_start_breaks' => true,
                 'auto_start_pomodoros' => false,
                 'notifications_enabled' => true,
+                'is_deleted' => false,
             ];
         }
 

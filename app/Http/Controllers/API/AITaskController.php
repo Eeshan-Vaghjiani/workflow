@@ -588,10 +588,10 @@ class AITaskController extends Controller
                     ->select('users.id', 'users.name')
                     ->get()
                     ->map(function($member) {
-                        return [
-                            'id' => $member->id,
-                            'name' => $member->name
-                        ];
+                    return [
+                        'id' => $member->id,
+                        'name' => $member->name
+                    ];
                     })
                     ->toArray();
 

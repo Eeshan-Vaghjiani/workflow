@@ -21,7 +21,9 @@ return new class extends Migration
             $table->boolean('auto_start_breaks')->default(true);
             $table->boolean('auto_start_pomodoros')->default(true);
             $table->boolean('notifications_enabled')->default(true);
+            $table->boolean('is_deleted')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('pomodoro_sessions', function (Blueprint $table) {
@@ -33,6 +35,7 @@ return new class extends Migration
             $table->unsignedInteger('duration_minutes');
             $table->boolean('completed')->default(false);
             $table->foreignId('task_id')->nullable()->constrained('group_tasks')->onDelete('set null');
+            $table->boolean('is_deleted')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });

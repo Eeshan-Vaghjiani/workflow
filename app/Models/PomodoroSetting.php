@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PomodoroSetting extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -18,6 +19,7 @@ class PomodoroSetting extends Model
         'auto_start_breaks',
         'auto_start_pomodoros',
         'notifications_enabled',
+        'is_deleted',
     ];
 
     protected $casts = [
@@ -28,6 +30,7 @@ class PomodoroSetting extends Model
         'auto_start_breaks' => 'boolean',
         'auto_start_pomodoros' => 'boolean',
         'notifications_enabled' => 'boolean',
+        'is_deleted' => 'boolean',
     ];
 
     public function user()

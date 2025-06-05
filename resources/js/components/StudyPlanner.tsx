@@ -62,41 +62,85 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
             setupAxios();
 
             try {
-                // Fetch study sessions
-                const sessionsResponse = await axios.get('/api/web/study-sessions');
-                if (sessionsResponse.data) {
-                    // Convert string dates back to Date objects
-                    setStudySessions(sessionsResponse.data.map((session: {
-                        id: number;
-                        title: string;
-                        description: string | null;
-                        session_date: string;
-                        start_time: string;
-                        end_time: string;
-                        completed: boolean;
-                    }) => ({
-                        id: session.id.toString(),
-                        title: session.title,
-                        description: session.description,
-                        date: new Date(session.session_date),
-                        startTime: session.start_time,
-                        endTime: session.end_time,
-                        completed: session.completed
-                    })));
+                // First try API endpoints for study sessions
+                try {
+                    const sessionsResponse = await axios.get('/api/web/study-sessions');
+                    if (sessionsResponse.data) {
+                        // Convert string dates back to Date objects
+                        setStudySessions(sessionsResponse.data.map((session: {
+                            id: number;
+                            title: string;
+                            description: string | null;
+                            session_date: string;
+                            start_time: string;
+                            end_time: string;
+                            completed: boolean;
+                        }) => ({
+                            id: session.id.toString(),
+                            title: session.title,
+                            description: session.description,
+                            date: new Date(session.session_date),
+                            startTime: session.start_time,
+                            endTime: session.end_time,
+                            completed: session.completed
+                        })));
+                    }
+                } catch (apiError) {
+                    console.error('API endpoint for sessions failed, trying direct web route:', apiError);
+
+                    // Fallback to direct web route
+                    const fallbackResponse = await axios.get('/study-sessions');
+                    if (fallbackResponse.data) {
+                        setStudySessions(fallbackResponse.data.map((session: {
+                            id: number;
+                            title: string;
+                            description: string | null;
+                            session_date: string;
+                            start_time: string;
+                            end_time: string;
+                            completed: boolean;
+                        }) => ({
+                            id: session.id.toString(),
+                            title: session.title,
+                            description: session.description,
+                            date: new Date(session.session_date),
+                            startTime: session.start_time,
+                            endTime: session.end_time,
+                            completed: session.completed
+                        })));
+                    }
                 }
 
-                // Fetch study tasks
-                const tasksResponse = await axios.get('/api/web/study-tasks');
-                if (tasksResponse.data) {
-                    setStudyTasks(tasksResponse.data.map((task: {
-                        id: number;
-                        title: string;
-                        completed: boolean;
-                    }) => ({
-                        id: task.id.toString(),
-                        title: task.title,
-                        completed: task.completed
-                    })));
+                // First try API endpoints for study tasks
+                try {
+                    const tasksResponse = await axios.get('/api/web/study-tasks');
+                    if (tasksResponse.data) {
+                        setStudyTasks(tasksResponse.data.map((task: {
+                            id: number;
+                            title: string;
+                            completed: boolean;
+                        }) => ({
+                            id: task.id.toString(),
+                            title: task.title,
+                            completed: task.completed
+                        })));
+                    }
+                } catch (apiError) {
+                    console.error('API endpoint for tasks failed, trying direct web route:', apiError);
+
+                    // Fallback to direct web route
+                    const fallbackResponse = await axios.get('/study-tasks');
+                    if (fallbackResponse.data) {
+                        setStudyTasks(fallbackResponse.data.map((task: {
+                            id: number;
+                            title: string;
+                            completed: boolean;
+                        }) => ({
+                            id: task.id.toString(),
+                            title: task.title,
+                            completed: task.completed
+                        })));
+                    }
                 }
 
                 setLoading(false);
@@ -126,40 +170,81 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
 
         setupAxios();
 
+        const sessionData = {
+            title: sessionTitle,
+            description: sessionDescription,
+            session_date: format(selectedDate, 'yyyy-MM-dd'),
+            start_time: startTime,
+            end_time: endTime,
+        };
+
         try {
-            // Save to backend first
-            const response = await axios.post('/api/web/study-sessions', {
-                title: sessionTitle,
-                description: sessionDescription,
-                session_date: format(selectedDate, 'yyyy-MM-dd'),
-                start_time: startTime,
-                end_time: endTime,
-            });
+            // First try the API endpoint
+            try {
+                const response = await axios.post('/api/web/study-sessions', sessionData);
 
-            // Create a new session object using the returned data
-            const newSession: StudySession = {
-                id: response.data.session.id.toString(),
-                title: response.data.session.title,
-                description: response.data.session.description,
-                date: new Date(response.data.session.session_date),
-                startTime: response.data.session.start_time,
-                endTime: response.data.session.end_time,
-                completed: response.data.session.completed
-            };
+                // Create a new session object using the returned data
+                const newSession: StudySession = {
+                    id: response.data.session.id.toString(),
+                    title: response.data.session.title,
+                    description: response.data.session.description,
+                    date: new Date(response.data.session.session_date),
+                    startTime: response.data.session.start_time,
+                    endTime: response.data.session.end_time,
+                    completed: response.data.session.completed
+                };
 
-            // Update state with the backend-created session
-            setStudySessions([...studySessions, newSession]);
+                // Update state with the backend-created session
+                setStudySessions([...studySessions, newSession]);
 
-            setSessionTitle('');
-            setSessionDescription('');
-            setIsAddingSession(false);
+                setSessionTitle('');
+                setSessionDescription('');
+                setIsAddingSession(false);
 
-            toast({
-                title: "Success",
-                description: "Study session added to your schedule",
-            });
+                toast({
+                    title: "Success",
+                    description: "Study session added to your schedule",
+                });
+
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                const fallbackResponse = await axios.post('/study-sessions', sessionData);
+
+                // Create a new session object using the returned data
+                const newSession: StudySession = {
+                    id: fallbackResponse.data.session.id.toString(),
+                    title: fallbackResponse.data.session.title,
+                    description: fallbackResponse.data.session.description,
+                    date: new Date(fallbackResponse.data.session.session_date),
+                    startTime: fallbackResponse.data.session.start_time,
+                    endTime: fallbackResponse.data.session.end_time,
+                    completed: fallbackResponse.data.session.completed
+                };
+
+                // Update state with the backend-created session
+                setStudySessions([...studySessions, newSession]);
+
+                setSessionTitle('');
+                setSessionDescription('');
+                setIsAddingSession(false);
+
+                toast({
+                    title: "Success",
+                    description: "Study session added to your schedule",
+                });
+            }
         } catch (error) {
             console.error('Error saving study session:', error);
+            console.error('Error details:', {
+                status: (error as any).response?.status,
+                statusText: (error as any).response?.statusText,
+                data: (error as any).response?.data,
+                headers: (error as any).response?.headers
+            });
+
             toast({
                 title: "Error",
                 description: "Failed to save your study session to the server. Please try again.",
@@ -173,30 +258,63 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
 
         setupAxios();
 
+        const taskData = {
+            title: currentTask,
+            description: null,
+            study_session_id: null
+        };
+
         try {
-            // Save to backend first
-            const response = await axios.post('/api/web/study-tasks', {
-                title: currentTask,
-                description: null,
-                study_session_id: null
-            });
+            // First try the API endpoint
+            try {
+                const response = await axios.post('/api/web/study-tasks', taskData);
 
-            // Add returned task to state
-            const newTask: StudyTask = {
-                id: response.data.task.id.toString(),
-                title: response.data.task.title,
-                completed: response.data.task.completed
-            };
+                // Add returned task to state
+                const newTask: StudyTask = {
+                    id: response.data.task.id.toString(),
+                    title: response.data.task.title,
+                    completed: response.data.task.completed
+                };
 
-            setStudyTasks([...studyTasks, newTask]);
-            setCurrentTask('');
+                setStudyTasks([...studyTasks, newTask]);
+                setCurrentTask('');
 
-            toast({
-                title: "Success",
-                description: "Task added successfully",
-            });
+                toast({
+                    title: "Success",
+                    description: "Task added successfully",
+                });
+
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                const fallbackResponse = await axios.post('/study-tasks', taskData);
+
+                // Add returned task to state
+                const newTask: StudyTask = {
+                    id: fallbackResponse.data.task.id.toString(),
+                    title: fallbackResponse.data.task.title,
+                    completed: fallbackResponse.data.task.completed
+                };
+
+                setStudyTasks([...studyTasks, newTask]);
+                setCurrentTask('');
+
+                toast({
+                    title: "Success",
+                    description: "Task added successfully",
+                });
+            }
         } catch (error) {
             console.error('Error saving study task:', error);
+            console.error('Error details:', {
+                status: (error as any).response?.status,
+                statusText: (error as any).response?.statusText,
+                data: (error as any).response?.data,
+                headers: (error as any).response?.headers
+            });
+
             toast({
                 title: "Error",
                 description: "Failed to save your task to the server. Please try again.",
@@ -221,14 +339,24 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
         setupAxios();
 
         try {
-            // Update in backend
-            await axios.put(`/api/web/study-tasks/${taskId}`, {
-                completed: newCompletionStatus
-            });
+            // First try the API endpoint
+            try {
+                await axios.put(`/api/web/study-tasks/${taskId}`, {
+                    completed: newCompletionStatus
+                });
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                await axios.put(`/study-tasks/${taskId}`, {
+                    completed: newCompletionStatus
+                });
+            }
         } catch (error) {
             console.error('Error updating task completion status:', error);
 
-            // Revert state if API call fails
+            // Revert state if all API calls fail
             setStudyTasks(studyTasks);
 
             toast({
@@ -249,17 +377,31 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
         setupAxios();
 
         try {
-            // Delete from backend
-            await axios.delete(`/api/web/study-tasks/${taskId}`);
+            // First try the API endpoint
+            try {
+                await axios.delete(`/api/web/study-tasks/${taskId}`);
 
-            toast({
-                title: "Success",
-                description: "Task deleted successfully"
-            });
+                toast({
+                    title: "Success",
+                    description: "Task deleted successfully"
+                });
+
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                await axios.delete(`/study-tasks/${taskId}`);
+
+                toast({
+                    title: "Success",
+                    description: "Task deleted successfully"
+                });
+            }
         } catch (error) {
             console.error('Error deleting task:', error);
 
-            // Restore state if API call fails
+            // Restore state if all API calls fail
             setStudyTasks(studyTasks);
 
             toast({
@@ -286,14 +428,24 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
         setupAxios();
 
         try {
-            // Update in backend
-            await axios.put(`/api/web/study-sessions/${sessionId}`, {
-                completed: newCompletionStatus
-            });
+            // First try the API endpoint
+            try {
+                await axios.put(`/api/web/study-sessions/${sessionId}`, {
+                    completed: newCompletionStatus
+                });
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                await axios.put(`/study-sessions/${sessionId}`, {
+                    completed: newCompletionStatus
+                });
+            }
         } catch (error) {
             console.error('Error updating session completion status:', error);
 
-            // Revert state if API call fails
+            // Revert state if all API calls fail
             setStudySessions(studySessions);
 
             toast({
@@ -314,17 +466,31 @@ const StudyPlanner: React.FC<StudyPlannerProps> = ({ userId }) => {
         setupAxios();
 
         try {
-            // Delete from backend
-            await axios.delete(`/api/web/study-sessions/${sessionId}`);
+            // First try the API endpoint
+            try {
+                await axios.delete(`/api/web/study-sessions/${sessionId}`);
 
-            toast({
-                title: "Success",
-                description: "Study session deleted successfully"
-            });
+                toast({
+                    title: "Success",
+                    description: "Study session deleted successfully"
+                });
+
+                return;
+            } catch (apiError) {
+                console.error('API endpoint failed, trying direct web route:', apiError);
+
+                // Try the direct web route (non-API)
+                await axios.delete(`/study-sessions/${sessionId}`);
+
+                toast({
+                    title: "Success",
+                    description: "Study session deleted successfully"
+                });
+            }
         } catch (error) {
             console.error('Error deleting session:', error);
 
-            // Restore state if API call fails
+            // Restore state if all API calls fail
             setStudySessions(studySessions);
 
             toast({

@@ -79,12 +79,28 @@ axios.interceptors.response.use(
 
             originalRequest._retry = true;
 
-            // Try to refresh the CSRF token
-            const tokenRefreshed = await refreshCsrfToken();
+            try {
+                // First try to refresh auth status
+                const authCheckResponse = await axios.get('/auth/status');
+                console.log('Auth status check:', authCheckResponse.data);
 
-            if (tokenRefreshed) {
-                // Retry the original request with the new token
-                return axios(originalRequest);
+                if (!authCheckResponse.data.authenticated) {
+                    // Then try to refresh the CSRF token
+                    const tokenRefreshed = await refreshCsrfToken();
+
+                    if (tokenRefreshed) {
+                        // Try refresh the session
+                        await axios.get('/auth/refresh-session');
+
+                        // Retry the original request with the new token
+                        return axios(originalRequest);
+                    }
+                } else {
+                    // If we are authenticated, just retry with the current session
+                    return axios(originalRequest);
+                }
+            } catch (refreshError) {
+                console.error('Failed to refresh authentication:', refreshError);
             }
         }
         return Promise.reject(error);

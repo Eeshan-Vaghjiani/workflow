@@ -580,17 +580,50 @@ Route::middleware(['web', 'auth'])->group(function () {
 });
 
 // Study Planner API Routes
-Route::get('/study-sessions', [StudyPlannerController::class, 'getSessions'])->middleware(['auth:sanctum']);
-Route::get('/study-tasks', [StudyPlannerController::class, 'getTasks'])->middleware(['auth:sanctum']);
-Route::post('/study-sessions', [StudyPlannerController::class, 'storeSession'])->middleware(['auth:sanctum']);
-Route::put('/study-sessions/{session}', [StudyPlannerController::class, 'updateSession'])->middleware(['auth:sanctum']);
-Route::delete('/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession'])->middleware(['auth:sanctum']);
-Route::post('/study-tasks', [StudyPlannerController::class, 'storeTask'])->middleware(['auth:sanctum']);
-Route::put('/study-tasks/{task}', [StudyPlannerController::class, 'updateTask'])->middleware(['auth:sanctum']);
-Route::delete('/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask'])->middleware(['auth:sanctum']);
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Study Planner API routes with /web prefix for better session handling
+    Route::get('/web/study-sessions', [StudyPlannerController::class, 'getSessions']);
+    Route::get('/web/study-tasks', [StudyPlannerController::class, 'getTasks']);
+    Route::post('/web/study-sessions', [StudyPlannerController::class, 'storeSession']);
+    Route::put('/web/study-sessions/{session}', [StudyPlannerController::class, 'updateSession']);
+    Route::delete('/web/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession']);
+    Route::post('/web/study-tasks', [StudyPlannerController::class, 'storeTask']);
+    Route::put('/web/study-tasks/{task}', [StudyPlannerController::class, 'updateTask']);
+    Route::delete('/web/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask']);
 
-// Pomodoro Timer API Routes
-Route::post('/web/pomodoro/settings', [PomodoroController::class, 'updateSettings'])->middleware(['auth:sanctum']);
-Route::get('/web/pomodoro/settings/{userId?}', [PomodoroController::class, 'getUserSettings'])->middleware(['auth:sanctum']);
-Route::post('/web/pomodoro/sessions', [PomodoroController::class, 'recordSession'])->middleware(['auth:sanctum']);
-Route::get('/web/pomodoro/stats', [PomodoroController::class, 'getStats'])->middleware(['auth:sanctum']);
+    // Original routes without /web prefix for backward compatibility
+    Route::get('/study-sessions', [StudyPlannerController::class, 'getSessions']);
+    Route::get('/study-tasks', [StudyPlannerController::class, 'getTasks']);
+    Route::post('/study-sessions', [StudyPlannerController::class, 'storeSession']);
+    Route::put('/study-sessions/{session}', [StudyPlannerController::class, 'updateSession']);
+    Route::delete('/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession']);
+    Route::post('/study-tasks', [StudyPlannerController::class, 'storeTask']);
+    Route::put('/study-tasks/{task}', [StudyPlannerController::class, 'updateTask']);
+    Route::delete('/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask']);
+});
+
+// Add web-middleware fallback routes for Study Planner to ensure session auth works
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/api/web/study-sessions', [StudyPlannerController::class, 'getSessions']);
+    Route::get('/api/web/study-tasks', [StudyPlannerController::class, 'getTasks']);
+    Route::post('/api/web/study-sessions', [StudyPlannerController::class, 'storeSession']);
+    Route::put('/api/web/study-sessions/{session}', [StudyPlannerController::class, 'updateSession']);
+    Route::delete('/api/web/study-sessions/{session}', [StudyPlannerController::class, 'deleteSession']);
+    Route::post('/api/web/study-tasks', [StudyPlannerController::class, 'storeTask']);
+    Route::put('/api/web/study-tasks/{task}', [StudyPlannerController::class, 'updateTask']);
+    Route::delete('/api/web/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask']);
+});
+
+// Pomodoro Timer API Routes - main routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/web/pomodoro/settings', [\App\Http\Controllers\PomodoroController::class, 'updateSettings']);
+    Route::get('/web/pomodoro/settings/{userId?}', [\App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
+    Route::post('/web/pomodoro/sessions', [\App\Http\Controllers\PomodoroController::class, 'recordSession']);
+    Route::get('/web/pomodoro/stats', [\App\Http\Controllers\PomodoroController::class, 'getStats']);
+
+    // Fallback routes without /web prefix for compatibility
+    Route::post('/pomodoro/settings', [\App\Http\Controllers\PomodoroController::class, 'updateSettings']);
+    Route::get('/pomodoro/settings/{userId?}', [\App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
+    Route::post('/pomodoro/sessions', [\App\Http\Controllers\PomodoroController::class, 'recordSession']);
+    Route::get('/pomodoro/stats', [\App\Http\Controllers\PomodoroController::class, 'getStats']);
+});

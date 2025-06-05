@@ -16,6 +16,11 @@ class VerifyCsrfToken extends Middleware
         'broadcasting/auth',
         'api/broadcasting/auth',
         // Temporarily exclude login route to debug CSRF issues
-        'login'
+        'login',
+        // Temporarily exclude study planner routes to debug authentication issues
+        'study-sessions',
+        'study-tasks',
+        'api/web/study-sessions',
+        'api/web/study-tasks'
     ];
 }

@@ -192,10 +192,11 @@ Route::prefix('api/web')->middleware(['web', 'auth'])->group(function() {
     Route::put('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'updateTask']);
     Route::delete('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'deleteTask']);
 
-    // Pomodoro routes with web middleware
-    Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession']);
-    Route::get('/pomodoro/stats', [App\Http\Controllers\PomodoroController::class, 'getStats']);
-    Route::get('/pomodoro/settings/{userId?}', [App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
+    // Pomodoro routes with web middleware - matching the expected client endpoint
+    Route::post('/pomodoro/settings', [\App\Http\Controllers\PomodoroController::class, 'updateSettings']);
+    Route::post('/pomodoro/sessions', [\App\Http\Controllers\PomodoroController::class, 'recordSession']);
+    Route::get('/pomodoro/stats', [\App\Http\Controllers\PomodoroController::class, 'getStats']);
+    Route::get('/pomodoro/settings/{userId?}', [\App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
 });
 
 // Add broadcasting authentication route
@@ -680,11 +681,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('task-assignments.distribute');
 });
 
-// Study Planner and Pomodoro Timer protected routes
+// Add direct web routes for the Study Planner and Pomodoro with explicit web middleware
 Route::middleware(['auth'])->group(function () {
     Route::get('/study-planner', [App\Http\Controllers\StudyPlannerController::class, 'index'])->name('study-planner.index');
     Route::get('/pomodoro', [App\Http\Controllers\PomodoroController::class, 'index'])->name('pomodoro.index');
     Route::get('/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
+
+    // Direct Study Planner web routes to ensure proper session handling
+    Route::get('/study-sessions', [App\Http\Controllers\StudyPlannerController::class, 'getSessions'])->name('study-sessions.index');
+    Route::get('/study-tasks', [App\Http\Controllers\StudyPlannerController::class, 'getTasks'])->name('study-tasks.index');
+    Route::post('/study-sessions', [App\Http\Controllers\StudyPlannerController::class, 'storeSession'])->name('study-sessions.store');
+    Route::put('/study-sessions/{session}', [App\Http\Controllers\StudyPlannerController::class, 'updateSession'])->name('study-sessions.update');
+    Route::delete('/study-sessions/{session}', [App\Http\Controllers\StudyPlannerController::class, 'deleteSession'])->name('study-sessions.destroy');
+    Route::post('/study-tasks', [App\Http\Controllers\StudyPlannerController::class, 'storeTask'])->name('study-tasks.store');
+    Route::put('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'updateTask'])->name('study-tasks.update');
+    Route::delete('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'deleteTask'])->name('study-tasks.destroy');
+
+    // Direct Pomodoro access through web routes
+    Route::post('/pomodoro/settings', [App\Http\Controllers\PomodoroController::class, 'updateSettings'])->name('pomodoro.settings.update');
+    Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession'])->name('pomodoro.sessions.store');
+    Route::get('/pomodoro/stats', [App\Http\Controllers\PomodoroController::class, 'getStats'])->name('pomodoro.stats');
+    Route::get('/pomodoro/settings/{userId?}', [App\Http\Controllers\PomodoroController::class, 'getUserSettings'])->name('pomodoro.settings.show');
 });
 
 require __DIR__.'/settings.php';

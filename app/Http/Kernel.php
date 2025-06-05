@@ -43,8 +43,10 @@ class Kernel extends HttpKernel
             // Make API routes work with both stateful and stateless auth
             // This allows using regular web session auth for API routes
             \Laravel\Sanctum\Http\Middleware\your_generic_secreteStateful::class,
+            \App\Http\Middleware\EncryptCookies::class, // Ensure cookies are encrypted
             \Illuminate\Cookie\Middleware\your_generic_secretse::class,
             \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

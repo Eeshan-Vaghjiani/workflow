@@ -174,6 +174,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession']);
     Route::get('/pomodoro/stats', [App\Http\Controllers\PomodoroController::class, 'getStats']);
     Route::get('/pomodoro/settings/{userId?}', [App\Http\Controllers\PomodoroController::class, 'getUserSettings']);
+
+    // Google Calendar OAuth routes
+    Route::get('/google/auth', [App\Http\Controllers\GoogleAuthController::class, 'redirectToGoogle'])->name('google.auth');
+    Route::get('/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
+    Route::get('/google/disconnect', [App\Http\Controllers\GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
+    Route::get('/calendar/settings', [App\Http\Controllers\GoogleAuthController::class, 'settings'])->name('calendar.settings');
+
+    // Calendar sync route (web version)
+    Route::post('/calendar/sync', [App\Http\Controllers\CalendarController::class, 'sync'])->name('calendar.sync');
+
+    // Task update routes for calendar integration
+    Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates'])->name('tasks.update-dates');
 });
 
 // Add API web fallback routes with explicit session auth
@@ -702,6 +714,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession'])->name('pomodoro.sessions.store');
     Route::get('/pomodoro/stats', [App\Http\Controllers\PomodoroController::class, 'getStats'])->name('pomodoro.stats');
     Route::get('/pomodoro/settings/{userId?}', [App\Http\Controllers\PomodoroController::class, 'getUserSettings'])->name('pomodoro.settings.show');
+
+    // Google Calendar OAuth routes
+    Route::get('/google/auth', [App\Http\Controllers\GoogleAuthController::class, 'redirectToGoogle'])->name('google.auth');
+    Route::get('/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
+    Route::get('/google/disconnect', [App\Http\Controllers\GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
+    Route::get('/calendar/settings', [App\Http\Controllers\GoogleAuthController::class, 'settings'])->name('calendar.settings');
+
+    // Task update routes for calendar integration
+    Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates'])->name('tasks.update-dates');
 });
 
 require __DIR__.'/settings.php';

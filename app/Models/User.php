@@ -63,6 +63,14 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    /**
+     * Get the user's Google Calendar connection.
+     */
+    public function googleCalendar()
+    {
+        return $this->hasOne(GoogleCalendar::class);
+    }
+
     public function user()
     {
         // This is a self-referential relationship, needed for compatibility

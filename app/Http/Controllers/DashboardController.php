@@ -23,28 +23,28 @@ class DashboardController extends Controller
         $groups = $groups->map(function($group) use ($user) {
             // Get the latest message for the group
             $lastMessage = $group->chatMessages()->with('user:id,name')->latest()->first();
-            
+
             // Get messages count from other users in last 24 hours as a simple way to show "unread" messages
             // This is a simplified approach that doesn't require tracking read status
             $unreadCount = $group->chatMessages()
                 ->where('created_at', '>=', now()->subDay())
                 ->where('user_id', '!=', $user->id)
                 ->count();
-            
+
             $group->lastMessage = $lastMessage ? [
                 'content' => $lastMessage->message,
                 'timestamp' => $lastMessage->created_at->diffForHumans(),
             ] : null;
-            
+
             $group->unreadCount = $unreadCount;
-            
+
             return $group;
         });
 
         $assignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })->with('group')->latest()->take(5)->get();
-        
+
         // Filter out any assignments with null groups
         $assignments = $assignments->filter(function ($assignment) {
             return $assignment->group !== null;
@@ -53,7 +53,7 @@ class DashboardController extends Controller
         $tasks = GroupTask::whereHas('assignment.group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })->with(['assignment', 'assignment.group'])->latest()->take(5)->get();
-        
+
         // Filter out any tasks with null assignments or groups
         $tasks = $tasks->filter(function ($task) {
             return $task->assignment !== null && $task->assignment->group !== null;
@@ -102,17 +102,37 @@ class DashboardController extends Controller
                 'title' => $task->title,
                 'start' => $task->start_date,
                 'end' => $task->end_date,
-                'status' => $task->status,
-                'priority' => $task->priority,
-                'assigned_to' => $task->assigned_user ? $task->assigned_user->name : 'Unassigned',
-                'group' => $task->assignment->group->name,
-                'assignment' => $task->assignment->title,
+                'allDay' => true,
+                'backgroundColor' => $this->getPriorityColor($task->priority),
+                'borderColor' => $this->getPriorityColor($task->priority),
+                'textColor' => '#ffffff',
+                'extendedProps' => [
+                    'assignment' => $task->assignment->title,
+                    'group' => $task->assignment->group->name,
+                    'priority' => $task->priority,
+                    'status' => $task->status,
+                    'type' => 'task'
+                ]
             ];
         });
 
         return Inertia::render('dashboard/Calendar', [
-            'tasks' => $tasks
+            'events' => $tasks
         ]);
+    }
+
+    private function getPriorityColor($priority)
+    {
+        switch ($priority) {
+            case 'high':
+                return '#ef4444'; // red-500
+            case 'medium':
+                return '#f59e0b'; // amber-500
+            case 'low':
+                return '#3b82f6'; // blue-500
+            default:
+                return '#6b7280'; // gray-500
+        }
     }
 
     public function gantt()
@@ -124,13 +144,13 @@ class DashboardController extends Controller
             $query->where('user_id', $user->id);
         })
         ->with(['assignment', 'assignment.group', 'assignedUser']);
-        
+
         $tasks = $tasksQuery->get();
-        
+
         // Filter out tasks with null relationships
         $tasks = $tasks->filter(function ($task) {
-            return $task->assignment !== null && 
-                   $task->assignment->group !== null && 
+            return $task->assignment !== null &&
+                   $task->assignment->group !== null &&
                    $task->assignedUser !== null;
         })
         ->map(function ($task) {
@@ -157,13 +177,13 @@ class DashboardController extends Controller
 
         // Group tasks by assignment
         $tasksByAssignment = $tasks->groupBy('assignmentTitle');
-        
+
         // Create a hierarchical structure for the Gantt chart
         $ganttTasks = collect();
-        
+
         foreach ($tasksByAssignment as $assignmentTitle => $assignmentTasks) {
             if ($assignmentTasks->isEmpty()) continue;
-            
+
             // Add the assignment as a parent task
             $firstTask = $assignmentTasks->first();
             if ($firstTask) {
@@ -180,7 +200,7 @@ class DashboardController extends Controller
                     'groupName' => $firstTask['groupName'],
                     'dependencies' => [],
                 ]);
-                
+
                 // Add the tasks as children
                 foreach ($assignmentTasks as $task) {
                     $task['dependencies'] = ['assignment-' . $firstTask['assignmentTitle']];
@@ -188,7 +208,7 @@ class DashboardController extends Controller
                 }
             }
         }
-        
+
         // Get all assignments for the dropdown
         $assignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
             $query->where('user_id', $user->id);
@@ -206,7 +226,7 @@ class DashboardController extends Controller
                 'group_name' => $assignment->group->name,
             ];
         });
-        
+
         // Get all group members for the dropdown (from groups the user is a member of)
         $groupMembersQuery = \App\Models\User::whereHas('groups', function ($query) use ($user) {
             $query->whereIn('group_id', function ($subquery) use ($user) {
@@ -215,7 +235,7 @@ class DashboardController extends Controller
                     ->where('user_id', $user->id);
             });
         });
-        
+
         $groupMembers = $groupMembersQuery->get()
             ->map(function ($member) {
                 return [
@@ -230,4 +250,4 @@ class DashboardController extends Controller
             'groupMembers' => $groupMembers,
         ]);
     }
-} 
+}

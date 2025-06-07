@@ -22,7 +22,7 @@ class CalendarController extends Controller
         $user = Auth::user();
 
         // Get all tasks for the user
-        $tasks = GroupTask::where('assigned_to', $user->id)
+        $tasks = GroupTask::where('assigned_user_id', $user->id)
             ->with(['assignment'])
             ->get()
             ->map(function ($task) {
@@ -111,7 +111,7 @@ class CalendarController extends Controller
         }
 
         // Get all tasks and assignments
-        $tasks = GroupTask::where('assigned_to', $user->id)
+        $tasks = GroupTask::where('assigned_user_id', $user->id)
             ->with(['assignment'])
             ->get();
 

@@ -9,8 +9,9 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import axios from 'axios';
-import { CalendarIcon, Check, RefreshCw, Calendar as CalendarLogo } from 'lucide-react';
+import { CalendarIcon, Check, RefreshCw, Calendar as CalendarLogo, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Link } from '@inertiajs/react';
 
 // Define minimal types for event handlers
 interface CalendarEventChangeArg {
@@ -151,14 +152,22 @@ export default function CalendarIndex({ events }: Props) {
                                 <CardTitle>Calendar</CardTitle>
                                 <CardDescription>View and manage your tasks and assignments</CardDescription>
                             </div>
-                            <Button onClick={syncWithGoogle} disabled={syncing}>
-                                {syncing ? (
-                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                )}
-                                Sync with Google
-                            </Button>
+                            <div className="flex space-x-2">
+                                <Button onClick={syncWithGoogle} disabled={syncing}>
+                                    {syncing ? (
+                                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                    )}
+                                    Sync with Google
+                                </Button>
+                                <Button variant="outline" asChild>
+                                    <Link href={route('calendar.settings')}>
+                                        <Settings className="mr-2 h-4 w-4" />
+                                        Settings
+                                    </Link>
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <FullCalendar

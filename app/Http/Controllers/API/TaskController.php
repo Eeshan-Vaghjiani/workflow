@@ -136,4 +136,99 @@ class TaskController extends Controller
 
         return response()->json(['message' => 'Task deleted successfully']);
     }
-} 
+
+    /**
+     * Update the task dates (for calendar integration).
+     */
+    public function updateDates(Request $request, $id)
+    {
+        try {
+            $task = \App\Models\GroupTask::find($id);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task not found'
+                ], 404);
+            }
+
+            // Check if user has permission to update this task
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated'
+                ], 401);
+            }
+
+            // Check if the user is a member of the group this task belongs to
+            if (!$task->assignment || !$task->assignment->group) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Task has invalid assignment or group'
+                ], 422);
+            }
+
+            $isGroupMember = $task->assignment->group->members()->where('user_id', $user->id)->exists();
+
+            if (!$isGroupMember) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to update this task'
+                ], 403);
+            }
+
+            // Validate input - more flexible validation
+            $validated = $request->validate([
+                'start_date' => 'required|date_format:Y-m-d',
+                'end_date' => 'required|date_format:Y-m-d',
+            ]);
+
+            // Ensure end date is not before start date
+            $startDate = new \DateTime($validated['start_date']);
+            $endDate = new \DateTime($validated['end_date']);
+
+            if ($endDate < $startDate) {
+                $endDate = clone $startDate;
+                $validated['end_date'] = $validated['start_date'];
+            }
+
+            // Update the task
+            $task->start_date = $validated['start_date'];
+            $task->end_date = $validated['end_date'];
+            $task->save();
+
+            // Log the update
+            \Illuminate\Support\Facades\Log::info('Task dates updated via calendar', [
+                'task_id' => $task->id,
+                'user_id' => $user->id,
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date']
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Task dates updated successfully',
+                'task' => $task
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating task dates', [
+                'error' => $e->getMessage(),
+                'task_id' => $id ?? null
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}

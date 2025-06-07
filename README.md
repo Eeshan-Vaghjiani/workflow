@@ -62,3 +62,43 @@ You can test your API connection by visiting the following endpoints:
 - `/api/user` - Should return your user info if you're authenticated
 
 If you continue to have issues, check your Laravel logs at `storage/logs/laravel.log` for detailed error information.
+
+# Google Calendar Integration
+
+This application supports synchronizing tasks and assignments with Google Calendar.
+
+## Setup
+
+1. Follow the detailed setup instructions in the [Google Calendar Setup Guide](./GOOGLE_CALENDAR_SETUP.md)
+2. Add the following to your `.env` file with your Google Cloud credentials:
+
+```
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+GOOGLE_REDIRECT_URI=http://localhost:8000/google/callback
+```
+
+## Usage
+
+1. Navigate to the Calendar page
+2. Click the "Settings" button to access calendar settings
+3. Click "Connect Google Calendar" to authenticate with Google
+4. Once connected, you can click "Sync with Google" on the Calendar page to sync your tasks and assignments
+
+## Features
+
+- Automatic synchronization of tasks and assignments to Google Calendar
+- Color-coded events based on task priority
+- Task status and progress shown in event descriptions
+- Changes to tasks in the application are reflected in Google Calendar
+
+## Troubleshooting
+
+If you encounter issues with Google Calendar integration:
+
+1. Check that your Google Cloud project has the Google Calendar API enabled
+2. Verify your OAuth consent screen is properly configured with the required scopes
+3. Ensure the redirect URI in your Google Cloud Console matches your application's callback URL
+4. Check the application logs for detailed error messages
+
+For more information, see the [Google Calendar API documentation](https://developers.google.com/calendar/api/guides/overview).

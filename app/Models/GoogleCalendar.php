@@ -107,7 +107,7 @@ class GoogleCalendar extends Model
                 'user_id' => $this->user_id
             ]);
 
-            $response = Http::post('https://oauth2.googleapis.com/token', [
+            $response = Http::withoutVerifying()->post('https://oauth2.googleapis.com/token', [
                 'client_id' => config('services.google.client_id'),
                 'client_secret' => config('services.google.client_secret'),
                 'refresh_token' => $this->refresh_token,
@@ -146,7 +146,7 @@ class GoogleCalendar extends Model
 
     private function getExistingEvents()
     {
-        $response = Http::withToken($this->access_token)
+        $response = Http::withoutVerifying()->withToken($this->access_token)
             ->get("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events", [
                 'timeMin' => Carbon::now()->subMonths(3)->toRfc3339String(),
                 'timeMax' => Carbon::now()->addMonths(3)->toRfc3339String(),
@@ -215,7 +215,7 @@ class GoogleCalendar extends Model
 
     private function createEvent($eventData)
     {
-        $response = Http::withToken($this->access_token)
+        $response = Http::withoutVerifying()->withToken($this->access_token)
             ->post("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events", $eventData);
 
         if (!$response->successful()) {
@@ -227,7 +227,7 @@ class GoogleCalendar extends Model
 
     private function updateEvent($eventId, $eventData)
     {
-        $response = Http::withToken($this->access_token)
+        $response = Http::withoutVerifying()->withToken($this->access_token)
             ->put("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}", $eventData);
 
         if (!$response->successful()) {
@@ -239,7 +239,7 @@ class GoogleCalendar extends Model
 
     private function deleteEvent($eventId)
     {
-        $response = Http::withToken($this->access_token)
+        $response = Http::withoutVerifying()->withToken($this->access_token)
             ->delete("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}");
 
         if (!$response->successful()) {

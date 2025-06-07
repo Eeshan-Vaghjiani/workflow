@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\StudyPlannerController;
 use App\Http\Controllers\PomodoroController;
+use App\Http\Controllers\CalendarController;
 
 /*
 |your_generic_secretyour_generic_secretyour_generic_secret--
@@ -172,6 +173,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Task assignment routes
     Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\your_generic_secret::class, 'getAssignmentStats']);
     Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks']);
+
+    // Google Calendar API routes
+    Route::post('/calendar/sync', [CalendarController::class, 'sync']);
+
+    // Calendar task date updates
+    Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates']);
 });
 
 // Chat-specific API routes using web middleware for session auth

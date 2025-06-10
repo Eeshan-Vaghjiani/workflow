@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - User Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page user-dashboard">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li class="active"><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-outline">View All</button>
+                        <button class="btn btn-primary">+ Create New</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-card upcoming-tasks">
+                        <div class="card-header">
+                            <h2>Upcoming Tasks</h2>
+                            <span class="card-icon">📋</span>
+                        </div>
+                        <div class="card-content">
+                            <ul class="task-list">
+                                <li class="task-item">
+                                    <div class="task-status high"></div>
+                                    <div class="task-details">
+                                        <h3>Complete Project Proposal</h3>
+                                        <p>Due Tomorrow</p>
+                                    </div>
+                                </li>
+                                <li class="task-item">
+                                    <div class="task-status medium"></div>
+                                    <div class="task-details">
+                                        <h3>Research User Interface Design</h3>
+                                        <p>Due in 2 days</p>
+                                    </div>
+                                </li>
+                                <li class="task-item">
+                                    <div class="task-status low"></div>
+                                    <div class="task-details">
+                                        <h3>Review Team Feedback</h3>
+                                        <p>Due in 3 days</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="tasks.html" class="view-all">View All Tasks</a>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card recent-groups">
+                        <div class="card-header">
+                            <h2>Recent Groups</h2>
+                            <span class="card-icon">👥</span>
+                        </div>
+                        <div class="card-content">
+                            <ul class="group-list">
+                                <li class="group-item">
+                                    <div class="group-avatar">WD</div>
+                                    <div class="group-details">
+                                        <h3>Web Development</h3>
+                                        <p>8 members • 12 tasks</p>
+                                    </div>
+                                </li>
+                                <li class="group-item">
+                                    <div class="group-avatar">UI</div>
+                                    <div class="group-details">
+                                        <h3>UI/UX Design</h3>
+                                        <p>5 members • 7 tasks</p>
+                                    </div>
+                                </li>
+                                <li class="group-item">
+                                    <div class="group-avatar">DB</div>
+                                    <div class="group-details">
+                                        <h3>Database Management</h3>
+                                        <p>3 members • 5 tasks</p>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="#" class="view-all">View All Groups</a>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card recent-assignments">
+                        <div class="card-header">
+                            <h2>Recent Assignments</h2>
+                            <span class="card-icon">📝</span>
+                        </div>
+                        <div class="card-content">
+                            <ul class="assignment-list">
+                                <li class="assignment-item">
+                                    <div class="assignment-details">
+                                        <h3>Website Redesign</h3>
+                                        <p>Web Development • Due Oct 15</p>
+                                    </div>
+                                    <div class="assignment-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress" style="width: 65%"></div>
+                                        </div>
+                                        <span class="progress-text">65%</span>
+                                    </div>
+                                </li>
+                                <li class="assignment-item">
+                                    <div class="assignment-details">
+                                        <h3>User Research</h3>
+                                        <p>UI/UX Design • Due Oct 22</p>
+                                    </div>
+                                    <div class="assignment-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress" style="width: 40%"></div>
+                                        </div>
+                                        <span class="progress-text">40%</span>
+                                    </div>
+                                </li>
+                                <li class="assignment-item">
+                                    <div class="assignment-details">
+                                        <h3>Database Schema</h3>
+                                        <p>Database Management • Due Oct 30</p>
+                                    </div>
+                                    <div class="assignment-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress" style="width: 20%"></div>
+                                        </div>
+                                        <span class="progress-text">20%</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="assignments.html" class="view-all">View All Assignments</a>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-card quick-actions">
+                        <div class="card-header">
+                            <h2>Quick Actions</h2>
+                            <span class="card-icon">⚡</span>
+                        </div>
+                        <div class="card-content">
+                            <div class="actions-grid">
+                                <a href="tasks.html" class="action-item">
+                                    <span class="action-icon">✅</span>
+                                    <span class="action-text">Create Task</span>
+                                </a>
+                                <a href="#" class="action-item">
+                                    <span class="action-icon">👥</span>
+                                    <span class="action-text">Join Group</span>
+                                </a>
+                                <a href="assignments.html" class="action-item">
+                                    <span class="action-icon">📝</span>
+                                    <span class="action-text">New Assignment</span>
+                                </a>
+                                <a href="calendar-view.html" class="action-item">
+                                    <span class="action-icon">📅</span>
+                                    <span class="action-text">Schedule Meeting</span>
+                                </a>
+                                <a href="ai-tasks.html" class="action-item">
+                                    <span class="action-icon">🤖</span>
+                                    <span class="action-text">AI Generate Tasks</span>
+                                </a>
+                                <a href="pomodoro.html" class="action-item">
+                                    <span class="action-icon">⏱️</span>
+                                    <span class="action-text">Start Pomodoro</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

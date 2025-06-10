@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Login</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe auth-page login-page">
+        <div class="auth-container">
+            <div class="auth-logo">
+                <a href="welcome.html">WORKFLOW</a>
+            </div>
+
+            <div class="auth-card">
+                <div class="auth-header">
+                    <h1>Login</h1>
+                    <p>Welcome back! Please login to your account.</p>
+                </div>
+
+                <form class="auth-form" action="user-dashboard.html">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="form-options">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="remember">
+                                <span class="checkmark"></span>
+                                Remember me
+                            </label>
+                            <a href="#" class="forgot-password">Forgot Password?</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Login</button>
+                </form>
+
+                <div class="auth-footer">
+                    <p>Don't have an account? <a href="register.html">Register</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

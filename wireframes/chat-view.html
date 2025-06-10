@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Chat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page chat-view">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li class="active"><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content chat-layout">
+                <div class="chat-sidebar">
+                    <div class="chat-search">
+                        <input type="text" placeholder="Search conversations...">
+                    </div>
+
+                    <div class="chat-tabs">
+                        <button class="chat-tab active">Groups</button>
+                        <button class="chat-tab">Direct</button>
+                    </div>
+
+                    <div class="chat-list">
+                        <div class="chat-item active">
+                            <div class="chat-avatar">WD</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Web Development</div>
+                                <div class="chat-preview">John: Let's discuss the new design</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">10:30 AM</div>
+                                <div class="chat-badge">3</div>
+                            </div>
+                        </div>
+
+                        <div class="chat-item">
+                            <div class="chat-avatar">UI</div>
+                            <div class="chat-info">
+                                <div class="chat-name">UI/UX Design</div>
+                                <div class="chat-preview">Sarah: I've uploaded the wireframes</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">Yesterday</div>
+                            </div>
+                        </div>
+
+                        <div class="chat-item">
+                            <div class="chat-avatar">DB</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Database Management</div>
+                                <div class="chat-preview">Mike: Schema looks good!</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">Yesterday</div>
+                            </div>
+                        </div>
+
+                        <div class="chat-item">
+                            <div class="chat-avatar">SL</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Sarah Lee</div>
+                                <div class="chat-preview">Can you review my task?</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">2d ago</div>
+                            </div>
+                        </div>
+
+                        <div class="chat-item">
+                            <div class="chat-avatar">MT</div>
+                            <div class="chat-info">
+                                <div class="chat-name">Mike Thompson</div>
+                                <div class="chat-preview">Thanks for your help!</div>
+                            </div>
+                            <div class="chat-meta">
+                                <div class="chat-time">3d ago</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-actions">
+                        <button class="btn btn-primary">
+                            <span class="btn-icon">+</span>
+                            New Message
+                        </button>
+                    </div>
+                </div>
+
+                <div class="chat-main">
+                    <div class="chat-header">
+                        <div class="chat-header-info">
+                            <div class="chat-avatar">WD</div>
+                            <div>
+                                <div class="chat-name">Web Development</div>
+                                <div class="chat-participants">8 participants</div>
+                            </div>
+                        </div>
+
+                        <div class="chat-header-actions">
+                            <button class="btn btn-icon">ℹ️</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages">
+                        <div class="message-date">Today</div>
+
+                        <div class="message">
+                            <div class="message-avatar">SL</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">Sarah Lee</span>
+                                    <span class="message-time">9:15 AM</span>
+                                </div>
+                                <div class="message-text">
+                                    Hi everyone! I've finished the wireframes for the homepage.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">MT</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">Mike Thompson</span>
+                                    <span class="message-time">9:22 AM</span>
+                                </div>
+                                <div class="message-text">
+                                    Great job Sarah! Can you share the link?
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">SL</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">Sarah Lee</span>
+                                    <span class="message-time">9:30 AM</span>
+                                </div>
+                                <div class="message-text">
+                                    Sure! Here's the link to the Figma file: <a href="#">https://figma.com/file/abc123</a>
+                                </div>
+                                <div class="message-attachment">
+                                    <div class="attachment-preview">
+                                        <div class="attachment-icon">🖼️</div>
+                                        <div class="attachment-info">
+                                            <div class="attachment-name">Homepage Wireframes.fig</div>
+                                            <div class="attachment-size">2.4 MB</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message own-message">
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-time">10:05 AM</span>
+                                </div>
+                                <div class="message-text">
+                                    Thanks for sharing, Sarah! The design looks great. Let's discuss the navigation structure in our meeting later today.
+                                </div>
+                            </div>
+                            <div class="message-avatar">JD</div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">AR</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">Anna Rodriguez</span>
+                                    <span class="message-time">10:15 AM</span>
+                                </div>
+                                <div class="message-text">
+                                    I agree with John. The design is coming together nicely. I have a few suggestions for the mobile view though.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="message">
+                            <div class="message-avatar">SL</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <span class="message-author">Sarah Lee</span>
+                                    <span class="message-time">10:30 AM</span>
+                                </div>
+                                <div class="message-text">
+                                    Thanks everyone! Anna, I'd love to hear your suggestions. Let's discuss them in the meeting.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input">
+                        <button class="btn btn-icon">😊</button>
+                        <button class="btn btn-icon">📎</button>
+                        <input type="text" placeholder="Type a message...">
+                        <button class="btn btn-primary">Send</button>
+                    </div>
+                </div>
+
+                <div class="chat-details">
+                    <div class="details-header">
+                        <h3>Group Details</h3>
+                        <button class="btn btn-icon">✖</button>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>About</h4>
+                        <p class="group-description">Web Development team working on the company website redesign project.</p>
+                        <div class="group-created">Created on Oct 5, 2023</div>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Members (8)</h4>
+                        <ul class="member-list">
+                            <li class="member-item">
+                                <div class="member-avatar">JD</div>
+                                <div class="member-info">
+                                    <div class="member-name">John Doe</div>
+                                    <div class="member-role">Owner</div>
+                                </div>
+                            </li>
+                            <li class="member-item">
+                                <div class="member-avatar">SL</div>
+                                <div class="member-info">
+                                    <div class="member-name">Sarah Lee</div>
+                                    <div class="member-role">Admin</div>
+                                </div>
+                            </li>
+                            <li class="member-item">
+                                <div class="member-avatar">MT</div>
+                                <div class="member-info">
+                                    <div class="member-name">Mike Thompson</div>
+                                    <div class="member-role">Member</div>
+                                </div>
+                            </li>
+                            <li class="member-item">
+                                <div class="member-avatar">AR</div>
+                                <div class="member-info">
+                                    <div class="member-name">Anna Rodriguez</div>
+                                    <div class="member-role">Member</div>
+                                </div>
+                            </li>
+                            <li class="member-item">
+                                <div class="member-avatar">+4</div>
+                                <div class="member-info">
+                                    <div class="member-name">4 more members</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Shared Files</h4>
+                        <ul class="file-list">
+                            <li class="file-item">
+                                <div class="file-icon">🖼️</div>
+                                <div class="file-info">
+                                    <div class="file-name">Homepage Wireframes.fig</div>
+                                    <div class="file-meta">Sarah Lee • 10:30 AM</div>
+                                </div>
+                            </li>
+                            <li class="file-item">
+                                <div class="file-icon">📄</div>
+                                <div class="file-info">
+                                    <div class="file-name">Project Requirements.pdf</div>
+                                    <div class="file-meta">John Doe • Yesterday</div>
+                                </div>
+                            </li>
+                            <li class="file-item">
+                                <div class="file-icon">📊</div>
+                                <div class="file-info">
+                                    <div class="file-name">Timeline.xlsx</div>
+                                    <div class="file-meta">Mike Thompson • 2d ago</div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="details-actions">
+                        <button class="btn btn-outline btn-block">Add Members</button>
+                        <button class="btn btn-outline btn-block">Leave Group</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

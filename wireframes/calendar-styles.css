@@ -1,0 +1,231 @@
+@charset "UTF-8";
+
+/* Calendar View Specific Styles */
+.calendar-container {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.calendar-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.calendar-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.calendar-view .btn-dark {
+    background-color: #1e293b;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.calendar-legend {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 1.5rem;
+}
+
+.legend-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.legend-color.past-due {
+    background-color: #ef4444;
+}
+
+.legend-color.high-priority {
+    background-color: #f97316;
+}
+
+.legend-color.normal-priority {
+    background-color: #3b82f6;
+}
+
+.legend-hint {
+    margin-left: auto;
+    font-size: 0.875rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+.calendar-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calendar-view .btn-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    cursor: pointer;
+}
+
+.today-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    text-transform: lowercase;
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    cursor: pointer;
+}
+
+.current-period {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.view-options {
+    display: flex;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.btn-view {
+    padding: 0.375rem 0.75rem;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.btn-view.active {
+    background-color: #1e293b;
+    color: white;
+}
+
+.calendar-grid {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.calendar-days-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.day-header {
+    padding: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.calendar-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(120px, auto);
+}
+
+.day-cell {
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.5rem;
+    position: relative;
+    min-height: 120px;
+    overflow: hidden;
+}
+
+.day-cell:nth-child(7n) {
+    border-right: none;
+}
+
+.day-number {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: right;
+}
+
+.day-cell.next-month {
+    background-color: #f8fafc;
+    color: #94a3b8;
+}
+
+.calendar-event {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.calendar-event.high-priority {
+    background-color: #f97316;
+    color: white;
+}
+
+.calendar-event.normal-priority {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.calendar-event.past-due {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* Breadcrumb styles */
+.calendar-view .breadcrumb {
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.calendar-view .breadcrumb a {
+    color: #2563eb;
+    text-decoration: none;
+}

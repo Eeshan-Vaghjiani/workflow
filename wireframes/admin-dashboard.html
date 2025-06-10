@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page admin-dashboard">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">5</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar admin">AD</div>
+                    <span class="user-name">Admin</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar admin-sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li class="active"><a href="admin-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Users</a></li>
+                        <li><a href="#"><span class="nav-icon">🔍</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="#"><span class="nav-icon">📊</span> Analytics</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                        <li><a href="#"><span class="nav-icon">📜</span> Logs</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>Admin Dashboard</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-outline">Export Data</button>
+                        <button class="btn btn-primary">System Settings</button>
+                    </div>
+                </div>
+
+                <div class="admin-overview">
+                    <div class="stats-card">
+                        <div class="stats-icon users">👥</div>
+                        <div class="stats-content">
+                            <h3>Total Users</h3>
+                            <div class="stats-number">125</div>
+                            <div class="stats-trend positive">+12% from last month</div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon groups">🔍</div>
+                        <div class="stats-content">
+                            <h3>Total Groups</h3>
+                            <div class="stats-number">34</div>
+                            <div class="stats-trend positive">+8% from last month</div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon tasks">✅</div>
+                        <div class="stats-content">
+                            <h3>Active Tasks</h3>
+                            <div class="stats-number">287</div>
+                            <div class="stats-trend positive">+15% from last month</div>
+                        </div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-icon assignments">📝</div>
+                        <div class="stats-content">
+                            <h3>Assignments</h3>
+                            <div class="stats-number">56</div>
+                            <div class="stats-trend negative">-3% from last month</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-dashboard-grid">
+                    <div class="admin-card user-activity">
+                        <div class="card-header">
+                            <h2>Recent User Activity</h2>
+                            <div class="card-actions">
+                                <button class="btn btn-icon">⋮</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <ul class="activity-list">
+                                <li class="activity-item">
+                                    <div class="activity-avatar">JD</div>
+                                    <div class="activity-details">
+                                        <div class="activity-user">John Doe</div>
+                                        <div class="activity-action">Created a new task</div>
+                                        <div class="activity-time">2 hours ago</div>
+                                    </div>
+                                </li>
+                                <li class="activity-item">
+                                    <div class="activity-avatar">SL</div>
+                                    <div class="activity-details">
+                                        <div class="activity-user">Sarah Lee</div>
+                                        <div class="activity-action">Joined Web Development group</div>
+                                        <div class="activity-time">5 hours ago</div>
+                                    </div>
+                                </li>
+                                <li class="activity-item">
+                                    <div class="activity-avatar">MT</div>
+                                    <div class="activity-details">
+                                        <div class="activity-user">Mike Thompson</div>
+                                        <div class="activity-action">Completed 3 tasks</div>
+                                        <div class="activity-time">Yesterday</div>
+                                    </div>
+                                </li>
+                                <li class="activity-item">
+                                    <div class="activity-avatar">AR</div>
+                                    <div class="activity-details">
+                                        <div class="activity-user">Anna Rodriguez</div>
+                                        <div class="activity-action">Created a new group</div>
+                                        <div class="activity-time">Yesterday</div>
+                                    </div>
+                                </li>
+                                <li class="activity-item">
+                                    <div class="activity-avatar">DW</div>
+                                    <div class="activity-details">
+                                        <div class="activity-user">David Wilson</div>
+                                        <div class="activity-action">Updated profile information</div>
+                                        <div class="activity-time">2 days ago</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="#" class="view-all">View All Activity</a>
+                        </div>
+                    </div>
+
+                    <div class="admin-card system-health">
+                        <div class="card-header">
+                            <h2>System Health</h2>
+                            <div class="card-actions">
+                                <button class="btn btn-icon">⋮</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="health-metrics">
+                                <div class="health-metric">
+                                    <div class="metric-name">Server Uptime</div>
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: 99%"></div>
+                                    </div>
+                                    <div class="metric-value">99.8%</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div class="metric-name">Database Load</div>
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: 45%"></div>
+                                    </div>
+                                    <div class="metric-value">45%</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div class="metric-name">API Response Time</div>
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: 30%"></div>
+                                    </div>
+                                    <div class="metric-value">230ms</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div class="metric-name">Storage Usage</div>
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: 72%"></div>
+                                    </div>
+                                    <div class="metric-value">72%</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <a href="#" class="view-all">View System Details</a>
+                        </div>
+                    </div>
+
+                    <div class="admin-card group-activity">
+                        <div class="card-header">
+                            <h2>Group Activity</h2>
+                            <div class="card-actions">
+                                <button class="btn btn-icon">⋮</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <ul class="group-activity-list">
+                                <li class="group-activity-item">
+                                    <div class="group-avatar">WD</div>
+                                    <div class="group-details">
+                                        <div class="group-name">Web Development</div>
+                                        <div class="group-stats">15 new tasks, 8 completed</div>
+                                        <div class="group-members">8 members active</div>
+                                    </div>
+                                </li>
+                                <li class="group-activity-item">
+                                    <div class="group-avatar">UI</div>
+                                    <div class="group-details">
+                                        <div class="group-name">UI/UX Design</div>
+                                        <div class="group-stats">8 new tasks, 5 completed</div>
+                                        <div class="group-members">5 members active</div>
+                                    </div>
+                                </li>
+                                <li class="group-activity-item">
+                                    <div class="group-avatar">DB</div>
+                                    <div class="group-details">
+                                        <div class="group-name">Database Management</div>
+                                        <div class="group-stats">3 new tasks, 2 completed</div>
+                                        <div class="group-members">3 members active</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-footer">
+                            <a href="#" class="view-all">View All Groups</a>
+                        </div>
+                    </div>
+
+                    <div class="admin-card admin-actions">
+                        <div class="card-header">
+                            <h2>Admin Actions</h2>
+                            <div class="card-actions">
+                                <button class="btn btn-icon">⋮</button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <div class="admin-actions-grid">
+                                <a href="#" class="admin-action">
+                                    <div class="action-icon">👥</div>
+                                    <div class="action-name">Add User</div>
+                                </a>
+                                <a href="#" class="admin-action">
+                                    <div class="action-icon">🔍</div>
+                                    <div class="action-name">Create Group</div>
+                                </a>
+                                <a href="#" class="admin-action">
+                                    <div class="action-icon">📝</div>
+                                    <div class="action-name">Add Assignment</div>
+                                </a>
+                                <a href="#" class="admin-action">
+                                    <div class="action-icon">📊</div>
+                                    <div class="action-name">View Reports</div>
+                                </a>
+                                <a href="#" class="admin-action">
+                                    <div class="action-icon">⚙️</div>
+                                    <div class="action-name">System Config</div>
+                                </a>
+                                <a href="#" class="admin-action">
+                                    <div class="action-icon">🔒</div>
+                                    <div class="action-name">Security</div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

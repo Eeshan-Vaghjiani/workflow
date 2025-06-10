@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Settings</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page settings-page">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li class="active"><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="breadcrumb">
+                    <a href="user-dashboard.html">Dashboard</a> &gt; Settings
+                </div>
+
+                <div class="settings-header">
+                    <div class="app-branding">
+                        <div class="app-logo">
+                            <span class="logo-icon">W</span>
+                        </div>
+                        <div class="app-name">Laravel Starter Kit</div>
+                    </div>
+                    <div class="settings-tabs">
+                        <div class="tab active">
+                            <span class="tab-icon">⚙️</span>
+                            Appearance settings
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-container">
+                    <div class="settings-sidebar">
+                        <div class="settings-nav">
+                            <h3>Profile</h3>
+                            <ul>
+                                <li><a href="profile-settings.html">Profile</a></li>
+                                <li><a href="password-settings.html">Password</a></li>
+                                <li class="active"><a href="settings.html">Appearance</a></li>
+                            </ul>
+                            <h3>Security</h3>
+                            <ul>
+                                <li><a href="2fa-settings.html">Two-Factor Authentication</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <h2>Settings</h2>
+                            <p class="section-description">Manage your profile and account settings</p>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Appearance settings</h3>
+                            <p class="section-description">Update your account's appearance settings</p>
+
+                            <div class="appearance-options">
+                                <div class="theme-option">
+                                    <label class="theme-label">
+                                        <input type="radio" name="theme" value="light" checked>
+                                        <span class="theme-icon">☀️</span>
+                                        <span class="theme-name">Light</span>
+                                    </label>
+                                </div>
+                                <div class="theme-option">
+                                    <label class="theme-label">
+                                        <input type="radio" name="theme" value="dark">
+                                        <span class="theme-icon">🌙</span>
+                                        <span class="theme-name">Dark</span>
+                                    </label>
+                                </div>
+                                <div class="theme-option">
+                                    <label class="theme-label">
+                                        <input type="radio" name="theme" value="system">
+                                        <span class="theme-icon">🖥️</span>
+                                        <span class="theme-name">System</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

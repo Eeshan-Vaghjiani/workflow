@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Assignments</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page assignments-page">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li class="active"><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="assignments-header">
+                    <div class="assignments-title">
+                        <h1>Assignments</h1>
+                    </div>
+                    <div class="assignments-actions">
+                        <button class="btn btn-primary">CREATE ASSIGNMENT</button>
+                    </div>
+                </div>
+
+                <div class="filters-container">
+                    <h2>Filters</h2>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label>Search</label>
+                            <div class="search-input">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" placeholder="Search assignments...">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Group</label>
+                            <div class="dropdown">
+                                <div class="dropdown-selected">All Groups</div>
+                                <span class="dropdown-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <div class="dropdown">
+                                <div class="dropdown-selected">All Statuses</div>
+                                <span class="dropdown-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="filter-group filter-actions">
+                            <button class="btn btn-icon">✕</button>
+                            <button class="btn btn-text">Reset Filters</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sort-bar">
+                    <div class="sort-options">
+                        <button class="sort-option active">
+                            <span class="sort-icon">▼</span>
+                            Due Date
+                        </button>
+                        <button class="sort-option">Title</button>
+                        <button class="sort-option">Created Date</button>
+                        <button class="sort-option">Unit Name</button>
+                    </div>
+                </div>
+
+                <div class="assignments-tabs">
+                    <div class="tab active">
+                        <span class="tab-name">Uncompleted Assignments</span>
+                        <span class="tab-count">8</span>
+                    </div>
+                    <div class="tab">
+                        <span class="tab-name">Completed Assignments</span>
+                        <span class="tab-count">0</span>
+                    </div>
+                </div>
+
+                <div class="assignments-grid">
+                    <div class="assignment-card">
+                        <div class="assignment-status active">active</div>
+                        <div class="assignment-header">
+                            <h3 class="assignment-title">Marketing Campaign</h3>
+                            <div class="assignment-category">Marketing</div>
+                        </div>
+                        <div class="assignment-description">
+                            Create and launch Q3 marketing campaign for our flagship product
+                        </div>
+                        <div class="assignment-meta">
+                            <div class="meta-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">14/06/2025</span>
+                            </div>
+                            <div class="meta-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">in 4 days</span>
+                            </div>
+                        </div>
+                        <div class="assignment-team">
+                            <div class="team-name">Project Alpha</div>
+                            <div class="team-tasks">5 tasks</div>
+                        </div>
+                    </div>
+
+                    <div class="assignment-card">
+                        <div class="assignment-status active">active</div>
+                        <div class="assignment-header">
+                            <h3 class="assignment-title">Documentation Update</h3>
+                            <div class="assignment-category">Support</div>
+                        </div>
+                        <div class="assignment-description">
+                            Update all user documentation to reflect latest features
+                        </div>
+                        <div class="assignment-meta">
+                            <div class="meta-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">15/06/2025</span>
+                            </div>
+                            <div class="meta-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">in 5 days</span>
+                            </div>
+                        </div>
+                        <div class="assignment-team">
+                            <div class="team-name">Development Team</div>
+                            <div class="team-tasks">4 tasks</div>
+                        </div>
+                    </div>
+
+                    <div class="assignment-card">
+                        <div class="assignment-status active">active</div>
+                        <div class="assignment-header">
+                            <h3 class="assignment-title">Documentation Update</h3>
+                            <div class="assignment-category">Support</div>
+                        </div>
+                        <div class="assignment-description">
+                            Update all user documentation to reflect latest features
+                        </div>
+                        <div class="assignment-meta">
+                            <div class="meta-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">21/06/2025</span>
+                            </div>
+                            <div class="meta-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">in 11 days</span>
+                            </div>
+                        </div>
+                        <div class="assignment-team">
+                            <div class="team-name">Marketing Team</div>
+                            <div class="team-tasks">3 tasks</div>
+                        </div>
+                    </div>
+
+                    <div class="assignment-card">
+                        <div class="assignment-status active">active</div>
+                        <div class="assignment-header">
+                            <h3 class="assignment-title">API Integration</h3>
+                            <div class="assignment-category">Development</div>
+                        </div>
+                        <div class="assignment-description">
+                            Integrate third-party payment gateway API into our platform
+                        </div>
+                        <div class="assignment-meta">
+                            <div class="meta-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">23/06/2025</span>
+                            </div>
+                            <div class="meta-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">in 13 days</span>
+                            </div>
+                        </div>
+                        <div class="assignment-team">
+                            <div class="team-name">Development Team</div>
+                            <div class="team-tasks">4 tasks</div>
+                        </div>
+                    </div>
+
+                    <div class="assignment-card">
+                        <div class="assignment-status active">active</div>
+                        <div class="assignment-header">
+                            <h3 class="assignment-title">Database Management System Assignment</h3>
+                            <div class="assignment-category">DBMS</div>
+                        </div>
+                        <div class="assignment-description">
+                            This assignment involves designing and implementing a database system for a given scenario.
+                        </div>
+                        <div class="assignment-meta">
+                            <div class="meta-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">23/06/2025</span>
+                            </div>
+                            <div class="meta-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">in 13 days</span>
+                            </div>
+                        </div>
+                        <div class="assignment-team">
+                            <div class="team-name">Database Team</div>
+                            <div class="team-tasks">5 tasks</div>
+                        </div>
+                    </div>
+
+                    <div class="assignment-card">
+                        <div class="assignment-status active">active</div>
+                        <div class="assignment-header">
+                            <h3 class="assignment-title">Marketing Campaign</h3>
+                            <div class="assignment-category">Marketing</div>
+                        </div>
+                        <div class="assignment-description">
+                            Create and launch Q3 marketing campaign for our flagship product
+                        </div>
+                        <div class="assignment-meta">
+                            <div class="meta-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">03/07/2025</span>
+                            </div>
+                            <div class="meta-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">in 23 days</span>
+                            </div>
+                        </div>
+                        <div class="assignment-team">
+                            <div class="team-name">Marketing Team</div>
+                            <div class="team-tasks">6 tasks</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

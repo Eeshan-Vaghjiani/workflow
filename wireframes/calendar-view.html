@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Calendar View</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="calendar-styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page calendar-view">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li class="active"><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="breadcrumb">
+                    <a href="user-dashboard.html">Dashboard</a> &gt; Calendar
+                </div>
+
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h1>Calendar View</h1>
+                        <div class="calendar-actions">
+                            <button class="btn btn-dark">
+                                <span class="btn-icon">🔄</span>
+                                Sync with Google
+                            </button>
+                            <button class="btn btn-outline">
+                                <span class="btn-icon">⚙️</span>
+                                Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-color past-due"></span>
+                            <span>Past Due</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color high-priority"></span>
+                            <span>High Priority</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color normal-priority"></span>
+                            <span>Normal Priority</span>
+                        </div>
+                        <div class="legend-hint">(Drag events to change dates)</div>
+                    </div>
+
+                    <div class="calendar-navigation">
+                        <div class="nav-controls">
+                            <button class="btn btn-icon nav-prev">◀</button>
+                            <button class="btn btn-outline today-btn">today</button>
+                            <button class="btn btn-icon nav-next">▶</button>
+                        </div>
+                        <div class="current-period">June 2025</div>
+                        <div class="view-options">
+                            <button class="btn btn-view active">month</button>
+                            <button class="btn btn-view">week</button>
+                            <button class="btn btn-view">day</button>
+                        </div>
+                    </div>
+
+                    <div class="calendar-grid month-view">
+                        <div class="calendar-days-header">
+                            <div class="day-header">Sun</div>
+                            <div class="day-header">Mon</div>
+                            <div class="day-header">Tue</div>
+                            <div class="day-header">Wed</div>
+                            <div class="day-header">Thu</div>
+                            <div class="day-header">Fri</div>
+                            <div class="day-header">Sat</div>
+                        </div>
+                        <div class="calendar-days-grid">
+                            <!-- Week 1 -->
+                            <div class="day-cell">
+                                <div class="day-number">1</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">2</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">3</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">4</div>
+                                <div class="calendar-event high-priority">Research Intel 8085</div>
+                                <div class="calendar-event high-priority">Research Intel 8086</div>
+                                <div class="calendar-event high-priority">Implement frontend components</div>
+                                <div class="calendar-event high-priority">Implement frontend components</div>
+                                <div class="calendar-event high-priority">Implement frontend components</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">5</div>
+                                <div class="calendar-event high-priority">Create wireframes</div>
+                                <div class="calendar-event high-priority">Create wireframes</div>
+                                <div class="calendar-event normal-priority">User interviews</div>
+                                <div class="calendar-event high-priority">Create wireframes</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">6</div>
+                                <div class="calendar-event high-priority">Compare Architectures</div>
+                                <div class="calendar-event high-priority">Compare Features</div>
+                                <div class="calendar-event normal-priority">Content creation</div>
+                                <div class="calendar-event high-priority">Create wireframes</div>
+                                <div class="calendar-event high-priority">Database migration</div>
+                                <div class="calendar-event normal-priority">User interviews</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">7</div>
+                            </div>
+
+                            <!-- Week 2 -->
+                            <div class="day-cell">
+                                <div class="day-number">8</div>
+                                <div class="calendar-event high-priority">Compare Architectures</div>
+                                <div class="calendar-event high-priority">Compare Features</div>
+                                <div class="calendar-event high-priority">Create social media assets</div>
+                                <div class="calendar-event high-priority">Research competitors</div>
+                                <div class="calendar-event high-priority">Security audit</div>
+                                <div class="calendar-event high-priority">Set up development environment</div>
+                                <div class="calendar-event high-priority">Set up development environment</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">9</div>
+                                <div class="calendar-event high-priority">Requirement Analysis</div>
+                                <div class="calendar-event normal-priority">Create social media assets</div>
+                                <div class="calendar-event high-priority">Create wireframes</div>
+                                <div class="calendar-event high-priority">Security audit</div>
+                                <div class="calendar-event high-priority">Security audit</div>
+                                <div class="calendar-event normal-priority">Write unit tests</div>
+                                <div class="calendar-event normal-priority">Write unit tests</div>
+                                <div class="calendar-event normal-priority">Write unit tests</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">10</div>
+                                <div class="calendar-event normal-priority">Draft Report</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">11</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">12</div>
+                                <div class="calendar-event high-priority">Database Design</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">13</div>
+                                <div class="calendar-event normal-priority">Review and Edit Report</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">14</div>
+                            </div>
+
+                            <!-- Week 3 -->
+                            <div class="day-cell">
+                                <div class="day-number">15</div>
+                                <div class="calendar-event high-priority">Database Design</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">16</div>
+                                <div class="calendar-event normal-priority">Finalize Presentation</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">17</div>
+                                <div class="calendar-event normal-priority">Implementation</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">18</div>
+                                <div class="calendar-event normal-priority">Implementation</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">19</div>
+                                <div class="calendar-event normal-priority">Practice Presentation</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">20</div>
+                                <div class="calendar-event normal-priority">Testing and Validation</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">21</div>
+                            </div>
+
+                            <!-- Week 4 -->
+                            <div class="day-cell">
+                                <div class="day-number">22</div>
+                                <div class="calendar-event normal-priority">Testing and Validation</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">23</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">24</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">25</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">26</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">27</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">28</div>
+                            </div>
+
+                            <!-- Week 5 -->
+                            <div class="day-cell">
+                                <div class="day-number">29</div>
+                            </div>
+                            <div class="day-cell">
+                                <div class="day-number">30</div>
+                            </div>
+                            <div class="day-cell next-month">
+                                <div class="day-number">1</div>
+                            </div>
+                            <div class="day-cell next-month">
+                                <div class="day-number">2</div>
+                            </div>
+                            <div class="day-cell next-month">
+                                <div class="day-number">3</div>
+                            </div>
+                            <div class="day-cell next-month">
+                                <div class="day-number">4</div>
+                            </div>
+                            <div class="day-cell next-month">
+                                <div class="day-number">5</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

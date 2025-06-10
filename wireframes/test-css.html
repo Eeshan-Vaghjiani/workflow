@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Test</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="calendar-styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+        }
+        .test-title {
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>CSS Compatibility Test</h1>
+        <p>This page tests if the CSS files are working correctly.</p>
+
+        <div class="test-section">
+            <div class="test-title">Base Styles Test</div>
+            <button class="btn btn-primary">Primary Button</button>
+            <button class="btn btn-outline">Outline Button</button>
+        </div>
+
+        <div class="test-section calendar-view">
+            <div class="test-title">Calendar Styles Test</div>
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <h1>Calendar View</h1>
+                    <div class="calendar-actions">
+                        <button class="btn btn-dark">Dark Button</button>
+                    </div>
+                </div>
+
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <span class="legend-color high-priority"></span>
+                        <span>High Priority</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color normal-priority"></span>
+                        <span>Normal Priority</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

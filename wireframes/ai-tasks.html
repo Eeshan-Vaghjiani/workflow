@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - AI Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page ai-tasks-page">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li class="active"><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>AI Tasks</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-outline">
+                            <span class="btn-icon">🔄</span>
+                            Refresh
+                        </button>
+                        <button class="btn btn-primary">+ New AI Task</button>
+                    </div>
+                </div>
+
+                <div class="ai-tasks-container">
+                    <div class="ai-prompt-section">
+                        <h2>Create New AI Task</h2>
+                        <div class="ai-prompt-form">
+                            <div class="form-group">
+                                <label for="model-select">AI Model</label>
+                                <select id="model-select">
+                                    <option selected>deepseek/deepseek-prover-v2:free</option>
+                                    <option>GPT-4</option>
+                                    <option>Claude 3</option>
+                                    <option>Llama 3</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="prompt-type">Task Type</label>
+                                <select id="prompt-type">
+                                    <option>Generate Content</option>
+                                    <option>Summarize Text</option>
+                                    <option>Research Topic</option>
+                                    <option>Draft Email</option>
+                                    <option>Create Outline</option>
+                                    <option>Custom Prompt</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="prompt-text">Your Prompt</label>
+                                <textarea id="prompt-text" placeholder="Describe what you want the AI to do..."></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn btn-outline">Save as Template</button>
+                                <button class="btn btn-primary">Generate</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-history-section">
+                        <div class="section-header">
+                            <h2>AI Task History</h2>
+                            <div class="section-filters">
+                                <select>
+                                    <option>All Models</option>
+                                    <option>deepseek/deepseek-prover-v2:free</option>
+                                    <option>GPT-4</option>
+                                    <option>Claude 3</option>
+                                </select>
+                                <select>
+                                    <option>All Types</option>
+                                    <option>Generate Content</option>
+                                    <option>Summarize Text</option>
+                                    <option>Research Topic</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="ai-history-list">
+                            <div class="ai-history-item">
+                                <div class="history-header">
+                                    <div class="history-type">Research Topic</div>
+                                    <div class="history-model">deepseek/deepseek-prover-v2:free</div>
+                                    <div class="history-date">Today, 2:30 PM</div>
+                                </div>
+                                <div class="history-content">
+                                    <div class="history-prompt">
+                                        <strong>Prompt:</strong> Research the differences between Intel 8085 and 8086 microprocessors
+                                    </div>
+                                    <div class="history-response">
+                                        <strong>Response:</strong> <span class="response-preview">The Intel 8085 and 8086 microprocessors differ in several key aspects...</span>
+                                    </div>
+                                </div>
+                                <div class="history-actions">
+                                    <button class="btn btn-sm btn-outline">View Full Response</button>
+                                    <button class="btn btn-sm btn-outline">Copy</button>
+                                    <button class="btn btn-sm btn-outline">Edit & Regenerate</button>
+                                </div>
+                            </div>
+
+                            <div class="ai-history-item">
+                                <div class="history-header">
+                                    <div class="history-type">Generate Content</div>
+                                    <div class="history-model">deepseek/deepseek-prover-v2:free</div>
+                                    <div class="history-date">Yesterday, 4:15 PM</div>
+                                </div>
+                                <div class="history-content">
+                                    <div class="history-prompt">
+                                        <strong>Prompt:</strong> Write a project proposal for a workflow management system
+                                    </div>
+                                    <div class="history-response">
+                                        <strong>Response:</strong> <span class="response-preview">Project Proposal: Workflow Management System...</span>
+                                    </div>
+                                </div>
+                                <div class="history-actions">
+                                    <button class="btn btn-sm btn-outline">View Full Response</button>
+                                    <button class="btn btn-sm btn-outline">Copy</button>
+                                    <button class="btn btn-sm btn-outline">Edit & Regenerate</button>
+                                </div>
+                            </div>
+
+                            <div class="ai-history-item">
+                                <div class="history-header">
+                                    <div class="history-type">Summarize Text</div>
+                                    <div class="history-model">deepseek/deepseek-prover-v2:free</div>
+                                    <div class="history-date">Oct 15, 2023</div>
+                                </div>
+                                <div class="history-content">
+                                    <div class="history-prompt">
+                                        <strong>Prompt:</strong> Summarize the attached research paper on machine learning algorithms
+                                    </div>
+                                    <div class="history-response">
+                                        <strong>Response:</strong> <span class="response-preview">This research paper explores recent advances in machine learning algorithms...</span>
+                                    </div>
+                                </div>
+                                <div class="history-actions">
+                                    <button class="btn btn-sm btn-outline">View Full Response</button>
+                                    <button class="btn btn-sm btn-outline">Copy</button>
+                                    <button class="btn btn-sm btn-outline">Edit & Regenerate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pagination">
+                            <button class="btn btn-icon">◀</button>
+                            <span>Page 1 of 3</span>
+                            <button class="btn btn-icon">▶</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

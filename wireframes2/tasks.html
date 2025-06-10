@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe">
+        <div class="header">
+            <div class="logo">WORKFLOW</div>
+            <div class="nav">
+                <div class="nav-item">Search</div>
+                <div class="nav-item">Notifications</div>
+                <div class="user-info">John Doe</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="sidebar">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Groups</div>
+                <div class="nav-item">Assignments</div>
+                <div class="nav-item active">Tasks</div>
+                <div class="nav-item">Calendar</div>
+                <div class="nav-item">Chat</div>
+                <div class="nav-item">Study Planner</div>
+                <div class="nav-item">Pomodoro</div>
+                <div class="nav-item">AI Tasks</div>
+                <div class="nav-item">Settings</div>
+            </div>
+
+            <div class="main-content">
+                <div class="row mb-20">
+                    <h1 style="flex: 1;">Tasks</h1>
+                    <div>
+                        <div class="btn btn-primary">+ New Task</div>
+                    </div>
+                </div>
+
+                <div class="card mb-20">
+                    <div class="card-header">Filters</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label class="form-label">Search</label>
+                                    <input type="text" class="form-control" placeholder="Search tasks...">
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select">
+                                        <option>All</option>
+                                        <option>To Do</option>
+                                        <option>In Progress</option>
+                                        <option>Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label class="form-label">Priority</label>
+                                    <select class="form-select">
+                                        <option>All</option>
+                                        <option>High</option>
+                                        <option>Medium</option>
+                                        <option>Low</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label class="form-label">Due Date</label>
+                                    <select class="form-select">
+                                        <option>Any Time</option>
+                                        <option>Today</option>
+                                        <option>This Week</option>
+                                        <option>This Month</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label class="form-label">Assigned To</label>
+                                    <select class="form-select">
+                                        <option>Anyone</option>
+                                        <option>Me</option>
+                                        <option>Unassigned</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="flex: 1;">
+                                <div class="form-group">
+                                    <label class="form-label">Tags</label>
+                                    <select class="form-select">
+                                        <option>All Tags</option>
+                                        <option>Research</option>
+                                        <option>Design</option>
+                                        <option>Development</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn">Apply Filters</div>
+                        <div class="btn">Reset</div>
+                    </div>
+                </div>
+
+                <div class="row mb-20">
+                    <div style="flex: 1;">
+                        <div class="btn active">All</div>
+                        <div class="btn">Today</div>
+                        <div class="btn">Upcoming</div>
+                        <div class="btn">Completed</div>
+                    </div>
+                    <div>
+                        <div class="btn">Sort: Due Date</div>
+                    </div>
+                </div>
+
+                <div class="task-list">
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">Research Paper on Machine Learning</div>
+                            <div class="task-status">High</div>
+                        </div>
+                        <div>Due: Tomorrow at 11:59 PM</div>
+                        <div>Research recent advancements in machine learning algorithms and prepare a summary report.</div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                            <div>Assigned to: Me</div>
+                            <div class="btn">Complete</div>
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">Math Assignment - Chapter 5</div>
+                            <div class="task-status">Medium</div>
+                        </div>
+                        <div>Due: Next Monday at 9:00 AM</div>
+                        <div>Complete exercises 5.1 through 5.15 from the textbook.</div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                            <div>Assigned to: Me</div>
+                            <div class="btn">Complete</div>
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">Project Proposal</div>
+                            <div class="task-status">High</div>
+                        </div>
+                        <div>Due: Next Friday at 5:00 PM</div>
+                        <div>Write a detailed project proposal including objectives, methodology, and timeline.</div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                            <div>Assigned to: Team</div>
+                            <div class="btn">Complete</div>
+                        </div>
+                    </div>
+
+                    <div class="task-item">
+                        <div class="task-header">
+                            <div class="task-title">Literature Review</div>
+                            <div class="task-status">Medium</div>
+                        </div>
+                        <div>Due: In 2 weeks</div>
+                        <div>Review at least 10 academic papers related to the research topic.</div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                            <div>Assigned to: Me</div>
+                            <div class="btn">Complete</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row" style="justify-content: center; margin-top: 20px;">
+                    <div class="btn">Load More</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

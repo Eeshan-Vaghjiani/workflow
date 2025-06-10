@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Pomodoro Timer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page pomodoro-view">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li class="active"><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>Pomodoro Timer</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-outline">Settings</button>
+                        <button class="btn btn-primary">Link to Task</button>
+                    </div>
+                </div>
+
+                <div class="pomodoro-container">
+                    <div class="pomodoro-main">
+                        <div class="timer-container">
+                            <div class="timer-type">
+                                <button class="timer-type-btn active">Focus</button>
+                                <button class="timer-type-btn">Short Break</button>
+                                <button class="timer-type-btn">Long Break</button>
+                            </div>
+
+                            <div class="timer-display">
+                                <div class="timer-circle">
+                                    <div class="timer-time">25:00</div>
+                                    <div class="timer-progress" style="--progress: 100%"></div>
+                                </div>
+                            </div>
+
+                            <div class="timer-controls">
+                                <button class="btn btn-primary btn-lg">Start</button>
+                                <button class="btn btn-outline btn-lg" disabled>Pause</button>
+                                <button class="btn btn-outline btn-lg" disabled>Reset</button>
+                            </div>
+
+                            <div class="timer-task">
+                                <h3>Current Task</h3>
+                                <div class="task-select">
+                                    <select>
+                                        <option>Select a task...</option>
+                                        <option>Complete Project Proposal</option>
+                                        <option>Research User Interface Design</option>
+                                        <option>Review Team Feedback</option>
+                                    </select>
+                                </div>
+                                <div class="task-notes">
+                                    <textarea placeholder="Add notes for this session..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pomodoro-info">
+                            <div class="info-card">
+                                <h3>Today's Progress</h3>
+                                <div class="progress-stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">3</div>
+                                        <div class="stat-label">Pomodoros</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">1:15</div>
+                                        <div class="stat-label">Focus Time</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">2</div>
+                                        <div class="stat-label">Tasks</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <h3>Current Settings</h3>
+                                <ul class="settings-list">
+                                    <li><span class="settings-label">Focus Time:</span> 25 minutes</li>
+                                    <li><span class="settings-label">Short Break:</span> 5 minutes</li>
+                                    <li><span class="settings-label">Long Break:</span> 15 minutes</li>
+                                    <li><span class="settings-label">Long Break After:</span> 4 pomodoros</li>
+                                    <li><span class="settings-label">Auto Start Breaks:</span> On</li>
+                                    <li><span class="settings-label">Sound:</span> Bell</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pomodoro-history">
+                        <h2>Session History</h2>
+                        <div class="history-tabs">
+                            <button class="history-tab active">Today</button>
+                            <button class="history-tab">Week</button>
+                            <button class="history-tab">Month</button>
+                        </div>
+
+                        <div class="history-chart">
+                            <div class="chart-placeholder">
+                                <div class="chart-bar" style="height: 60%"></div>
+                                <div class="chart-bar" style="height: 80%"></div>
+                                <div class="chart-bar" style="height: 40%"></div>
+                                <div class="chart-bar" style="height: 100%"></div>
+                                <div class="chart-bar" style="height: 75%"></div>
+                                <div class="chart-bar" style="height: 30%"></div>
+                                <div class="chart-bar" style="height: 50%"></div>
+                            </div>
+                            <div class="chart-labels">
+                                <div class="chart-label">Mon</div>
+                                <div class="chart-label">Tue</div>
+                                <div class="chart-label">Wed</div>
+                                <div class="chart-label">Thu</div>
+                                <div class="chart-label">Fri</div>
+                                <div class="chart-label">Sat</div>
+                                <div class="chart-label">Sun</div>
+                            </div>
+                        </div>
+
+                        <div class="history-list">
+                            <div class="history-item">
+                                <div class="history-time">10:30 AM</div>
+                                <div class="history-details">
+                                    <div class="history-task">Complete Project Proposal</div>
+                                    <div class="history-duration">25 min focus</div>
+                                </div>
+                                <div class="history-status completed">Completed</div>
+                            </div>
+
+                            <div class="history-item">
+                                <div class="history-time">11:00 AM</div>
+                                <div class="history-details">
+                                    <div class="history-task">Research User Interface Design</div>
+                                    <div class="history-duration">25 min focus</div>
+                                </div>
+                                <div class="history-status completed">Completed</div>
+                            </div>
+
+                            <div class="history-item">
+                                <div class="history-time">11:30 AM</div>
+                                <div class="history-details">
+                                    <div class="history-task">Research User Interface Design</div>
+                                    <div class="history-duration">25 min focus</div>
+                                </div>
+                                <div class="history-status completed">Completed</div>
+                            </div>
+
+                            <div class="history-item">
+                                <div class="history-time">2:00 PM</div>
+                                <div class="history-details">
+                                    <div class="history-task">Review Team Feedback</div>
+                                    <div class="history-duration">25 min focus</div>
+                                </div>
+                                <div class="history-status interrupted">Interrupted</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

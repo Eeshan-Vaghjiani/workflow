@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Gantt Chart</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page gantt-view">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li class="active"><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>Gantt Chart</h1>
+                    <div class="page-actions">
+                        <div class="gantt-view-toggle">
+                            <button class="btn btn-outline">Day</button>
+                            <button class="btn btn-outline active">Week</button>
+                            <button class="btn btn-outline">Month</button>
+                        </div>
+                        <button class="btn btn-primary">+ Add Task</button>
+                    </div>
+                </div>
+
+                <div class="gantt-controls">
+                    <div class="date-navigation">
+                        <button class="btn btn-icon">◀</button>
+                        <h2>October - December 2023</h2>
+                        <button class="btn btn-icon">▶</button>
+                    </div>
+                    <div class="gantt-filters">
+                        <select>
+                            <option>All Assignments</option>
+                            <option>Website Redesign</option>
+                            <option>User Research</option>
+                            <option>Database Schema</option>
+                        </select>
+                        <select>
+                            <option>All Groups</option>
+                            <option>Web Development</option>
+                            <option>UI/UX Design</option>
+                            <option>Database Management</option>
+                        </select>
+                        <select>
+                            <option>Group By: Assignment</option>
+                            <option>Group By: Person</option>
+                            <option>Group By: Priority</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="gantt-container">
+                    <div class="gantt-sidebar">
+                        <div class="gantt-header-row">
+                            <div class="gantt-task-info">Task Name</div>
+                            <div class="gantt-assignee">Assignee</div>
+                        </div>
+                        <div class="gantt-task-row">
+                            <div class="gantt-task-info">
+                                <div class="task-name">Website Redesign</div>
+                                <div class="task-progress">65%</div>
+                            </div>
+                            <div class="gantt-assignee">Team</div>
+                        </div>
+                        <div class="gantt-task-row subtask">
+                            <div class="gantt-task-info">
+                                <div class="task-name">Wireframing</div>
+                                <div class="task-progress">100%</div>
+                            </div>
+                            <div class="gantt-assignee">John D.</div>
+                        </div>
+                        <div class="gantt-task-row subtask">
+                            <div class="gantt-task-info">
+                                <div class="task-name">UI Design</div>
+                                <div class="task-progress">80%</div>
+                            </div>
+                            <div class="gantt-assignee">Sarah L.</div>
+                        </div>
+                        <div class="gantt-task-row subtask">
+                            <div class="gantt-task-info">
+                                <div class="task-name">Frontend Development</div>
+                                <div class="task-progress">50%</div>
+                            </div>
+                            <div class="gantt-assignee">Mike T.</div>
+                        </div>
+                        <div class="gantt-task-row subtask">
+                            <div class="gantt-task-info">
+                                <div class="task-name">Backend Integration</div>
+                                <div class="task-progress">30%</div>
+                            </div>
+                            <div class="gantt-assignee">Anna K.</div>
+                        </div>
+                        <div class="gantt-task-row">
+                            <div class="gantt-task-info">
+                                <div class="task-name">User Research</div>
+                                <div class="task-progress">40%</div>
+                            </div>
+                            <div class="gantt-assignee">Team</div>
+                        </div>
+                        <div class="gantt-task-row subtask">
+                            <div class="gantt-task-info">
+                                <div class="task-name">User Interviews</div>
+                                <div class="task-progress">70%</div>
+                            </div>
+                            <div class="gantt-assignee">Emily R.</div>
+                        </div>
+                        <div class="gantt-task-row subtask">
+                            <div class="gantt-task-info">
+                                <div class="task-name">Data Analysis</div>
+                                <div class="task-progress">20%</div>
+                            </div>
+                            <div class="gantt-assignee">David S.</div>
+                        </div>
+                        <div class="gantt-task-row">
+                            <div class="gantt-task-info">
+                                <div class="task-name">Database Schema</div>
+                                <div class="task-progress">20%</div>
+                            </div>
+                            <div class="gantt-assignee">Team</div>
+                        </div>
+                    </div>
+
+                    <div class="gantt-timeline">
+                        <div class="gantt-timeline-header">
+                            <div class="gantt-months">
+                                <div class="gantt-month">October</div>
+                                <div class="gantt-month">November</div>
+                                <div class="gantt-month">December</div>
+                            </div>
+                            <div class="gantt-weeks">
+                                <div class="gantt-week">W1</div>
+                                <div class="gantt-week">W2</div>
+                                <div class="gantt-week">W3</div>
+                                <div class="gantt-week">W4</div>
+                                <div class="gantt-week">W1</div>
+                                <div class="gantt-week">W2</div>
+                                <div class="gantt-week">W3</div>
+                                <div class="gantt-week">W4</div>
+                                <div class="gantt-week">W1</div>
+                                <div class="gantt-week">W2</div>
+                                <div class="gantt-week">W3</div>
+                                <div class="gantt-week">W4</div>
+                            </div>
+                        </div>
+
+                        <div class="gantt-timeline-grid">
+                            <!-- Project 1: Website Redesign -->
+                            <div class="gantt-row">
+                                <!-- Main project bar -->
+                                <div class="gantt-bar project-bar" style="left: 0%; width: 66.7%;">
+                                    <div class="gantt-bar-label">Website Redesign</div>
+                                    <div class="gantt-progress-bar" style="width: 65%;"></div>
+                                </div>
+                            </div>
+                            <div class="gantt-row">
+                                <!-- Wireframing -->
+                                <div class="gantt-bar task-bar" style="left: 0%; width: 16.7%;">
+                                    <div class="gantt-bar-label">Wireframing</div>
+                                    <div class="gantt-progress-bar" style="width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div class="gantt-row">
+                                <!-- UI Design -->
+                                <div class="gantt-bar task-bar" style="left: 8.3%; width: 25%;">
+                                    <div class="gantt-bar-label">UI Design</div>
+                                    <div class="gantt-progress-bar" style="width: 80%;"></div>
+                                </div>
+                            </div>
+                            <div class="gantt-row">
+                                <!-- Frontend Development -->
+                                <div class="gantt-bar task-bar" style="left: 25%; width: 33.3%;">
+                                    <div class="gantt-bar-label">Frontend Development</div>
+                                    <div class="gantt-progress-bar" style="width: 50%;"></div>
+                                </div>
+                            </div>
+                            <div class="gantt-row">
+                                <!-- Backend Integration -->
+                                <div class="gantt-bar task-bar" style="left: 41.7%; width: 25%;">
+                                    <div class="gantt-bar-label">Backend Integration</div>
+                                    <div class="gantt-progress-bar" style="width: 30%;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Project 2: User Research -->
+                            <div class="gantt-row">
+                                <!-- Main project bar -->
+                                <div class="gantt-bar project-bar" style="left: 16.7%; width: 58.3%; background-color: rgba(76, 175, 80, 0.3); border-color: #4caf50;">
+                                    <div class="gantt-bar-label">User Research</div>
+                                    <div class="gantt-progress-bar" style="width: 40%; background-color: #4caf50;"></div>
+                                </div>
+                            </div>
+                            <div class="gantt-row">
+                                <!-- User Interviews -->
+                                <div class="gantt-bar task-bar" style="left: 16.7%; width: 25%; background-color: rgba(76, 175, 80, 0.2); border-color: #4caf50;">
+                                    <div class="gantt-bar-label">User Interviews</div>
+                                    <div class="gantt-progress-bar" style="width: 70%; background-color: #4caf50;"></div>
+                                </div>
+                            </div>
+                            <div class="gantt-row">
+                                <!-- Data Analysis -->
+                                <div class="gantt-bar task-bar" style="left: 33.3%; width: 41.7%; background-color: rgba(76, 175, 80, 0.2); border-color: #4caf50;">
+                                    <div class="gantt-bar-label">Data Analysis</div>
+                                    <div class="gantt-progress-bar" style="width: 20%; background-color: #4caf50;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Project 3: Database Schema -->
+                            <div class="gantt-row">
+                                <!-- Main project bar -->
+                                <div class="gantt-bar project-bar" style="left: 50%; width: 41.7%; background-color: rgba(156, 39, 176, 0.3); border-color: #9c27b0;">
+                                    <div class="gantt-bar-label">Database Schema</div>
+                                    <div class="gantt-progress-bar" style="width: 20%; background-color: #9c27b0;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gantt-details">
+                    <div class="task-details-panel">
+                        <h3>Task Details</h3>
+                        <div class="selected-task">
+                            <h4>Frontend Development</h4>
+                            <div class="task-detail-row">
+                                <span class="detail-label">Assignment:</span>
+                                <span class="detail-value">Website Redesign</span>
+                            </div>
+                            <div class="task-detail-row">
+                                <span class="detail-label">Assignee:</span>
+                                <span class="detail-value">Mike T.</span>
+                            </div>
+                            <div class="task-detail-row">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">Oct 22, 2023</span>
+                            </div>
+                            <div class="task-detail-row">
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value">Nov 20, 2023</span>
+                            </div>
+                            <div class="task-detail-row">
+                                <span class="detail-label">Progress:</span>
+                                <span class="detail-value">50%</span>
+                            </div>
+                            <div class="task-detail-row">
+                                <span class="detail-label">Priority:</span>
+                                <span class="detail-value high-priority">High</span>
+                            </div>
+                            <div class="task-detail-row">
+                                <span class="detail-label">Description:</span>
+                                <p class="detail-value">Implement the frontend components based on the approved UI designs. Include responsive layouts and interactive elements.</p>
+                            </div>
+                            <div class="task-actions">
+                                <button class="btn btn-outline">Edit</button>
+                                <button class="btn btn-primary">Update Progress</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Two-Factor Authentication</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page settings-page">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li class="active"><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="breadcrumb">
+                    <span class="page-icon">🔒</span>
+                    Two-Factor Authentication
+                </div>
+
+                <div class="settings-container">
+                    <div class="settings-sidebar">
+                        <div class="settings-nav">
+                            <h3>Security</h3>
+                            <ul>
+                                <li><a href="profile-settings.html">Profile</a></li>
+                                <li><a href="password-settings.html">Password</a></li>
+                                <li class="active"><a href="2fa-settings.html">Two-Factor Authentication</a></li>
+                                <li><a href="settings.html">Appearance</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="settings-content">
+                        <div class="settings-section">
+                            <h2>Two-Factor Authentication</h2>
+                            <p class="section-description">Add additional security to your account using two-factor authentication</p>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Setup Two-Factor Authentication</h3>
+                            <p class="section-description">You have not enabled two-factor authentication yet.</p>
+
+                            <div class="tfa-setup-container">
+                                <div class="tfa-info">
+                                    <p>When two-factor authentication is enabled, you will be prompted for a secure, random token during authentication. You may retrieve this token from your phone's Google Authenticator application.</p>
+                                </div>
+
+                                <div class="tfa-qr-container">
+                                    <div class="qr-code">
+                                        <div class="qr-placeholder">QR Code Placeholder</div>
+                                    </div>
+                                    <p class="qr-instructions">Scan this QR code with your authenticator app</p>
+                                </div>
+
+                                <div class="tfa-setup-form">
+                                    <div class="form-group">
+                                        <label for="auth-code">Authentication Code</label>
+                                        <input type="text" id="auth-code" placeholder="Enter the 6-digit code" class="form-control">
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">Enable Two-Factor Authentication</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-section">
+                            <h3>Recovery Codes</h3>
+                            <p class="section-description">Store these recovery codes in a secure password manager. They can be used to recover access to your account if your two-factor authentication device is lost.</p>
+
+                            <div class="your_generic_secret">
+                                <div class="recovery-codes">
+                                    <div class="recovery-code">ABCD-EFGH-IJKL</div>
+                                    <div class="recovery-code">MNOP-QRST-UVWX</div>
+                                    <div class="recovery-code">YZ12-3456-7890</div>
+                                    <div class="recovery-code">WXYZ-VUTS-RQPO</div>
+                                    <div class="recovery-code">NMLK-JIHG-FEDC</div>
+                                    <div class="recovery-code">BA98-7654-3210</div>
+                                </div>
+
+                                <div class="recovery-actions">
+                                    <button class="btn btn-outline">Download Codes</button>
+                                    <button class="btn btn-outline">Copy Codes</button>
+                                    <button class="btn btn-outline">Print Codes</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

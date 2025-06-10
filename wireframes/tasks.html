@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page tasks-page">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li class="active"><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="tasks-header">
+                    <div class="tasks-title">
+                        <h1>My Tasks</h1>
+                    </div>
+                    <div class="tasks-view-toggle">
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Viewing my tasks</span>
+                    </div>
+                    <div class="tasks-actions">
+                        <button class="btn btn-primary">CREATE TASK</button>
+                    </div>
+                </div>
+
+                <div class="tasks-filters-container">
+                    <h2>Filters</h2>
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label>Search</label>
+                            <div class="search-input">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" placeholder="Search tasks...">
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Assignment</label>
+                            <div class="dropdown">
+                                <div class="dropdown-selected">All Assignments</div>
+                                <span class="dropdown-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Group</label>
+                            <div class="dropdown">
+                                <div class="dropdown-selected">All Groups</div>
+                                <span class="dropdown-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status</label>
+                            <div class="dropdown">
+                                <div class="dropdown-selected">All Statuses</div>
+                                <span class="dropdown-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="filter-group">
+                            <label>Priority</label>
+                            <div class="dropdown">
+                                <div class="dropdown-selected">All Priorities</div>
+                                <span class="dropdown-icon">▼</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filters-actions">
+                        <button class="btn btn-icon">✕</button>
+                        <button class="btn btn-text">Reset Filters</button>
+                    </div>
+                </div>
+
+                <div class="tasks-sort-bar">
+                    <div class="sort-options">
+                        <button class="sort-option active">
+                            <span class="sort-icon">▼</span>
+                            Due Date
+                        </button>
+                        <button class="sort-option">Title</button>
+                        <button class="sort-option">Priority</button>
+                        <button class="sort-option">Status</button>
+                        <button class="sort-option">Effort Hours</button>
+                    </div>
+                </div>
+
+                <div class="tasks-tabs">
+                    <div class="tab active">
+                        <span class="tab-name">Uncompleted Tasks</span>
+                        <span class="tab-count">10</span>
+                    </div>
+                    <div class="tab">
+                        <span class="tab-name">Completed Tasks</span>
+                        <span class="tab-count">0</span>
+                    </div>
+                </div>
+
+                <div class="tasks-list">
+                    <div class="task-card">
+                        <div class="task-header">
+                            <h3 class="task-title">Research Intel 8085</h3>
+                            <div class="task-tags">
+                                <span class="tag priority-medium">medium</span>
+                                <span class="tag status-pending">pending</span>
+                            </div>
+                        </div>
+                        <div class="task-subtitle">Difference between Intel 8085 and Intel 8086</div>
+                        <div class="task-description">
+                            Gather detailed information about the Intel 8085 microprocessor, including its architecture, features, and specifications.
+                        </div>
+                        <div class="task-meta">
+                            <div class="task-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">06/06/2025</span>
+                            </div>
+                            <div class="task-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">4 days ago</span>
+                            </div>
+                        </div>
+                        <div class="task-footer">
+                            <div class="task-effort">4 hours</div>
+                            <div class="task-assignee">Eeshan vaghjiani</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-success btn-block">MARK AS COMPLETE</button>
+                        </div>
+                    </div>
+
+                    <div class="task-card">
+                        <div class="task-header">
+                            <h3 class="task-title">Create social media assets</h3>
+                            <div class="task-tags">
+                                <span class="tag priority-medium">medium</span>
+                                <span class="tag status-progress">in progress</span>
+                            </div>
+                        </div>
+                        <div class="task-subtitle">Marketing Campaign</div>
+                        <div class="task-description">
+                            Design graphics for social media campaign
+                        </div>
+                        <div class="task-meta">
+                            <div class="task-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">09/06/2025</span>
+                            </div>
+                            <div class="task-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">17h</span>
+                            </div>
+                        </div>
+                        <div class="task-footer">
+                            <div class="task-effort">1 hour</div>
+                            <div class="task-assignee">Eeshan vaghjiani</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-success btn-block">MARK AS COMPLETE</button>
+                        </div>
+                    </div>
+
+                    <div class="task-card">
+                        <div class="task-header">
+                            <h3 class="task-title">Compare Architectures</h3>
+                            <div class="task-tags">
+                                <span class="tag priority-medium">medium</span>
+                                <span class="tag status-pending">pending</span>
+                            </div>
+                        </div>
+                        <div class="task-subtitle">Difference between Intel 8085 and Intel 8086</div>
+                        <div class="task-description">
+                            Compare the architectures of the Intel 8085 and Intel 8086 microprocessors, highlighting key differences and similarities.
+                        </div>
+                        <div class="task-meta">
+                            <div class="task-date">
+                                <span class="meta-icon">📅</span>
+                                <span class="meta-text">09/06/2025</span>
+                            </div>
+                            <div class="task-time">
+                                <span class="meta-icon">⏱️</span>
+                                <span class="meta-text">17h</span>
+                            </div>
+                        </div>
+                        <div class="task-footer">
+                            <div class="task-effort">6 hours</div>
+                            <div class="task-assignee">Eeshan vaghjiani</div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="btn btn-success btn-block">MARK AS COMPLETE</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
+
+</html>

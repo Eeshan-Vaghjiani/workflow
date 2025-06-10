@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar View</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe">
+        <div class="header">
+            <div class="logo">WORKFLOW</div>
+            <div class="nav">
+                <div class="nav-item">Search</div>
+                <div class="nav-item">Notifications</div>
+                <div class="user-info">John Doe</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="sidebar">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Groups</div>
+                <div class="nav-item">Assignments</div>
+                <div class="nav-item">Tasks</div>
+                <div class="nav-item active">Calendar</div>
+                <div class="nav-item">Chat</div>
+                <div class="nav-item">Study Planner</div>
+                <div class="nav-item">Pomodoro</div>
+                <div class="nav-item">AI Tasks</div>
+                <div class="nav-item">Settings</div>
+            </div>
+
+            <div class="main-content">
+                <h1 class="mb-20">Calendar View</h1>
+
+                <div class="calendar-header mb-10">
+                    <div>
+                        <div class="btn">Previous</div>
+                        <div class="btn">Today</div>
+                        <div class="btn">Next</div>
+                    </div>
+                    <div>June 2023</div>
+                    <div>
+                        <div class="btn active">Month</div>
+                        <div class="btn">Week</div>
+                        <div class="btn">Day</div>
+                    </div>
+                </div>
+
+                <div class="calendar">
+                    <div class="calendar-grid">
+                        <!-- Day headers -->
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Sun</div>
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Mon</div>
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Tue</div>
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Wed</div>
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Thu</div>
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Fri</div>
+                        <div class="calendar-day" style="text-align: center; font-weight: bold;">Sat</div>
+
+                        <!-- Week 1 -->
+                        <div class="calendar-day">
+                            <div style="text-align: right;">1</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">2</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">3</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">4</div>
+                            <div class="calendar-event">Research Intel 8085</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">5</div>
+                            <div class="calendar-event">Create wireframes</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">6</div>
+                            <div class="calendar-event">Compare Architectures</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">7</div>
+                        </div>
+
+                        <!-- Week 2 -->
+                        <div class="calendar-day">
+                            <div style="text-align: right;">8</div>
+                            <div class="calendar-event">Compare Features</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">9</div>
+                            <div class="calendar-event">Requirement Analysis</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">10</div>
+                            <div class="calendar-event">Draft Report</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">11</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">12</div>
+                            <div class="calendar-event">Database Design</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">13</div>
+                            <div class="calendar-event">Review Report</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">14</div>
+                        </div>
+
+                        <!-- Week 3 -->
+                        <div class="calendar-day">
+                            <div style="text-align: right;">15</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">16</div>
+                            <div class="calendar-event">Presentation</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">17</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">18</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">19</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">20</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">21</div>
+                        </div>
+
+                        <!-- Week 4 -->
+                        <div class="calendar-day">
+                            <div style="text-align: right;">22</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">23</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">24</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">25</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">26</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">27</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">28</div>
+                        </div>
+
+                        <!-- Week 5 -->
+                        <div class="calendar-day">
+                            <div style="text-align: right;">29</div>
+                        </div>
+                        <div class="calendar-day">
+                            <div style="text-align: right;">30</div>
+                        </div>
+                        <div class="calendar-day" style="background: #eee;">
+                            <div style="text-align: right;">1</div>
+                        </div>
+                        <div class="calendar-day" style="background: #eee;">
+                            <div style="text-align: right;">2</div>
+                        </div>
+                        <div class="calendar-day" style="background: #eee;">
+                            <div style="text-align: right;">3</div>
+                        </div>
+                        <div class="calendar-day" style="background: #eee;">
+                            <div style="text-align: right;">4</div>
+                        </div>
+                        <div class="calendar-day" style="background: #eee;">
+                            <div style="text-align: right;">5</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-20">
+                    <div class="card" style="flex: 1;">
+                        <div class="card-header">Legend</div>
+                        <div class="card-body">
+                            <div style="display: flex; gap: 20px;">
+                                <div>
+                                    <div class="border p-10" style="background: #ddd;">High Priority</div>
+                                </div>
+                                <div>
+                                    <div class="border p-10">Normal Priority</div>
+                                </div>
+                                <div>
+                                    <div class="border p-10" style="text-decoration: line-through;">Completed</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

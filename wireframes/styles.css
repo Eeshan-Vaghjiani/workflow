@@ -1,0 +1,700 @@
+@charset "UTF-8";
+
+/* Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #333;
+    line-height: 1.6;
+    background-color: #f5f7fa;
+}
+
+.wireframe {
+    width: 100%;
+    min-height: 100vh;
+}
+
+a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
+    list-style: none;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #2563eb;
+    color: white;
+    border: 1px solid #2563eb;
+}
+
+.btn-primary:hover {
+    background-color: #1d4ed8;
+    text-decoration: none;
+}
+
+.btn-outline {
+    background-color: transparent;
+    color: #2563eb;
+    border: 1px solid #2563eb;
+}
+
+.btn-outline:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+    text-decoration: none;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.btn-icon {
+    padding: 0.25rem;
+    font-size: 1.25rem;
+    line-height: 1;
+    border: none;
+    background: transparent;
+}
+
+/* Welcome Page Styles */
+.welcome-page .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-page .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.welcome-page .nav ul {
+    display: flex;
+    gap: 2rem;
+}
+
+.welcome-page .auth-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.welcome-page .hero {
+    display: flex;
+    padding: 4rem 2rem;
+    background-color: #f8fafc;
+    min-height: 500px;
+}
+
+.welcome-page .hero-content {
+    flex: 1;
+    max-width: 600px;
+}
+
+.welcome-page .hero-content h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #1e293b;
+}
+
+.welcome-page .hero-content .subtitle {
+    font-size: 1.5rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-page .hero-content .description {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+}
+
+.welcome-page .hero-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.welcome-page .hero-image {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.welcome-page .placeholder-image {
+    width: 100%;
+    max-width: 500px;
+    height: 300px;
+    background-color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    color: #64748b;
+}
+
+.welcome-page .features {
+    padding: 4rem 2rem;
+    background-color: white;
+}
+
+.welcome-page .features h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 3rem;
+}
+
+.welcome-page .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.welcome-page .feature-card {
+    padding: 2rem;
+    background-color: #f8fafc;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.welcome-page .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.welcome-page .feature-card h3 {
+    margin-bottom: 1rem;
+}
+
+.welcome-page .testimonials {
+    padding: 4rem 2rem;
+    background-color: #f1f5f9;
+}
+
+.welcome-page .testimonials h2 {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 3rem;
+}
+
+.welcome-page .testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.welcome-page .testimonial-card {
+    padding: 2rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.welcome-page .quote {
+    font-style: italic;
+    margin-bottom: 1rem;
+}
+
+.welcome-page .author {
+    font-weight: 600;
+    color: #64748b;
+}
+
+.welcome-page .footer {
+    background-color: #1e293b;
+    color: white;
+    padding: 4rem 2rem 2rem;
+}
+
+.welcome-page .footer-content {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    margin-bottom: 3rem;
+}
+
+.welcome-page .footer-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.welcome-page .footer-links {
+    display: flex;
+    gap: 4rem;
+}
+
+.welcome-page .footer-column h4 {
+    margin-bottom: 1rem;
+    color: #94a3b8;
+}
+
+.welcome-page .footer-column ul li {
+    margin-bottom: 0.5rem;
+}
+
+.welcome-page .footer-column a {
+    color: white;
+}
+
+.welcome-page .footer-bottom {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 2rem;
+    border-top: 1px solid #334155;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* Auth Pages Styles */
+.auth-page {
+    background-color: #f1f5f9;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-logo a {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.auth-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.auth-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.auth-form input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+}
+
+.auth-form .remember-me {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.auth-form .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 1.5rem;
+}
+
+/* Dashboard Layout Styles */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header .logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2563eb;
+}
+
+.dashboard-header .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.dashboard-header .search-bar input {
+    padding: 0.5rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    width: 250px;
+}
+
+.dashboard-header .notifications {
+    position: relative;
+}
+
+.dashboard-header .notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dashboard-header .user-menu {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.dashboard-header .user-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: #2563eb;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.dashboard-header .user-avatar.admin {
+    background-color: #9333ea;
+}
+
+.dashboard-layout {
+    display: flex;
+    height: calc(100vh - 64px);
+}
+
+.sidebar {
+    width: 250px;
+    background-color: white;
+    border-right: 1px solid #e2e8f0;
+    padding: 1.5rem 0;
+}
+
+.main-nav ul li {
+    margin-bottom: 0.25rem;
+}
+
+.main-nav ul li a {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    color: #64748b;
+    border-left: 3px solid transparent;
+}
+
+.main-nav ul li a:hover {
+    background-color: #f1f5f9;
+    text-decoration: none;
+}
+
+.main-nav ul li.active a {
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-left-color: #2563eb;
+}
+
+.nav-icon {
+    margin-right: 0.75rem;
+}
+
+.dashboard-content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 1.5rem;
+}
+
+.page-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+/* User Dashboard Styles */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.dashboard-card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.card-header h2 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.card-content {
+    padding: 1.5rem;
+}
+
+.card-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.task-list, .group-list, .assignment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.task-item {
+    display: flex;
+    gap: 1rem;
+}
+
+.task-status {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 0.375rem;
+}
+
+.task-status.high {
+    background-color: #ef4444;
+}
+
+.task-status.medium {
+    background-color: #f59e0b;
+}
+
+.task-status.low {
+    background-color: #10b981;
+}
+
+.task-details h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.task-details p {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.group-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.group-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #2563eb;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.group-details h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.group-details p {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.assignment-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.assignment-details h3 {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.assignment-details p {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.assignment-progress {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background-color: #2563eb;
+}
+
+.progress-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    background-color: #f8fafc;
+}
+
+.action-item:hover {
+    background-color: #f1f5f9;
+    text-decoration: none;
+}
+
+.action-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.action-text {
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+/* Calendar View Styles */
+/* Calendar specific styles moved to calendar-styles.css */
+
+/* AI Tasks Page Styles */
+.ai-tasks-page .dashboard-content {
+    padding: 1.5rem;
+}
+
+.ai-tasks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.ai-prompt-section {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+}
+
+.ai-prompt-section h2 {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+}
+
+.ai-prompt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.history-model {
+    font-size: 0.875rem;
+    color: #2563eb;
+    font-weight: 500;
+}

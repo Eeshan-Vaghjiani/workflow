@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe">
+        <div class="header">
+            <div class="logo">WORKFLOW</div>
+            <div class="nav">
+                <div class="nav-item">Search</div>
+                <div class="nav-item">Notifications</div>
+                <div class="user-info">John Doe</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="sidebar">
+                <div class="nav-item">Dashboard</div>
+                <div class="nav-item">Groups</div>
+                <div class="nav-item">Assignments</div>
+                <div class="nav-item">Tasks</div>
+                <div class="nav-item">Calendar</div>
+                <div class="nav-item">Chat</div>
+                <div class="nav-item">Study Planner</div>
+                <div class="nav-item">Pomodoro</div>
+                <div class="nav-item active">AI Tasks</div>
+                <div class="nav-item">Settings</div>
+            </div>
+
+            <div class="main-content">
+                <div class="row mb-20">
+                    <h1 style="flex: 1;">AI Tasks</h1>
+                    <div>
+                        <div class="btn">Refresh</div>
+                        <div class="btn btn-primary">+ New AI Task</div>
+                    </div>
+                </div>
+
+                <div class="card mb-20">
+                    <div class="card-header">Create New AI Task</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">AI Model</label>
+                            <select class="form-select">
+                                <option selected>deepseek/deepseek-prover-v2:free</option>
+                                <option>GPT-4</option>
+                                <option>Claude 3</option>
+                                <option>Llama 3</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Task Type</label>
+                            <select class="form-select">
+                                <option>Generate Content</option>
+                                <option>Summarize Text</option>
+                                <option>Research Topic</option>
+                                <option>Draft Email</option>
+                                <option>Create Outline</option>
+                                <option>Custom Prompt</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Your Prompt</label>
+                            <textarea class="form-control" style="height: 100px;" placeholder="Describe what you want the AI to do..."></textarea>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn">Save as Template</div>
+                        <div class="btn btn-primary">Generate</div>
+                    </div>
+                </div>
+
+                <div class="card mb-20">
+                    <div class="card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>AI Task History</div>
+                            <div style="display: flex; gap: 10px;">
+                                <select class="form-select" style="width: 150px;">
+                                    <option>All Models</option>
+                                    <option>deepseek/deepseek-prover-v2:free</option>
+                                    <option>GPT-4</option>
+                                    <option>Claude 3</option>
+                                </select>
+                                <select class="form-select" style="width: 150px;">
+                                    <option>All Types</option>
+                                    <option>Generate Content</option>
+                                    <option>Summarize Text</option>
+                                    <option>Research Topic</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="ai-prompt">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div><strong>Research Topic</strong></div>
+                                <div>deepseek/deepseek-prover-v2:free</div>
+                                <div>Today, 2:30 PM</div>
+                            </div>
+                            <div>
+                                <strong>Prompt:</strong> Research the differences between Intel 8085 and 8086 microprocessors
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <strong>Response:</strong> <span>The Intel 8085 and 8086 microprocessors differ in several key aspects...</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <div class="btn">View Full Response</div>
+                                <div class="btn">Copy</div>
+                                <div class="btn">Edit & Regenerate</div>
+                            </div>
+                        </div>
+
+                        <div class="ai-prompt">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div><strong>Generate Content</strong></div>
+                                <div>deepseek/deepseek-prover-v2:free</div>
+                                <div>Yesterday, 4:15 PM</div>
+                            </div>
+                            <div>
+                                <strong>Prompt:</strong> Write a project proposal for a workflow management system
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <strong>Response:</strong> <span>Project Proposal: Workflow Management System...</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <div class="btn">View Full Response</div>
+                                <div class="btn">Copy</div>
+                                <div class="btn">Edit & Regenerate</div>
+                            </div>
+                        </div>
+
+                        <div class="ai-prompt">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div><strong>Summarize Text</strong></div>
+                                <div>deepseek/deepseek-prover-v2:free</div>
+                                <div>Oct 15, 2023</div>
+                            </div>
+                            <div>
+                                <strong>Prompt:</strong> Summarize the attached research paper on machine learning algorithms
+                            </div>
+                            <div style="margin-top: 10px;">
+                                <strong>Response:</strong> <span>This research paper explores recent advances in machine learning algorithms...</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                <div class="btn">View Full Response</div>
+                                <div class="btn">Copy</div>
+                                <div class="btn">Edit & Regenerate</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                            <div class="btn">◀</div>
+                            <div>Page 1 of 3</div>
+                            <div class="btn">▶</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow - Study Planner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="wireframe dashboard-page study-planner-view">
+        <header class="dashboard-header">
+            <div class="header-left">
+                <div class="logo">WORKFLOW</div>
+            </div>
+            <div class="header-right">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notifications">
+                    <div class="notification-icon">🔔</div>
+                    <span class="notification-badge">3</span>
+                </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JD</div>
+                    <span class="user-name">John Doe</span>
+                    <span class="dropdown-icon">▼</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-layout">
+            <aside class="sidebar">
+                <nav class="main-nav">
+                    <ul>
+                        <li><a href="user-dashboard.html"><span class="nav-icon">📊</span> Dashboard</a></li>
+                        <li><a href="#"><span class="nav-icon">👥</span> Groups</a></li>
+                        <li><a href="assignments.html"><span class="nav-icon">📝</span> Assignments</a></li>
+                        <li><a href="tasks.html"><span class="nav-icon">✅</span> Tasks</a></li>
+                        <li><a href="calendar-view.html"><span class="nav-icon">📅</span> Calendar</a></li>
+                        <li><a href="chat-view.html"><span class="nav-icon">💬</span> Chat</a></li>
+                        <li class="active"><a href="study-planner.html"><span class="nav-icon">📚</span> Study Planner</a></li>
+                        <li><a href="pomodoro.html"><span class="nav-icon">⏱️</span> Pomodoro</a></li>
+                        <li><a href="ai-tasks.html"><span class="nav-icon">🤖</span> AI Tasks</a></li>
+                        <li><a href="settings.html"><span class="nav-icon">⚙️</span> Settings</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <main class="dashboard-content">
+                <div class="page-header">
+                    <h1>Study Planner</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-outline">Import Schedule</button>
+                        <button class="btn btn-primary">Create Study Plan</button>
+                    </div>
+                </div>
+
+                <div class="study-planner-container">
+                    <div class="study-planner-sidebar">
+                        <div class="sidebar-section">
+                            <h3>My Courses</h3>
+                            <ul class="course-list">
+                                <li class="course-item">
+                                    <div class="course-color" style="background-color: #2563eb;"></div>
+                                    <div class="course-info">
+                                        <div class="course-name">Web Development</div>
+                                        <div class="course-code">CS301</div>
+                                    </div>
+                                </li>
+                                <li class="course-item">
+                                    <div class="course-color" style="background-color: #10b981;"></div>
+                                    <div class="course-info">
+                                        <div class="course-name">Database Systems</div>
+                                        <div class="course-code">CS302</div>
+                                    </div>
+                                </li>
+                                <li class="course-item">
+                                    <div class="course-color" style="background-color: #f59e0b;"></div>
+                                    <div class="course-info">
+                                        <div class="course-name">UI/UX Design</div>
+                                        <div class="course-code">DES201</div>
+                                    </div>
+                                </li>
+                                <li class="course-item">
+                                    <div class="course-color" style="background-color: #8b5cf6;"></div>
+                                    <div class="course-info">
+                                        <div class="course-name">Project Management</div>
+                                        <div class="course-code">BUS101</div>
+                                    </div>
+                                </li>
+                            </ul>
+                            <button class="btn btn-outline btn-block">Add Course</button>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <h3>Upcoming Deadlines</h3>
+                            <ul class="deadline-list">
+                                <li class="deadline-item">
+                                    <div class="deadline-date">Oct 15</div>
+                                    <div class="deadline-info">
+                                        <div class="deadline-name">Project Proposal</div>
+                                        <div class="deadline-course">CS301 • Web Development</div>
+                                    </div>
+                                </li>
+                                <li class="deadline-item">
+                                    <div class="deadline-date">Oct 18</div>
+                                    <div class="deadline-info">
+                                        <div class="deadline-name">Database Schema</div>
+                                        <div class="deadline-course">CS302 • Database Systems</div>
+                                    </div>
+                                </li>
+                                <li class="deadline-item">
+                                    <div class="deadline-date">Oct 22</div>
+                                    <div class="deadline-info">
+                                        <div class="deadline-name">Wireframe Design</div>
+                                        <div class="deadline-course">DES201 • UI/UX Design</div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <h3>Study Statistics</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value">12.5</div>
+                                    <div class="stat-label">Hours this week</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">4</div>
+                                    <div class="stat-label">Study sessions</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">85%</div>
+                                    <div class="stat-label">Goal completion</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value">3</div>
+                                    <div class="stat-label">Courses studied</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="study-planner-main">
+                        <div class="planner-tabs">
+                            <button class="planner-tab active">Weekly Schedule</button>
+                            <button class="planner-tab">Study Sessions</button>
+                            <button class="planner-tab">Resources</button>
+                        </div>
+
+                        <div class="weekly-schedule">
+                            <div class="schedule-header">
+                                <div class="schedule-title">
+                                    <h2>Weekly Schedule</h2>
+                                    <div class="schedule-date">October 14 - 20, 2023</div>
+                                </div>
+                                <div class="schedule-actions">
+                                    <button class="btn btn-icon">◀</button>
+                                    <button class="btn btn-outline">Today</button>
+                                    <button class="btn btn-icon">▶</button>
+                                </div>
+                            </div>
+
+                            <div class="schedule-grid">
+                                <div class="time-column">
+                                    <div class="time-header"></div>
+                                    <div class="time-slot">8:00 AM</div>
+                                    <div class="time-slot">9:00 AM</div>
+                                    <div class="time-slot">10:00 AM</div>
+                                    <div class="time-slot">11:00 AM</div>
+                                    <div class="time-slot">12:00 PM</div>
+                                    <div class="time-slot">1:00 PM</div>
+                                    <div class="time-slot">2:00 PM</div>
+                                    <div class="time-slot">3:00 PM</div>
+                                    <div class="time-slot">4:00 PM</div>
+                                    <div class="time-slot">5:00 PM</div>
+                                    <div class="time-slot">6:00 PM</div>
+                                    <div class="time-slot">7:00 PM</div>
+                                </div>
+
+                                <div class="day-column">
+                                    <div class="day-header">Monday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event class-event" style="top: 0; height: 120px;">
+                                            <div class="event-name">Web Development</div>
+                                            <div class="event-time">8:00 - 10:00 AM</div>
+                                            <div class="event-location">Room 301</div>
+                                        </div>
+                                        <div class="schedule-event study-event" style="top: 240px; height: 60px;">
+                                            <div class="event-name">Study: Database</div>
+                                            <div class="event-time">12:00 - 1:00 PM</div>
+                                        </div>
+                                        <div class="schedule-event class-event" style="top: 420px; height: 120px;">
+                                            <div class="event-name">UI/UX Design</div>
+                                            <div class="event-time">3:00 - 5:00 PM</div>
+                                            <div class="event-location">Design Lab</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="day-column">
+                                    <div class="day-header">Tuesday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event study-event" style="top: 120px; height: 120px;">
+                                            <div class="event-name">Study: Web Dev</div>
+                                            <div class="event-time">10:00 - 12:00 PM</div>
+                                        </div>
+                                        <div class="schedule-event class-event" style="top: 300px; height: 120px;">
+                                            <div class="event-name">Database Systems</div>
+                                            <div class="event-time">1:00 - 3:00 PM</div>
+                                            <div class="event-location">Room 205</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="day-column">
+                                    <div class="day-header">Wednesday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event class-event" style="top: 0; height: 120px;">
+                                            <div class="event-name">Web Development</div>
+                                            <div class="event-time">8:00 - 10:00 AM</div>
+                                            <div class="event-location">Room 301</div>
+                                        </div>
+                                        <div class="schedule-event group-event" style="top: 180px; height: 120px;">
+                                            <div class="event-name">Group Project</div>
+                                            <div class="event-time">11:00 - 1:00 PM</div>
+                                            <div class="event-location">Study Room 2</div>
+                                        </div>
+                                        <div class="schedule-event study-event" style="top: 420px; height: 60px;">
+                                            <div class="event-name">Study: UI/UX</div>
+                                            <div class="event-time">3:00 - 4:00 PM</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="day-column">
+                                    <div class="day-header">Thursday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event class-event" style="top: 60; height: 120px;">
+                                            <div class="event-name">Project Management</div>
+                                            <div class="event-time">9:00 - 11:00 AM</div>
+                                            <div class="event-location">Room 110</div>
+                                        </div>
+                                        <div class="schedule-event class-event" style="top: 300px; height: 120px;">
+                                            <div class="event-name">Database Systems</div>
+                                            <div class="event-time">1:00 - 3:00 PM</div>
+                                            <div class="event-location">Room 205</div>
+                                        </div>
+                                        <div class="schedule-event study-event" style="top: 480px; height: 120px;">
+                                            <div class="event-name">Study: Project Mgmt</div>
+                                            <div class="event-time">4:00 - 6:00 PM</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="day-column">
+                                    <div class="day-header">Friday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event class-event" style="top: 120px; height: 120px;">
+                                            <div class="event-name">UI/UX Design</div>
+                                            <div class="event-time">10:00 - 12:00 PM</div>
+                                            <div class="event-location">Design Lab</div>
+                                        </div>
+                                        <div class="schedule-event group-event" style="top: 300px; height: 120px;">
+                                            <div class="event-name">Team Meeting</div>
+                                            <div class="event-time">1:00 - 3:00 PM</div>
+                                            <div class="event-location">Library</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="day-column weekend">
+                                    <div class="day-header">Saturday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event study-event" style="top: 180px; height: 180px;">
+                                            <div class="event-name">Study: Web Dev Project</div>
+                                            <div class="event-time">11:00 - 2:00 PM</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="day-column weekend">
+                                    <div class="day-header">Sunday</div>
+                                    <div class="day-grid">
+                                        <div class="schedule-event study-event" style="top: 240px; height: 180px;">
+                                            <div class="event-name">Study: Database Quiz</div>
+                                            <div class="event-time">12:00 - 3:00 PM</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

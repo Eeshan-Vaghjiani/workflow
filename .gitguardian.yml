@@ -1,0 +1,34 @@
+# GitGuardian configuration file
+# Documentation: https://docs.gitguardian.com/integrations/git_hooks/configuration
+
+version: 2
+
+# Configure the exit code when a policy break is found
+exit_zero: true
+
+# Configure paths to exclude from the scan
+paths-ignore:
+  - "**/*.md"
+  - "**/tests/**"
+  - "**/test/**"
+  - "**/*.test.js"
+  - "**/*.test.ts"
+  - "**/node_modules/**"
+  - "**/vendor/**"
+  - "**/public/**"
+  - "**/storage/**"
+  - "**/bootstrap/**"
+  - "**/wireframes/**"
+  - "**/wireframes2/**"
+  - "**/app/Services/AIService.php"
+  - "**/config/broadcasting.php"
+
+# Configure secrets to ignore
+secrets-ignore:
+  - your_pusher_app_key
+  - your_pusher_app_secret
+  - your_pusher_app_id
+  - your_openrouter_api_key
+
+# Configure the maximum allowed depth in files
+max-depth: 500

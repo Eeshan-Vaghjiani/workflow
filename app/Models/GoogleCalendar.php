@@ -33,34 +33,60 @@ class GoogleCalendar extends Model
                 $this->refreshToken();
             }
 
+            // Verify we have a valid token
+            if (empty($this->access_token)) {
+                \Illuminate\Support\Facades\Log::error('Empty access token in syncEvents', [
+                    'user_id' => $this->user_id
+                ]);
+                throw new \Exception('Google Calendar access token is empty or invalid. Please reconnect your account.');
+            }
+
             // Get existing events from Google Calendar
             $existingEvents = $this->getExistingEvents();
 
             // Sync tasks
             foreach ($tasks as $task) {
-                $eventId = $this->getEventIdForTask($task);
-                $eventData = $this->createEventData($task);
+                try {
+                    $eventId = $this->getEventIdForTask($task);
+                    $eventData = $this->createEventDataForTask($task);
 
-                if (isset($existingEvents[$eventId])) {
-                    // Update existing event
-                    $this->updateEvent($eventId, $eventData);
-                } else {
-                    // Create new event
-                    $this->createEvent($eventData);
+                    if (isset($existingEvents[$eventId])) {
+                        // Update existing event
+                        $this->updateEvent($eventId, $eventData);
+                    } else {
+                        // Create new event
+                        $this->createEvent($eventData, $eventId);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error syncing task', [
+                        'user_id' => $this->user_id,
+                        'task_id' => $task->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with next task
                 }
             }
 
             // Sync assignments
             foreach ($assignments as $assignment) {
-                $eventId = $this->getEventIdForAssignment($assignment);
-                $eventData = $this->createEventData($assignment);
+                try {
+                    $eventId = $this->getEventIdForAssignment($assignment);
+                    $eventData = $this->your_generic_secretment($assignment);
 
-                if (isset($existingEvents[$eventId])) {
-                    // Update existing event
-                    $this->updateEvent($eventId, $eventData);
-                } else {
-                    // Create new event
-                    $this->createEvent($eventData);
+                    if (isset($existingEvents[$eventId])) {
+                        // Update existing event
+                        $this->updateEvent($eventId, $eventData);
+                    } else {
+                        // Create new event
+                        $this->createEvent($eventData, $eventId);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error syncing assignment', [
+                        'user_id' => $this->user_id,
+                        'assignment_id' => $assignment->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Continue with next assignment
                 }
             }
 
@@ -74,9 +100,25 @@ class GoogleCalendar extends Model
                 $type = str_starts_with($eventId, 'task_') ? 'task' : 'assignment';
 
                 if ($type === 'task' && !$tasks->contains('id', $id)) {
-                    $this->deleteEvent($eventId);
+                    try {
+                        $this->deleteEvent($eventId);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Error deleting task event', [
+                            'user_id' => $this->user_id,
+                            'event_id' => $eventId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 } elseif ($type === 'assignment' && !$assignments->contains('id', $id)) {
-                    $this->deleteEvent($eventId);
+                    try {
+                        $this->deleteEvent($eventId);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Error deleting assignment event', [
+                            'user_id' => $this->user_id,
+                            'event_id' => $eventId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
             }
 
@@ -146,27 +188,64 @@ class GoogleCalendar extends Model
 
     private function getExistingEvents()
     {
-        $response = Http::withoutVerifying()->withToken($this->access_token)
-            ->get("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events", [
-                'timeMin' => Carbon::now()->subMonths(3)->toRfc3339String(),
-                'timeMax' => Carbon::now()->addMonths(3)->toRfc3339String(),
-                'singleEvents' => true,
-                'orderBy' => 'startTime',
+        try {
+            \Illuminate\Support\Facades\Log::info('Fetching existing Google Calendar events', [
+                'user_id' => $this->user_id,
+                'calendar_id' => $this->calendar_id
             ]);
 
-        if (!$response->successful()) {
-            throw new \Exception('Failed to fetch Google Calendar events');
-        }
+            $response = Http::withoutVerifying()->withToken($this->access_token)
+                ->get("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events", [
+                    'timeMin' => Carbon::now()->subMonths(3)->toRfc3339String(),
+                    'timeMax' => Carbon::now()->addMonths(3)->toRfc3339String(),
+                    'singleEvents' => true,
+                    'orderBy' => 'startTime',
+                ]);
 
-        $events = [];
-        foreach ($response->json()['items'] as $event) {
-            if (isset($event['extendedProperties']['private']['appSource']) &&
-                $event['extendedProperties']['private']['appSource'] === 'workflow') {
-                $events[$event['id']] = $event;
+            if (!$response->successful()) {
+                \Illuminate\Support\Facades\Log::error('Failed to fetch Google Calendar events', [
+                    'user_id' => $this->user_id,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                throw new \Exception('Failed to fetch Google Calendar events: ' . $response->body());
             }
-        }
 
-        return $events;
+            $events = [];
+            $responseData = $response->json();
+            
+            // Check if 'items' key exists
+            if (!isset($responseData['items'])) {
+                \Illuminate\Support\Facades\Log::error('Google Calendar response missing items key', [
+                    'user_id' => $this->user_id,
+                    'response_keys' => array_keys($responseData)
+                ]);
+                return $events;
+            }
+            
+            foreach ($responseData['items'] as $event) {
+                // Check for extendedProperties before accessing
+                if (isset($event['extendedProperties']['private']['appSource']) &&
+                    $event['extendedProperties']['private']['appSource'] === 'workflow') {
+                    $events[$event['id']] = $event;
+                }
+            }
+
+            \Illuminate\Support\Facades\Log::info('Fetched Google Calendar events', [
+                'user_id' => $this->user_id,
+                'event_count' => count($events)
+            ]);
+
+            return $events;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Exception in getExistingEvents', [
+                'user_id' => $this->user_id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            // Return empty array instead of re-throwing to allow sync to continue
+            return [];
+        }
     }
 
     private function getEventIdForTask($task)
@@ -179,72 +258,168 @@ class GoogleCalendar extends Model
         return 'assignment_' . $assignment->id;
     }
 
-    private function createEventData($item)
+    private function createEventDataForTask($task)
     {
-        $isTask = $item instanceof \App\Models\Task;
-
-        $eventData = [
-            'summary' => $item->title,
-            'description' => $isTask
-                ? "Task: {$item->title}\nPriority: {$item->priority}\nStatus: {$item->status}\nProgress: {$item->progress}%"
-                : "Assignment: {$item->title}",
+        return [
+            'summary' => $task->title,
+            'description' => "Task: {$task->title}\nPriority: {$task->priority}\nStatus: {$task->status}",
             'start' => [
-                'date' => $item->start_date->format('Y-m-d'),
+                'date' => Carbon::parse($task->start_date)->format('Y-m-d'),
                 'timeZone' => config('app.timezone'),
             ],
             'end' => [
-                'date' => $item->end_date->format('Y-m-d'),
+                'date' => Carbon::parse($task->end_date)->format('Y-m-d'),
                 'timeZone' => config('app.timezone'),
             ],
-            'colorId' => $isTask ? $this->getColorIdForPriority($item->priority) : '1', // Blue for assignments
+            'colorId' => $this->getColorIdForPriority($task->priority),
             'extendedProperties' => [
                 'private' => [
                     'appSource' => 'workflow',
-                    'type' => $isTask ? 'task' : 'assignment',
-                    'id' => $item->id,
+                    'type' => 'task',
+                    'id' => $task->id,
                 ]
             ]
         ];
-
-        if ($isTask) {
-            $eventData['extendedProperties']['private']['progress'] = $item->progress;
-        }
-
-        return $eventData;
     }
 
-    private function createEvent($eventData)
+    private function your_generic_secretment($assignment)
     {
+        return [
+            'summary' => $assignment->title,
+            'description' => "Assignment: {$assignment->title}",
+            'start' => [
+                'date' => Carbon::parse($assignment->start_date)->format('Y-m-d'),
+                'timeZone' => config('app.timezone'),
+            ],
+            'end' => [
+                'date' => Carbon::parse($assignment->end_date)->format('Y-m-d'),
+                'timeZone' => config('app.timezone'),
+            ],
+            'colorId' => '1', // Blue for assignments
+            'extendedProperties' => [
+                'private' => [
+                    'appSource' => 'workflow',
+                    'type' => 'assignment',
+                    'id' => $assignment->id,
+                ]
+            ]
+        ];
+    }
+
+    private function createEvent($eventData, $eventId = null)
+    {
+        if (empty($this->access_token)) {
+            \Illuminate\Support\Facades\Log::error('Empty access token in createEvent', [
+                'user_id' => $this->user_id
+            ]);
+            throw new \Exception('Access token is empty. Please reconnect your Google Calendar.');
+        }
+
+        $url = "https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events";
+        
+        // If eventId is provided, add it to the request body
+        if ($eventId) {
+            $eventData['id'] = $eventId;
+        }
+        
+        \Illuminate\Support\Facades\Log::info('Creating Google Calendar event', [
+            'user_id' => $this->user_id,
+            'event_id' => $eventId,
+            'url' => $url
+        ]);
+        
         $response = Http::withoutVerifying()->withToken($this->access_token)
-            ->post("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events", $eventData);
+            ->post($url, $eventData);
 
         if (!$response->successful()) {
-            throw new \Exception('Failed to create Google Calendar event');
+            \Illuminate\Support\Facades\Log::error('Failed to create Google Calendar event', [
+                'user_id' => $this->user_id,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            throw new \Exception('Failed to create Google Calendar event: ' . $response->body());
         }
+
+        \Illuminate\Support\Facades\Log::info('Successfully created Google Calendar event', [
+            'user_id' => $this->user_id,
+            'event_id' => $eventId
+        ]);
 
         return $response->json();
     }
 
     private function updateEvent($eventId, $eventData)
     {
+        if (empty($this->access_token)) {
+            \Illuminate\Support\Facades\Log::error('Empty access token in updateEvent', [
+                'user_id' => $this->user_id
+            ]);
+            throw new \Exception('Access token is empty. Please reconnect your Google Calendar.');
+        }
+
+        $url = "https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}";
+        
+        \Illuminate\Support\Facades\Log::info('Updating Google Calendar event', [
+            'user_id' => $this->user_id,
+            'event_id' => $eventId,
+            'url' => $url
+        ]);
+        
         $response = Http::withoutVerifying()->withToken($this->access_token)
-            ->put("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}", $eventData);
+            ->put($url, $eventData);
 
         if (!$response->successful()) {
-            throw new \Exception('Failed to update Google Calendar event');
+            \Illuminate\Support\Facades\Log::error('Failed to update Google Calendar event', [
+                'user_id' => $this->user_id,
+                'event_id' => $eventId,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            throw new \Exception('Failed to update Google Calendar event: ' . $response->body());
         }
+
+        \Illuminate\Support\Facades\Log::info('Successfully updated Google Calendar event', [
+            'user_id' => $this->user_id,
+            'event_id' => $eventId
+        ]);
 
         return $response->json();
     }
 
     private function deleteEvent($eventId)
     {
+        if (empty($this->access_token)) {
+            \Illuminate\Support\Facades\Log::error('Empty access token in deleteEvent', [
+                'user_id' => $this->user_id
+            ]);
+            throw new \Exception('Access token is empty. Please reconnect your Google Calendar.');
+        }
+
+        $url = "https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}";
+        
+        \Illuminate\Support\Facades\Log::info('Deleting Google Calendar event', [
+            'user_id' => $this->user_id,
+            'event_id' => $eventId,
+            'url' => $url
+        ]);
+        
         $response = Http::withoutVerifying()->withToken($this->access_token)
-            ->delete("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}");
+            ->delete($url);
 
         if (!$response->successful()) {
-            throw new \Exception('Failed to delete Google Calendar event');
+            \Illuminate\Support\Facades\Log::error('Failed to delete Google Calendar event', [
+                'user_id' => $this->user_id,
+                'event_id' => $eventId,
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+            throw new \Exception('Failed to delete Google Calendar event: ' . $response->body());
         }
+
+        \Illuminate\Support\Facades\Log::info('Successfully deleted Google Calendar event', [
+            'user_id' => $this->user_id,
+            'event_id' => $eventId
+        ]);
     }
 
     private function getColorIdForPriority($priority)
@@ -253,7 +428,7 @@ class GoogleCalendar extends Model
             'high' => '11', // Red
             'medium' => '6', // Orange
             'low' => '10', // Green
-            default => '1', // Blue
+            default => '8', // Gray
         };
     }
 }

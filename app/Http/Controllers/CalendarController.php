@@ -115,11 +115,14 @@ class CalendarController extends Controller
             ->with(['assignment'])
             ->get();
 
-        $assignments = Assignment::whereHas('groups', function ($query) use ($user) {
+        // Use model query to get assignments instead of static method
+        $assignmentsQuery = Assignment::query();
+        $assignmentsQuery->whereHas('groups', function ($query) use ($user) {
             $query->whereHas('users', function ($q) use ($user) {
                 $q->where('users.id', $user->id);
             });
-        })->get();
+        });
+        $assignments = $assignmentsQuery->get();
 
         // Sync with Google Calendar
         try {

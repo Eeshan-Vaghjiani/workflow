@@ -1,0 +1,161 @@
+@startuml AI-Assisted Task Management System
+skinparam dpi 300
+skinparam ActivityBackgroundColor #F5F5F5
+skinparam ActivityBorderColor #000000
+skinparam ActivityBorderThickness 0.5
+skinparam your_generic_secretdColor #F5F5F5
+skinparam your_generic_secretor #000000
+skinparam your_generic_secretckness 0.5
+skinparam ActivityStartColor #222222
+skinparam ActivityEndColor #222222
+skinparam ArrowColor #000000
+skinparam your_generic_secret #D3D3D3
+skinparam PartitionBorderColor #000000
+skinparam your_generic_secret 1.5
+skinparam LegendBackgroundColor white
+skinparam LegendBorderColor black
+skinparam LegendBorderThickness 1
+skinparam NoteBackgroundColor #F5F5F5
+skinparam NoteBorderColor #000000
+
+title AI-Assisted Task Management System - Activity Diagram
+
+|User|
+start
+:User Authentication;
+:Log in to the System;
+|System|
+:Verify Credentials;
+if (Authentication Valid?) then (yes)
+  :Grant Access;
+else (no)
+  :Show Error Message;
+  stop
+endif
+
+|User|
+:Navigate Dashboard;
+
+partition "User Management" {
+  |User|
+  :Update Profile/Settings;
+  |System|
+  :Store User Preferences;
+  :Update User Data;
+}
+
+partition "Group Management" {
+  |User|
+  :Create/Join Group;
+  |System|
+  :Register Group;
+  :Add User to Group;
+}
+
+partition "Assignment Creation" {
+  |User|
+  :Navigate to Create Assignment;
+  :Select Target Group;
+  if (Use AI Assistant?) then (yes)
+    :Enter Natural Language Description;
+    |AI Subsystem|
+    :Process Natural Language Input;
+    :Extract Assignment Structure;
+    :Generate Tasks Automatically;
+    :Assign Members Based on Expertise;
+    :Set Intelligent Deadlines;
+    :Prioritize Tasks;
+    |User|
+    :Review AI Suggestions;
+    :Modify if Needed;
+  else (no)
+    :Manually Create Assignment;
+    :Manually Add Tasks;
+    :Manually Assign Members;
+    :Manually Set Dates;
+  endif
+  :Save Assignment;
+  |System|
+  :Store Assignment Data;
+  :Send Notifications;
+}
+
+partition "Task Management" {
+  |User|
+  :View Assigned Tasks;
+  while (Tasks Remaining?) is (yes)
+    :Select Task;
+    :Update Task Status;
+    :Add Comments/Attachments;
+    |System|
+    :Update Task Data;
+    :Notify Relevant Users;
+  endwhile (no)
+}
+
+partition "Communication System" {
+  |User|
+  :Open Chat Interface;
+  split
+    :Send Direct Message;
+    |System|
+    :Route to Private Channel;
+    :Deliver to Recipient;
+  split again
+    |User|
+    :Send Group Message;
+    |System|
+    :Broadcast to Group Channel;
+    :Deliver to All Members;
+  end split
+  |User|
+  :View Notifications;
+  :Respond to Messages;
+}
+
+partition "Assignment Monitoring" {
+  |User|
+  if (Is Admin/Group Leader?) then (yes)
+    :View Group Progress;
+    :Monitor Task Completion;
+    :Generate Reports;
+  endif
+  :View Personal Progress;
+}
+
+partition "Non-Functional Features" {
+  |System|
+  split
+    :Real-time Updates;
+    :WebSocket Connection;
+    :Presence Channel Subscription;
+  split again
+    :Data Persistence;
+    :Database Operations;
+    :Caching;
+  split again
+    :Error Logging;
+    :System Monitoring;
+    :Performance Tracking;
+  split again
+    :Security Enforcement;
+    :Authorization Checks;
+    :Data Validation;
+  end split
+}
+
+|User|
+:Log Out;
+|System|
+:End User Session;
+:Clean Up Resources;
+stop
+
+legend
+|= Actor |= Description |
+| User | Regular System User |
+| System | Backend Services |
+| AI Subsystem | AI Processing Components |
+endlegend
+
+@enduml 

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Collection;
+
 class Assignment extends GroupAssignment
 {
     // This class extends GroupAssignment for backwards compatibility
@@ -9,7 +11,10 @@ class Assignment extends GroupAssignment
     // Map groups relation using group
     public function groups()
     {
-        return $this->group() ? collect([$this->group]) : collect([]);
+        if ($this->group) {
+            return Group::where('id', $this->group_id)->get();
+        }
+        return Collection::make([]);
     }
     
     // Map start_date to created_at for compatibility

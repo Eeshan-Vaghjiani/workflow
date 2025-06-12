@@ -28,6 +28,7 @@ class GroupTask extends Model
         'effort_hours',
         'importance',
         'priority',
+        'progress',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class GroupTask extends Model
         'effort_hours' => 'float',
         'importance' => 'integer',
         'priority' => 'string',
+        'progress' => 'integer',
     ];
 
     protected $with = ['assigned_user', 'creator'];
@@ -45,8 +47,11 @@ class GroupTask extends Model
         'priority' => 'medium',
         'effort_hours' => 1,
         'importance' => 1,
-        'order_index' => 0
+        'order_index' => 0,
+        'progress' => 0
     ];
+
+    protected $appends = ['progress'];
 
     public function assignment(): BelongsTo
     {

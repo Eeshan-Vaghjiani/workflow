@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
-import { AlertCircle, Check, CheckCheck } from "lucide-react"
+import { AlertCircle, CheckCheck } from "lucide-react"
 
 interface ChatMessageProps {
     message: {
@@ -71,4 +71,4 @@ export function ChatMessage({ message, isCurrentUser, isSequential = false }: Ch
             </div>
         </div>
     )
-} 
+}

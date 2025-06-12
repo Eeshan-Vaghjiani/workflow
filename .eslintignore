@@ -1,0 +1,8 @@
+# Ignore ziggy.js as it's auto-generated
+resources/js/ziggy.js
+
+# Ignore node_modules
+node_modules/
+
+# Ignore build files
+public/build/

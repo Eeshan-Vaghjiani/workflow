@@ -120,7 +120,7 @@ window.Pusher = Pusher;
 
 // Log that we're initializing Echo
 console.log('Initializing Echo with:', {
-    key: import.meta.env.VITE_PUSHER_APP_KEY || 'your_pusher_app_key',
+    key: import.meta.env.VITE_PUSHER_APP_KEY ? 'Present' : 'Missing',
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
     csrfToken: token ? 'Present' : 'Missing'
 });
@@ -131,7 +131,7 @@ try {
 
     window.Echo = new Echo({
         broadcaster: 'pusher',
-        key: import.meta.env.VITE_PUSHER_APP_KEY || 'your_pusher_app_key',
+        key: import.meta.env.VITE_PUSHER_APP_KEY || '',
         cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
         forceTLS: true,
         // Enable WebSockets and disable stats to improve reliability

@@ -78,7 +78,7 @@ This application supports AI-powered task creation using OpenRouter API with the
 OPENROUTER_API_KEY=your_api_key_here
 ```
 
-**Important:** Make sure to use the environment variable name `OPENROUTER_API_KEY` and not paste the actual key as the variable name.
+**Important:** Never commit your actual API key to the repository.
 
 ## Usage
 

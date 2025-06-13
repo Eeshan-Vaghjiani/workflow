@@ -3,9 +3,9 @@
 return [
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Default Broadcaster
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | This option controls the default broadcaster that will be used by the
     | framework when an event needs to be broadcast. You may set this to
@@ -18,9 +18,9 @@ return [
     'default' => env('BROADCAST_DRIVER', 'pusher'),
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Broadcast Connections
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | Here you may define all of the broadcast connections that will be used
     | to broadcast events to other systems or over websockets. Samples of
@@ -32,9 +32,9 @@ return [
 
         'pusher' => [
             'driver' => 'pusher',
-            'key' => env('PUSHER_APP_KEY'),
-            'secret' => env('PUSHER_APP_SECRET'),
-            'app_id' => env('PUSHER_APP_ID'),
+            'key' => env('PUSHER_APP_KEY', '17b1123fdac52c500a2b'),
+            'secret' => env('PUSHER_APP_SECRET', '17713c73fb1fa9bc0213'),
+            'app_id' => env('PUSHER_APP_ID', '1964096'),
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER', 'mt1'),
                 'host' => env('PUSHER_HOST') ?: 'api-'.env('PUSHER_APP_CLUSTER', 'mt1').'.pusher.com',
@@ -63,4 +63,4 @@ return [
 
     ],
 
-];
+]; 

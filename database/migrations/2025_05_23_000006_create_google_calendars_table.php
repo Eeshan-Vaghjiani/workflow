@@ -57,7 +57,7 @@ return new class extends Migration
                 }
 
                 // Make sure user_id has a unique constraint
-                if (!Schema::hasTable('your_generic_secretique')) {
+                if (!Schema::hasTable('google_calendars_user_unique')) {
                     try {
                         $table->unique('user_id');
                     } catch (\Exception $e) {

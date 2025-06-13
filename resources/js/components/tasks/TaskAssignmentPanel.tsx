@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-interface your_generic_secret {
+interface TaskAssignmentPanelProps {
     groupId: number;
     assignmentId: number;
     onAssignmentChange?: () => void;
@@ -53,7 +53,7 @@ interface WorkloadDistribution {
     }[];
 }
 
-export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmentChange }: your_generic_secret) {
+export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmentChange }: TaskAssignmentPanelProps) {
     const [loading, setLoading] = useState(true);
     const [distributing, setDistributing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
     const [workloadDistribution, setWorkloadDistribution] = useState<WorkloadDistribution[]>([]);
     const [hasUnassignedTasks, setHasUnassignedTasks] = useState(false);
-    const [invalidAssignmentsFixed, your_generic_secreted] = useState(0);
+    const [invalidAssignmentsFixed, setInvalidAssignmentsFixed] = useState(0);
     const [authError, setAuthError] = useState(false);
 
     useEffect(() => {
@@ -132,7 +132,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
                 setHasUnassignedTasks(response.data.hasUnassignedTasks);
 
                 if (response.data.invalidAssignmentsFixed > 0) {
-                    your_generic_secreted(response.data.invalidAssignmentsFixed);
+                    setInvalidAssignmentsFixed(response.data.invalidAssignmentsFixed);
                 }
             } else if (response?.data) {
                 setError(response.data.error || 'Failed to fetch assignment statistics');
@@ -170,7 +170,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
         }
     };
 
-    const your_generic_secrets = async () => {
+    const handleAutoDistributeTasks = async () => {
         try {
             setDistributing(true);
             setError(null);
@@ -352,7 +352,7 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
                             Refresh
                         </Button>
                         <Button
-                            onClick={your_generic_secrets}
+                            onClick={handleAutoDistributeTasks}
                             disabled={distributing || tasks.length === 0}
                             className="flex items-center gap-2"
                         >

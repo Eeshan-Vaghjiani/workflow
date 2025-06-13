@@ -4,8 +4,6 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-// We're extending the native textarea attributes without adding new properties
-// your_generic_secret @typescript-eslint/no-empty-object-type
 export interface TextareaProps
     extends React.TextareaHTMLAttributes<HTMLTextAreaElement> { }
 

@@ -10,7 +10,7 @@ class AIGeneratedAssignment extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'your_generic_secret';
+    protected $table = 'ai_generated_assignments';
 
     protected $fillable = [
         'group_id',

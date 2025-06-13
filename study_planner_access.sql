@@ -42,13 +42,13 @@ CREATE TABLE study_group_user
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secretroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
+    CONSTRAINT FK_StudyGroupUser_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
     CONSTRAINT FK_StudyGroupUser_Users FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT UQ_StudyGroupUser UNIQUE (group_id, user_id)
 );
 
 /* Study Group Join Requests Table */
-CREATE TABLE your_generic_secrets
+CREATE TABLE study_group_join_requests
 (
     id COUNTER PRIMARY KEY,
     group_id LONG NOT NULL,
@@ -57,9 +57,9 @@ CREATE TABLE your_generic_secrets
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secrets_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
-    CONSTRAINT your_generic_secrets_Users FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secrets UNIQUE (group_id, user_id)
+    CONSTRAINT FK_StudyGroupJoinRequests_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
+    CONSTRAINT FK_StudyGroupJoinRequests_Users FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT UQ_StudyGroupJoinRequests UNIQUE (group_id, user_id)
 );
 
 /* Direct Messages Table (Solo Chat) */
@@ -74,8 +74,8 @@ CREATE TABLE direct_messages
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secret FOREIGN KEY (sender_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secreter FOREIGN KEY (receiver_id) REFERENCES users(id)
+    CONSTRAINT FK_DirectMessages_Sender FOREIGN KEY (sender_id) REFERENCES users(id),
+    CONSTRAINT FK_DirectMessages_Receiver FOREIGN KEY (receiver_id) REFERENCES users(id)
 );
 
 /* Study Group Messages Table (Group Chat) */
@@ -90,8 +90,8 @@ CREATE TABLE study_group_messages
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secretudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
-    CONSTRAINT your_generic_secreters FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT FK_StudyGroupMessages_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
+    CONSTRAINT FK_StudyGroupMessages_Users FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 /* Notifications Table */
@@ -122,7 +122,7 @@ CREATE TABLE google_calendars
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secret FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT FK_GoogleCalendars_Users FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 /* Study Sessions Table */
@@ -161,7 +161,7 @@ CREATE TABLE study_tasks
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
     CONSTRAINT FK_StudyTasks_Users FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secretons FOREIGN KEY (session_id) REFERENCES study_sessions(id)
+    CONSTRAINT FK_StudyTasks_StudySessions FOREIGN KEY (session_id) REFERENCES study_sessions(id)
 );
 
 /* Study Group Tasks Table */
@@ -180,8 +180,8 @@ CREATE TABLE study_group_tasks
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secretGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
-    CONSTRAINT your_generic_secret FOREIGN KEY (assigned_user_id) REFERENCES users(id)
+    CONSTRAINT FK_StudyGroupTasks_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id),
+    CONSTRAINT FK_StudyGroupTasks_Users FOREIGN KEY (assigned_user_id) REFERENCES users(id)
 );
 
 /* Study Group Assignments Table */
@@ -199,7 +199,7 @@ CREATE TABLE study_group_assignments
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secret_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id)
+    CONSTRAINT FK_StudyGroupAssignments_StudyGroups FOREIGN KEY (group_id) REFERENCES study_groups(id)
 );
 
 /* Task Attachments Table */
@@ -214,11 +214,11 @@ CREATE TABLE task_attachments
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secretGroupTasks FOREIGN KEY (task_id) REFERENCES study_group_tasks(id)
+    CONSTRAINT FK_TaskAttachments_StudyGroupTasks FOREIGN KEY (task_id) REFERENCES study_group_tasks(id)
 );
 
 /* AI Generated Assignments Table */
-CREATE TABLE your_generic_secret
+CREATE TABLE ai_generated_assignments
 (
     id COUNTER PRIMARY KEY,
     user_id LONG NOT NULL,
@@ -228,7 +228,7 @@ CREATE TABLE your_generic_secret
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secrets_Users FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT FK_AIGeneratedAssignments_Users FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 /* Pomodoro Settings Table */
@@ -239,7 +239,7 @@ CREATE TABLE pomodoro_settings
     work_duration_minutes LONG NOT NULL DEFAULT 25,
     short_break_minutes LONG NOT NULL DEFAULT 5,
     long_break_minutes LONG NOT NULL DEFAULT 15,
-    your_generic_secreteak LONG NOT NULL DEFAULT 4,
+    intervals_before_long_break LONG NOT NULL DEFAULT 4,
     auto_start_breaks YESNO DEFAULT No,
     auto_start_pomodoros YESNO DEFAULT No,
     sound_enabled YESNO DEFAULT Yes,
@@ -248,7 +248,7 @@ CREATE TABLE pomodoro_settings
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secrets FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT FK_PomodoroSettings_Users FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 /* Pomodoro Sessions Table */
@@ -267,9 +267,9 @@ CREATE TABLE pomodoro_sessions
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secrets FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secretyTasks FOREIGN KEY (study_task_id) REFERENCES study_tasks(id),
-    CONSTRAINT your_generic_secretySessions FOREIGN KEY (study_session_id) REFERENCES study_sessions(id)
+    CONSTRAINT FK_PomodoroSessions_Users FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT FK_PomodoroSessions_StudyTasks FOREIGN KEY (study_task_id) REFERENCES study_tasks(id),
+    CONSTRAINT FK_PomodoroSessions_StudySessions FOREIGN KEY (study_session_id) REFERENCES study_sessions(id)
 );
 
 /* Subscription Plans Table */
@@ -300,8 +300,8 @@ CREATE TABLE user_subscriptions
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secretrs FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secretscriptionPlans FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plans(id)
+    CONSTRAINT FK_UserSubscriptions_Users FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT FK_UserSubscriptions_SubscriptionPlans FOREIGN KEY (subscription_plan_id) REFERENCES subscription_plans(id)
 );
 
 /* M-Pesa Transactions Table */
@@ -322,7 +322,7 @@ CREATE TABLE mpesa_transactions
     first_name TEXT(50) NULL,
     middle_name TEXT(50) NULL,
     last_name TEXT(50) NULL,
-    your_generic_secretance TEXT(50) NULL,
+    organization_account_balance TEXT(50) NULL,
     third_party_trans_id TEXT(50) NULL,
     result_code TEXT(10) NULL,
     result_desc MEMO NULL,
@@ -331,8 +331,8 @@ CREATE TABLE mpesa_transactions
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secretrs FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secretrSubscriptions FOREIGN KEY (subscription_id) REFERENCES user_subscriptions(id)
+    CONSTRAINT FK_MpesaTransactions_Users FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT FK_MpesaTransactions_UserSubscriptions FOREIGN KEY (subscription_id) REFERENCES user_subscriptions(id)
 );
 
 /* AI Features Table */
@@ -363,7 +363,7 @@ CREATE TABLE user_ai_feature_usage
     updated_at DATETIME NULL,
     is_deleted YESNO DEFAULT No,
     deleted_at DATETIME NULL,
-    CONSTRAINT your_generic_secreters FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT your_generic_secretFeatures FOREIGN KEY (ai_feature_id) REFERENCES ai_features(id),
-    CONSTRAINT your_generic_secreterSubscriptions FOREIGN KEY (subscription_id) REFERENCES user_subscriptions(id)
+    CONSTRAINT FK_UserAIFeatureUsage_Users FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT FK_UserAIFeatureUsage_AIFeatures FOREIGN KEY (ai_feature_id) REFERENCES ai_features(id),
+    CONSTRAINT FK_UserAIFeatureUsage_UserSubscriptions FOREIGN KEY (subscription_id) REFERENCES user_subscriptions(id)
 );

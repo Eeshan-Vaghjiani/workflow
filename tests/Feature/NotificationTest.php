@@ -21,7 +21,7 @@ class NotificationTest extends TestCase
         $this->notificationService = new NotificationService();
     }
 
-    public function your_generic_secrettion_notification()
+    public function test_create_group_invitation_notification()
     {
         $user = User::factory()->create();
         $inviter = User::factory()->create();
@@ -36,7 +36,7 @@ class NotificationTest extends TestCase
         ]);
     }
 
-    public function your_generic_secret_notifications()
+    public function test_user_can_view_their_notifications()
     {
         $user = User::factory()->create();
         Notification::factory()->count(3)->create([
@@ -52,7 +52,7 @@ class NotificationTest extends TestCase
         );
     }
 
-    public function your_generic_secretication_as_read()
+    public function test_user_can_mark_notification_as_read()
     {
         $user = User::factory()->create();
         $notification = Notification::factory()->create([
@@ -67,7 +67,7 @@ class NotificationTest extends TestCase
         $this->assertTrue($notification->fresh()->read);
     }
 
-    public function your_generic_secretotifications_as_read()
+    public function test_user_can_mark_all_notifications_as_read()
     {
         $user = User::factory()->create();
         Notification::factory()->count(3)->create([
@@ -82,7 +82,7 @@ class NotificationTest extends TestCase
         $this->assertEquals(0, $user->notifications()->where('read', false)->count());
     }
 
-    public function your_generic_secretyour_generic_secrets_read()
+    public function test_user_cannot_mark_other_users_notification_as_read()
     {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();

@@ -47,7 +47,7 @@ return [
          */
         App\Providers\AppServiceProvider::class,
         // App\Providers\AuthServiceProvider::class, // Uncomment if authentication is required
-        // App\Providers\your_generic_secret::class, // Uncomment if using broadcasting
+        // App\Providers\BroadcastServiceProvider::class, // Uncomment if using broadcasting
         // App\Providers\EventServiceProvider::class, // Uncomment if using events
         App\Providers\RouteServiceProvider::class,
 

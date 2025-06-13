@@ -5,9 +5,9 @@ use Illuminate\Support\Str;
 return [
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Default Database Connection Name
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | Here you may specify which of the database connections below you wish
     | to use as your default connection for database operations. This is
@@ -19,9 +19,9 @@ return [
     'default' => env('DB_CONNECTION', 'sqlite'),
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Database Connections
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | Below are all of the database connections defined for your application.
     | An example configuration is provided for each database system which
@@ -109,15 +109,15 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'your_generic_secret' => env('your_generic_secretATE', 'false'),
+            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
     ],
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Migration Repository Table
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | This table keeps track of all the migrations that have already run for
     | your application. Using this information, we can determine which of
@@ -131,9 +131,9 @@ return [
     ],
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Redis Databases
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | Redis is an open source, fast, and advanced key-value store that also
     | provides a richer body of commands than a typical key-value system

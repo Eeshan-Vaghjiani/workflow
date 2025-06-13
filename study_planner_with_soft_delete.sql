@@ -42,7 +42,7 @@ CREATE TABLE study_group_user
     UNIQUE (group_id, user_id)
 );
 
-CREATE TABLE your_generic_secrets
+CREATE TABLE study_group_join_requests
 (
     id SERIAL PRIMARY KEY,
     group_id INTEGER NOT NULL,
@@ -202,7 +202,7 @@ CREATE TABLE task_attachments
     FOREIGN KEY (task_id) REFERENCES study_group_tasks(id)
 );
 
-CREATE TABLE your_generic_secret
+CREATE TABLE ai_generated_assignments
 (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
@@ -222,7 +222,7 @@ CREATE TABLE pomodoro_settings
     work_duration_minutes INTEGER NOT NULL DEFAULT 25,
     short_break_minutes INTEGER NOT NULL DEFAULT 5,
     long_break_minutes INTEGER NOT NULL DEFAULT 15,
-    your_generic_secreteak INTEGER NOT NULL DEFAULT 4,
+    intervals_before_long_break INTEGER NOT NULL DEFAULT 4,
     auto_start_breaks BOOLEAN DEFAULT FALSE,
     auto_start_pomodoros BOOLEAN DEFAULT FALSE,
     sound_enabled BOOLEAN DEFAULT TRUE,
@@ -301,7 +301,7 @@ CREATE TABLE mpesa_transactions
     first_name VARCHAR(50) NULL,
     middle_name VARCHAR(50) NULL,
     last_name VARCHAR(50) NULL,
-    your_generic_secretance VARCHAR(50) NULL,
+    organization_account_balance VARCHAR(50) NULL,
     third_party_trans_id VARCHAR(50) NULL,
     result_code VARCHAR(10) NULL,
     result_desc TEXT NULL,
@@ -345,24 +345,24 @@ CREATE TABLE user_ai_feature_usage
     FOREIGN KEY (subscription_id) REFERENCES user_subscriptions(id)
 );
 
-CREATE INDEX your_generic_secretid ON study_sessions(user_id);
-CREATE INDEX your_generic_secret_time ON study_sessions(start_time);
+CREATE INDEX idx_study_sessions_user_id ON study_sessions(user_id);
+CREATE INDEX idx_study_sessions_start_time ON study_sessions(start_time);
 CREATE INDEX idx_study_tasks_user_id ON study_tasks(user_id);
-CREATE INDEX your_generic_secretid ON study_tasks(session_id);
-CREATE INDEX your_generic_secret ON study_tasks(due_date);
-CREATE INDEX your_generic_secreter_id ON pomodoro_sessions(user_id);
-CREATE INDEX your_generic_secretudy_task_id ON pomodoro_sessions(study_task_id);
-CREATE INDEX your_generic_secretudy_session_id ON pomodoro_sessions(study_session_id);
-CREATE INDEX your_generic_secretser_id ON mpesa_transactions(user_id);
-CREATE INDEX your_generic_secretser_id ON user_subscriptions(user_id);
-CREATE INDEX your_generic_secrete_user_id ON user_ai_feature_usage(user_id);
-CREATE INDEX your_generic_secreter_receiver ON direct_messages(sender_id, receiver_id);
-CREATE INDEX your_generic_secretiver_sender ON direct_messages(receiver_id, sender_id);
-CREATE INDEX your_generic_secret_group_id ON study_group_messages(group_id);
-CREATE INDEX your_generic_secretd_read ON notifications(user_id, is_read);
-CREATE INDEX your_generic_secretd_type ON notifications(user_id, type);
-CREATE INDEX your_generic_secretoup_id ON study_group_tasks(group_id);
-CREATE INDEX your_generic_secretsigned_user_id ON study_group_tasks(assigned_user_id);
-CREATE INDEX your_generic_secretnts_group_id ON study_group_assignments(group_id);
-CREATE INDEX your_generic_secretup_id ON study_group_user(group_id);
-CREATE INDEX your_generic_secretr_id ON study_group_user(user_id);
+CREATE INDEX idx_study_tasks_session_id ON study_tasks(session_id);
+CREATE INDEX idx_study_tasks_due_date ON study_tasks(due_date);
+CREATE INDEX idx_pomodoro_sessions_user_id ON pomodoro_sessions(user_id);
+CREATE INDEX idx_pomodoro_sessions_study_task_id ON pomodoro_sessions(study_task_id);
+CREATE INDEX idx_pomodoro_sessions_study_session_id ON pomodoro_sessions(study_session_id);
+CREATE INDEX idx_mpesa_transactions_user_id ON mpesa_transactions(user_id);
+CREATE INDEX idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX idx_user_ai_feature_usage_user_id ON user_ai_feature_usage(user_id);
+CREATE INDEX idx_direct_messages_sender_receiver ON direct_messages(sender_id, receiver_id);
+CREATE INDEX idx_direct_messages_receiver_sender ON direct_messages(receiver_id, sender_id);
+CREATE INDEX idx_study_group_messages_group_id ON study_group_messages(group_id);
+CREATE INDEX idx_notifications_user_id_read ON notifications(user_id, is_read);
+CREATE INDEX idx_notifications_user_id_type ON notifications(user_id, type);
+CREATE INDEX idx_study_group_tasks_group_id ON study_group_tasks(group_id);
+CREATE INDEX idx_study_group_tasks_assigned_user_id ON study_group_tasks(assigned_user_id);
+CREATE INDEX idx_study_group_assignments_group_id ON study_group_assignments(group_id);
+CREATE INDEX idx_study_group_user_group_id ON study_group_user(group_id);
+CREATE INDEX idx_study_group_user_user_id ON study_group_user(user_id);

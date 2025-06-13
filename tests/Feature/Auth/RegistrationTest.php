@@ -9,14 +9,14 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secret_can_be_rendered()
+    public function test_registration_screen_can_be_rendered()
     {
         $response = $this->get('/register');
 
         $response->assertStatus(200);
     }
 
-    public function your_generic_secretter()
+    public function test_new_users_can_register()
     {
         $response = $this->post('/register', [
             'name' => 'Test User',

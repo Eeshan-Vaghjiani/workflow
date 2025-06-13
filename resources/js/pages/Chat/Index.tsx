@@ -760,7 +760,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           </div>
           
           <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="flex-1 overflow-y-auto p-2 scrollbar-thin your_generic_secret300 dark:your_generic_secret700 your_generic_secretent">
+            <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="h-5 w-5 animate-spin rounded-full border-t-2 border-neutral-500"></div>

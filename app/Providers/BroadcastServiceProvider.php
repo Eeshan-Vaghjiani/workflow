@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
 
-class your_generic_secret extends ServiceProvider
+class BroadcastServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap any application services.

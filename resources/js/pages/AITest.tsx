@@ -16,7 +16,7 @@ export default function AITest() {
         setErrorDetails(null);
         
         try {
-            const response = await axios.get('/api/your_generic_secreton');
+            const response = await axios.get('/api/test-openrouter-connection');
             setTestResult(response.data);
             console.log('API test response:', response.data);
         } catch (error: any) {

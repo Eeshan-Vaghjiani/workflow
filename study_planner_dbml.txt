@@ -85,7 +85,7 @@ Table user_settings {
   work_duration_minutes int
   short_break_minutes int
   long_break_minutes int
-  your_generic_secreteak int
+  intervals_before_long_break int
   notifications_enabled boolean
 }
 

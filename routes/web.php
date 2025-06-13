@@ -3,7 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
-use App\Http\Controllers\your_generic_secretr;
+use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\GroupChatController;
 use App\Http\Controllers\DirectMessageController;
@@ -18,9 +18,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
 /*
-|your_generic_secretyour_generic_secretyour_generic_secret--
+|--------------------------------------------------------------------------
 | Web Routes
-|your_generic_secretyour_generic_secretyour_generic_secret--
+|--------------------------------------------------------------------------
 |
 | Here is where you can register web routes for your application. These
 | routes are loaded by the RouteServiceProvider and all of them will
@@ -64,7 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Dynamic assignments redirect - uses first group the user is a member of
-    Route::get('/assignments', [your_generic_secretr::class, 'index'])->name('assignments');
+    Route::get('/assignments', [GroupAssignmentController::class, 'index'])->name('assignments');
     Route::get('/tasks', [DashboardController::class, 'tasks'])->name('group-tasks.index');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
@@ -91,13 +91,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/groups/{group}/search-users', [GroupMemberController::class, 'searchUsers'])->name('groups.members.search');
 
     // Group Assignments
-    Route::get('/groups/{group}/assignments', [your_generic_secretr::class, 'index'])->name('group-assignments.index');
-    Route::get('/groups/{group}/assignments/create', [your_generic_secretr::class, 'create'])->name('group-assignments.create');
-    Route::post('/groups/{group}/assignments', [your_generic_secretr::class, 'store'])->name('group-assignments.store');
-    Route::get('/groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'show'])->name('group-assignments.show');
-    Route::get('/groups/{group}/assignments/{assignment}/edit', [your_generic_secretr::class, 'edit'])->name('group-assignments.edit');
-    Route::put('/groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'update'])->name('group-assignments.update');
-    Route::delete('/groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'destroy'])->name('group-assignments.destroy');
+    Route::get('/groups/{group}/assignments', [GroupAssignmentController::class, 'index'])->name('group-assignments.index');
+    Route::get('/groups/{group}/assignments/create', [GroupAssignmentController::class, 'create'])->name('group-assignments.create');
+    Route::post('/groups/{group}/assignments', [GroupAssignmentController::class, 'store'])->name('group-assignments.store');
+    Route::get('/groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'show'])->name('group-assignments.show');
+    Route::get('/groups/{group}/assignments/{assignment}/edit', [GroupAssignmentController::class, 'edit'])->name('group-assignments.edit');
+    Route::put('/groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'update'])->name('group-assignments.update');
+    Route::delete('/groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'destroy'])->name('group-assignments.destroy');
 
     // AI Task Assignment
     Route::get('/groups/{group}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'index'])->name('ai-tasks.index');
@@ -609,7 +609,7 @@ Route::get('/debug/broadcasting-auth', function() {
     ]);
 });
 
-Route::get('/groups/{group}/assignments/{assignment}/task-assignments', [App\Http\Controllers\your_generic_secret::class, 'show'])
+Route::get('/groups/{group}/assignments/{assignment}/task-assignments', [App\Http\Controllers\TaskAssignmentController::class, 'show'])
     ->name('task-assignments.show');
 
 Route::get('group-tasks/{task}/edit', [App\Http\Controllers\GroupTaskController::class, 'edit'])
@@ -647,7 +647,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/groups/{groupId}/assignments/{assignmentId}/get-stats', function ($groupId, $assignmentId) {
         try {
             // Get the controller instance
-            $controller = app()->make(App\Http\Controllers\API\your_generic_secret::class);
+            $controller = app()->make(App\Http\Controllers\API\TaskAssignmentController::class);
 
             // Call the controller method directly
             return $controller->getAssignmentStats(request(), $groupId, $assignmentId);
@@ -689,7 +689,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
     })->name('task-assignments.get-stats');
 
-    Route::post('/groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks'])
+    Route::post('/groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\TaskAssignmentController::class, 'autoDistributeTasks'])
         ->name('task-assignments.distribute');
 });
 

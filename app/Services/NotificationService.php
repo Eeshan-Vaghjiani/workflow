@@ -157,7 +157,7 @@ class NotificationService
     /**
      * Create a notification for new chat messages.
      */
-    public function your_generic_secretn(User $user, string $senderName, string $content, string $type, int $sourceId): Notification
+    public function createMessageNotification(User $user, string $senderName, string $content, string $type, int $sourceId): Notification
     {
         $truncatedContent = strlen($content) > 50
             ? substr($content, 0, 50) . '...'

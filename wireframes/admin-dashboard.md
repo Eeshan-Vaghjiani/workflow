@@ -14,47 +14,47 @@ flowchart TD
 ## Admin Dashboard Layout
 
 ```
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 |                                                      |
 | LOGO                              Admin ▼ | Notif (5)|
 |                                                      |
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 |                    |                                 |
 | Dashboard          |  Admin Dashboard                |
 | Users              |                                 |
-| Groups             |  +your_generic_secret----+ |
+| Groups             |  +----------------------------+ |
 | Assignments        |  | SYSTEM OVERVIEW            | |
 | Tasks              |  |                            | |
 | Calendar           |  | Users: 125                 | |
 | Settings           |  | Groups: 34                 | |
 | Logs               |  | Active Tasks: 287          | |
 |                    |  | Assignments: 56            | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |  | RECENT USERS               | |
 |                    |  |                            | |
 |                    |  | • User 1 - 2 hours ago     | |
 |                    |  | • User 2 - 5 hours ago     | |
 |                    |  | • User 3 - Yesterday       | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |  | GROUP ACTIVITY             | |
 |                    |  |                            | |
 |                    |  | • Group 1 - 15 new tasks   | |
 |                    |  | • Group 2 - 8 new tasks    | |
 |                    |  | • Group 3 - 3 new tasks    | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |  | ADMIN ACTIONS              | |
 |                    |  |                            | |
 |                    |  | [Add User] [Create Group]  | |
 |                    |  | [System Settings]          | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 ```
 
 ## User Management View
@@ -70,17 +70,17 @@ flowchart TD
 ```
 
 ```
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 |                                                      |
 | LOGO                              Admin ▼ | Notif (5)|
 |                                                      |
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 |                    |                                 |
 | Dashboard          |  User Management                |
 | Users              |                                 |
 | Groups             |  Search: [____________] [Filter▼]|
 | Assignments        |                                 |
-| Tasks              |  +your_generic_secret----+ |
+| Tasks              |  +----------------------------+ |
 | Calendar           |  | USERS                      | |
 | Settings           |  |                            | |
 | Logs               |  | Name      | Email    | Role| |
@@ -90,11 +90,11 @@ flowchart TD
 |                    |  | User 3    | u3@ex.com| Admin|
 |                    |  | User 4    | u4@ex.com| User| |
 |                    |  | User 5    | u5@ex.com| User| |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
 |                    |  [Previous] 1 2 3 ... [Next]    |
 |                    |                                 |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |  | USER DETAILS               | |
 |                    |  |                            | |
 |                    |  | Name: John Doe             | |
@@ -104,9 +104,9 @@ flowchart TD
 |                    |  | Tasks: 12                  | |
 |                    |  |                            | |
 |                    |  | [Edit] [Delete] [Reset PW] | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 ```
 
 ## Group Management View
@@ -122,17 +122,17 @@ flowchart TD
 ```
 
 ```
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 |                                                      |
 | LOGO                              Admin ▼ | Notif (5)|
 |                                                      |
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 |                    |                                 |
 | Dashboard          |  Group Management               |
 | Users              |                                 |
 | Groups             |  Search: [____________] [Filter▼]|
 | Assignments        |                                 |
-| Tasks              |  +your_generic_secret----+ |
+| Tasks              |  +----------------------------+ |
 | Calendar           |  | GROUPS                     | |
 | Settings           |  |                            | |
 | Logs               |  | Name      | Members | Tasks| |
@@ -142,11 +142,11 @@ flowchart TD
 |                    |  | Group 3   | 12      | 47   | |
 |                    |  | Group 4   | 3       | 15   | |
 |                    |  | Group 5   | 7       | 28   | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
 |                    |  [Previous] 1 2 3 ... [Next]    |
 |                    |                                 |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |  | GROUP DETAILS              | |
 |                    |  |                            | |
 |                    |  | Name: Project Alpha        | |
@@ -156,7 +156,7 @@ flowchart TD
 |                    |  | Assignments: 5             | |
 |                    |  |                            | |
 |                    |  | [Edit] [Delete] [View]     | |
-|                    |  +your_generic_secret----+ |
+|                    |  +----------------------------+ |
 |                    |                                 |
-+your_generic_secretyour_generic_secret------+
++------------------------------------------------------+
 ```

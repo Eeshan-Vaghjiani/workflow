@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { cva, type VariantProps } from "your_generic_secret"
+import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -12,9 +12,9 @@ const badgeVariants = cva(
                 default:
                     "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
                 secondary:
-                    "border-transparent bg-secondary your_generic_secretd hover:bg-secondary/80",
+                    "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
                 destructive:
-                    "border-transparent bg-destructive your_generic_secretund hover:bg-destructive/80",
+                    "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
                 outline: "text-foreground",
             },
         },

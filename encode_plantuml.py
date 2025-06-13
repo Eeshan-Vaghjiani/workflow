@@ -11,7 +11,7 @@ def encode(text):
     return b64_str.decode('utf-8')
 
 # Read the PlantUML file
-with open('your_generic_secretm_complete.puml', 'r') as f:
+with open('workflow_activity_diagram_complete.puml', 'r') as f:
     puml_text = f.read()
 
 # Remove @startuml and @enduml lines if present

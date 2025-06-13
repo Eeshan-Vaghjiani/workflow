@@ -21,13 +21,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 
 // Import ViewMode as a value
-import { ViewMode } from '@rsagiev/gantt-task-react-19';
-import type { Task } from '@rsagiev/gantt-task-react-19';
+import { ViewMode } from 'gantt-task-react';
+import type { Task } from 'gantt-task-react';
 
 // Lazy load the Gantt component and its styles
 const GanttComponent = lazy(() => Promise.all([
-    import('@rsagiev/gantt-task-react-19').then(module => ({ default: module.Gantt })),
-    import('@rsagiev/gantt-task-react-19/dist/index.css').then(() => ({}))
+    import('gantt-task-react').then(module => ({ default: module.Gantt })),
+    import('gantt-task-react/dist/index.css').then(() => ({}))
 ]).then(([moduleExport]) => moduleExport));
 
 interface GanttTask {

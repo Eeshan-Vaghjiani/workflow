@@ -1,0 +1,76 @@
+@startuml Study Planner System - Use Case Diagram
+
+' Define actors
+actor "Student" as student
+actor "Group Owner" as owner
+actor "AI System" as ai
+actor "Payment System" as payment
+
+' Define boundary
+rectangle "Study Planner System" {
+  ' User Management
+  usecase "Register Account" as UC1
+  usecase "Login" as UC2
+  usecase "Update Profile" as UC3
+
+  ' Study Session Management
+  usecase "Create Study Session" as UC4
+  usecase "Track Study Time" as UC5
+  usecase "Use Pomodoro Timer" as UC6
+  usecase "Complete Study Session" as UC7
+
+  ' Task Management
+  usecase "Create Task" as UC8
+  usecase "Assign Task" as UC9
+  usecase "Update Task Status" as UC10
+
+  ' Group Management
+  usecase "Create Study Group" as UC11
+  usecase "Join Study Group" as UC12
+  usecase "Send Messages" as UC13
+  usecase "Create Group Task" as UC14
+  usecase "Manage Group Members" as UC15
+
+  ' AI Features
+  usecase "Generate Study Materials" as UC16
+  usecase "Get AI Recommendations" as UC17
+
+  ' Subscription
+  usecase "Subscribe to Premium" as UC18
+  usecase "Process Payment" as UC19
+}
+
+' Define relationships
+student --> UC1
+student --> UC2
+student --> UC3
+student --> UC4
+student --> UC5
+student --> UC6
+student --> UC7
+student --> UC8
+student --> UC10
+student --> UC12
+student --> UC13
+student --> UC16
+student --> UC17
+student --> UC18
+
+owner --> UC11
+owner --> UC14
+owner --> UC15
+owner --|> student
+
+ai --> UC16
+ai --> UC17
+
+payment --> UC19
+
+' Include relationships
+UC18 ..> UC19 : include
+
+' Extend relationships
+UC14 ..> UC9 : extend
+UC7 ..> UC10 : extend
+
+@enduml

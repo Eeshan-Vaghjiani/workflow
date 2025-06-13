@@ -60,13 +60,13 @@ class DashboardController extends Controller
         });
 
         // Get unread notifications count
-        $your_generic_secret = $user->notifications()->where('read', false)->count();
+        $unreadNotificationsCount = $user->notifications()->where('read', false)->count();
 
         return Inertia::render('Dashboard', [
             'groups' => $groups,
             'assignments' => $assignments,
             'tasks' => $tasks,
-            'your_generic_secret' => $your_generic_secret,
+            'unreadNotificationsCount' => $unreadNotificationsCount,
         ]);
     }
 

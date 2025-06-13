@@ -4,18 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class your_generic_secretroller extends Controller
+class AuthenticatedSessionController extends Controller
 {
     /**
      * Show the login page.
@@ -35,52 +32,72 @@ class your_generic_secretroller extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse|JsonResponse|Response
+    public function store(LoginRequest $request)
     {
         try {
+            // Log request headers for debugging
+            Log::debug('Login Request Headers', [
+                'headers' => $request->headers->all(),
+                'has_csrf' => $request->hasHeader('X-CSRF-TOKEN'),
+                'csrf_token' => $request->header('X-CSRF-TOKEN'),
+                'session_token' => session()->token(),
+                'matches' => $request->header('X-CSRF-TOKEN') === session()->token(),
+                'accepts_json' => $request->expectsJson()
+            ]);
+
             $request->authenticate();
             $request->session()->regenerate();
 
             // Check if this is the user's first login
-            if (Auth::check()) {
-                $userId = Auth::id();
-                $user = User::find($userId);
-
-                if ($user && !$user->last_login_at) {
-                    $user->last_login_at = now();
-                    $user->save();
-                }
-
-                // API requests should still get JSON responses
-                if ($request->is('api/*')) {
-                    return response()->json([
-                        'success' => true,
-                        'user' => $user,
-                        'csrf_token' => csrf_token(),
-                        'session_id' => session()->getId(),
-                        'message' => 'Successfully authenticated'
-                    ]);
-                }
+            $user = Auth::user();
+            if (!$user->last_login_at) {
+                $user->last_login_at = now();
+                $user->save();
             }
 
-            // For web requests, return a redirect response
-            return redirect()->intended(route('dashboard'));
-        } catch (ValidationException $e) {
-            // For API requests, return JSON error
-            if ($request->is('api/*')) {
+            // Return JSON response for API requests
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => true,
+                    'user' => $user,
+                    'csrf_token' => csrf_token(),
+                    'session_id' => session()->getId(),
+                    'message' => 'Successfully authenticated'
+                ]);
+            }
+
+            // Always redirect to dashboard after successful login
+            if ($request->header('X-Inertia')) {
+                return redirect()->route('dashboard');
+            }
+
+            return redirect()->route('dashboard');
+        } catch (\Exception $e) {
+            Log::error('Login Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Return JSON error for API requests
+            if ($request->expectsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'These credentials do not match our records.',
-                    'errors' => $e->errors(),
-                ], 422);
+                    'message' => 'The provided credentials do not match our records.',
+                    'error' => $e->getMessage()
+                ], 401);
             }
 
-            // For Inertia requests, return Inertia response with errors
-            return Inertia::render('auth/login', [
-                'errors' => $e->errors(),
-                'canResetPassword' => Route::has('password.request'),
-                'status' => $request->session()->get('status'),
-            ]);
+            if ($request->header('X-Inertia')) {
+                return Inertia::render('auth/login', [
+                    'errors' => [
+                        'email' => 'The provided credentials do not match our records.',
+                    ],
+                ]);
+            }
+
+            return redirect()->back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ])->withInput();
         }
     }
 

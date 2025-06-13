@@ -13,7 +13,7 @@ class GroupAssignmentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secretssignment()
+    public function test_leader_can_create_assignment()
     {
         $leader = User::factory()->create();
         $group = Group::factory()->create(['created_by' => $leader->id]);
@@ -34,7 +34,7 @@ class GroupAssignmentTest extends TestCase
         ]);
     }
 
-    public function your_generic_secretignment()
+    public function test_member_can_view_assignment()
     {
         $leader = User::factory()->create();
         $member = User::factory()->create();
@@ -56,7 +56,7 @@ class GroupAssignmentTest extends TestCase
         $response->assertSee($assignment->title);
     }
 
-    public function your_generic_secretask()
+    public function test_member_can_create_task()
     {
         $leader = User::factory()->create();
         $member = User::factory()->create();
@@ -88,7 +88,7 @@ class GroupAssignmentTest extends TestCase
         ]);
     }
 
-    public function your_generic_secretiew_assignment()
+    public function test_non_member_cannot_view_assignment()
     {
         $leader = User::factory()->create();
         $nonMember = User::factory()->create();

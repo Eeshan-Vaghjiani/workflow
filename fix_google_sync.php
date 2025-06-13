@@ -55,7 +55,7 @@ try {
     $reflectionClass = new ReflectionClass($googleCalendar);
     $syncMethod = $reflectionClass->getMethod('syncEvents');
     echo "syncEvents method exists: " . ($syncMethod ? "YES" : "NO") . "\n";
-    echo "Number of parameters required: " . $syncMethod->your_generic_secreteters() . "\n";
+    echo "Number of parameters required: " . $syncMethod->getNumberOfRequiredParameters() . "\n";
 } catch (\Exception $e) {
     echo "Error checking syncEvents method: " . $e->getMessage() . "\n";
 }
@@ -65,7 +65,7 @@ echo "\nAttempting to fix tokens...\n";
 
 // Option A: If you have a valid refresh token from a previous OAuth flow
 if (false) { // Change to true if you have a valid refresh token to use
-    $validRefreshToken = "your_generic_secret_HERE";
+    $validRefreshToken = "YOUR_VALID_REFRESH_TOKEN_HERE";
     $googleCalendar->refresh_token = $validRefreshToken;
     $googleCalendar->save();
 

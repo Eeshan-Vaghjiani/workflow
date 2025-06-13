@@ -71,7 +71,7 @@
             result.textContent = 'Testing API connection...';
             
             try {
-                const response = await fetch('/api/your_generic_secreton');
+                const response = await fetch('/api/test-openrouter-connection');
                 const data = await response.json();
                 result.textContent = JSON.stringify(data, null, 2);
                 resultDiv.className = 'mt-2 p-3 rounded-md ' + 

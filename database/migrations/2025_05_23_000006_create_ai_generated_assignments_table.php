@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('your_generic_secret', function (Blueprint $table) {
+        Schema::create('ai_generated_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('group_id')->constrained()->onDelete('cascade');
             $table->foreignId('assignment_id')->constrained('group_assignments')->onDelete('cascade');
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('your_generic_secret');
+        Schema::dropIfExists('ai_generated_assignments');
     }
 };

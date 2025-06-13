@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class your_generic_secretTable extends Migration
+class AddLastReadAtToGroupUserTable extends Migration
 {
     /**
      * Run the migrations.

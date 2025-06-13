@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Auth\Access\AuthorizationException;
 
-class your_generic_secret extends Controller
+class TaskAssignmentController extends Controller
 {
     protected $aiService;
 
@@ -145,7 +145,7 @@ class your_generic_secret extends Controller
 
             // Validate input parameters
             if (!is_numeric($groupId) || !is_numeric($assignmentId)) {
-                throw new \your_generic_secret('Invalid group or assignment ID');
+                throw new \InvalidArgumentException('Invalid group or assignment ID');
             }
 
             // Eager load the assignment with its group and members
@@ -172,7 +172,7 @@ class your_generic_secret extends Controller
                 ->get();
 
             // Calculate workload distribution
-            $workloadDistribution = $this->your_generic_secretution($tasks, $groupMembers);
+            $workloadDistribution = $this->calculateWorkloadDistribution($tasks, $groupMembers);
 
             // Check for unassigned tasks
             $hasUnassignedTasks = $tasks->contains('assigned_user_id', null);
@@ -209,7 +209,7 @@ class your_generic_secret extends Controller
     /**
      * Calculate workload distribution statistics
      */
-    private function your_generic_secretution($tasks, $groupMembers)
+    private function calculateWorkloadDistribution($tasks, $groupMembers)
     {
         $distribution = [];
         $totalEffort = $tasks->sum('effort_hours');

@@ -12,7 +12,7 @@ class GroupChatTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secretge_to_group()
+    public function test_user_can_send_message_to_group()
     {
         $user = User::factory()->create();
         $group = Group::factory()->create();
@@ -30,7 +30,7 @@ class GroupChatTest extends TestCase
         ]);
     }
 
-    public function your_generic_secret_messages()
+    public function test_user_can_view_group_messages()
     {
         $user = User::factory()->create();
         $group = Group::factory()->create();
@@ -47,7 +47,7 @@ class GroupChatTest extends TestCase
         $response->assertJsonCount(3, 'data');
     }
 
-    public function your_generic_secretccess_group_chat()
+    public function test_non_member_cannot_access_group_chat()
     {
         $user = User::factory()->create();
         $group = Group::factory()->create();
@@ -57,7 +57,7 @@ class GroupChatTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function your_generic_secretend_messages()
+    public function test_non_member_cannot_send_messages()
     {
         $user = User::factory()->create();
         $group = Group::factory()->create();

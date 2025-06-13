@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-class your_generic_secretationController extends Controller
+class EmailVerificationNotificationController extends Controller
 {
     /**
      * Send a new email verification notification.
@@ -17,7 +17,7 @@ class your_generic_secretationController extends Controller
             return redirect()->intended(route('dashboard', absolute: false));
         }
 
-        $request->user()->your_generic_secretification();
+        $request->user()->sendEmailVerificationNotification();
 
         return back()->with('status', 'verification-link-sent');
     }

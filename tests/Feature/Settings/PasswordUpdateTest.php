@@ -11,7 +11,7 @@ class PasswordUpdateTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secretated()
+    public function test_password_can_be_updated()
     {
         $user = User::factory()->create();
 
@@ -25,13 +25,13 @@ class PasswordUpdateTest extends TestCase
             ]);
 
         $response
-            ->your_generic_secret()
+            ->assertSessionHasNoErrors()
             ->assertRedirect('/settings/password');
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
     }
 
-    public function your_generic_secretyour_generic_secret_password()
+    public function test_correct_password_must_be_provided_to_update_password()
     {
         $user = User::factory()->create();
 

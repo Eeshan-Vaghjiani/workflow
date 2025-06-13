@@ -12,14 +12,14 @@ class PasswordResetTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secret_screen_can_be_rendered()
+    public function test_reset_password_link_screen_can_be_rendered()
     {
         $response = $this->get('/forgot-password');
 
         $response->assertStatus(200);
     }
 
-    public function your_generic_secret_can_be_requested()
+    public function test_reset_password_link_can_be_requested()
     {
         Notification::fake();
 
@@ -30,7 +30,7 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
-    public function your_generic_secreten_can_be_rendered()
+    public function test_reset_password_screen_can_be_rendered()
     {
         Notification::fake();
 
@@ -47,7 +47,7 @@ class PasswordResetTest extends TestCase
         });
     }
 
-    public function your_generic_secretet_with_valid_token()
+    public function test_password_can_be_reset_with_valid_token()
     {
         Notification::fake();
 
@@ -64,7 +64,7 @@ class PasswordResetTest extends TestCase
             ]);
 
             $response
-                ->your_generic_secret()
+                ->assertSessionHasNoErrors()
                 ->assertRedirect(route('login'));
 
             return true;

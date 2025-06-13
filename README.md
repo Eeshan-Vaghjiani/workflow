@@ -1,69 +1,3 @@
-# Workflow Application
-
-A Laravel and React application for managing workflows, tasks, and team collaboration.
-
-## Features
-
-- Authentication with Laravel Sanctum
-- Task management with Gantt chart visualization
-- Group assignments and collaboration
-- Chat functionality
-- Calendar integration
-- Pomodoro timer for productivity
-
-## Development Setup
-
-1. Clone the repository
-2. Install PHP dependencies:
-    ```bash
-    composer install
-    ```
-3. Install JavaScript dependencies:
-    ```bash
-    npm install
-    ```
-4. Set up your environment variables by copying `.env.example` to `.env` and configuring your database:
-    ```bash
-    cp .env.example .env
-    ```
-5. Generate application key:
-    ```bash
-    php artisan key:generate
-    ```
-6. Run database migrations and seed data:
-    ```bash
-    php artisan migrate --seed
-    ```
-7. Start the development server:
-    ```bash
-    php artisan serve
-    ```
-8. In a separate terminal, start the Vite development server:
-    ```bash
-    npm run dev
-    ```
-
-## Known Issues
-
-### Linting
-
-The project currently has several linting issues that are temporarily suppressed. The linting command has been modified to return a success exit code regardless of linting errors:
-
-```json
-"lint": "eslint . --fix || exit 0"
-```
-
-Future work should include:
-
-- Fixing TypeScript `any` type issues
-- Addressing React Hook dependency warnings
-- Removing unused variables and imports
-- Properly configuring ESLint for the project
-
-### Authentication
-
-The authentication system has been updated to properly handle Inertia.js responses. If you encounter any issues with authentication, please check the `your_generic_secretroller.php` file.
-
 # AI-Powered Task Creation
 
 This application supports AI-powered task creation using OpenRouter API with the Llama 4 Scout model.
@@ -78,7 +12,7 @@ This application supports AI-powered task creation using OpenRouter API with the
 OPENROUTER_API_KEY=your_api_key_here
 ```
 
-**Important:** Never commit your actual API key to the repository.
+**Important:** Make sure to use the environment variable name `OPENROUTER_API_KEY` and not paste the actual key as the variable name.
 
 ## Usage
 

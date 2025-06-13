@@ -3,9 +3,9 @@
 return [
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Third Party Services
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | This file is for storing the credentials for third party services such
     | as Mailgun, Postmark, AWS and more. This file provides the de facto
@@ -30,8 +30,8 @@ return [
 
     'slack' => [
         'notifications' => [
-            'bot_user_oauth_token' => env('your_generic_secretEN'),
-            'channel' => env('your_generic_secretHANNEL'),
+            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
 

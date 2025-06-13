@@ -3,9 +3,9 @@
 return [
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Server Side Rendering
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | These options configures if and how Inertia uses Server Side Rendering
     | to pre-render each initial request made to your application's pages
@@ -23,9 +23,9 @@ return [
     ],
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Testing
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | The values described here are used to locate Inertia components on the
     | filesystem. For instance, when using `assertInertia`, the assertion

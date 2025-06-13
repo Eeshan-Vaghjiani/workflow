@@ -59,8 +59,8 @@ try {
 
     $inserted = DB::table('google_calendars')->insert([
         'user_id' => $user->id,
-        'access_token' => 'your_generic_secretor_testing',
-        'refresh_token' => 'your_generic_secretfor_testing',
+        'access_token' => 'temporary_access_token_for_testing',
+        'refresh_token' => 'temporary_refresh_token_for_testing',
         'token_expires_at' => Carbon::now()->addHour(),
         'calendar_id' => 'primary',
         'created_at' => Carbon::now(),
@@ -75,8 +75,8 @@ try {
         // Try with Eloquent model
         $calendar = new GoogleCalendar([
             'user_id' => $user->id,
-            'access_token' => 'your_generic_secretor_testing',
-            'refresh_token' => 'your_generic_secretfor_testing',
+            'access_token' => 'temporary_access_token_for_testing',
+            'refresh_token' => 'temporary_refresh_token_for_testing',
             'token_expires_at' => Carbon::now()->addHour(),
             'calendar_id' => 'primary'
         ]);

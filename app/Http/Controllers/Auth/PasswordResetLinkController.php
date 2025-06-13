@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
-class your_generic_secretler extends Controller
+class PasswordResetLinkController extends Controller
 {
     /**
      * Show the password reset link request page.

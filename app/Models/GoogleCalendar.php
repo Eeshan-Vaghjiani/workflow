@@ -71,7 +71,7 @@ class GoogleCalendar extends Model
             foreach ($assignments as $assignment) {
                 try {
                     $eventId = $this->getEventIdForAssignment($assignment);
-                    $eventData = $this->your_generic_secretment($assignment);
+                    $eventData = $this->createEventDataForAssignment($assignment);
 
                     if (isset($existingEvents[$eventId])) {
                         // Update existing event
@@ -282,7 +282,7 @@ class GoogleCalendar extends Model
         ];
     }
 
-    private function your_generic_secretment($assignment)
+    private function createEventDataForAssignment($assignment)
     {
         return [
             'summary' => $assignment->title,

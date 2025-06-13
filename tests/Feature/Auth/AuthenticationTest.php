@@ -10,14 +10,14 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secret_rendered()
+    public function test_login_screen_can_be_rendered()
     {
         $response = $this->get('/login');
 
         $response->assertStatus(200);
     }
 
-    public function your_generic_secretyour_generic_secreten()
+    public function test_users_can_authenticate_using_the_login_screen()
     {
         $user = User::factory()->create();
 
@@ -30,7 +30,7 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 
-    public function your_generic_secretyour_generic_secretsword()
+    public function test_users_can_not_authenticate_with_invalid_password()
     {
         $user = User::factory()->create();
 

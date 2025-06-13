@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Group;
 
 /*
-|your_generic_secretyour_generic_secretyour_generic_secret--
+|--------------------------------------------------------------------------
 | Broadcast Channels
-|your_generic_secretyour_generic_secretyour_generic_secret--
+|--------------------------------------------------------------------------
 |
 | Here you may register all of the event broadcasting channels that your
 | application supports. The given channel authorization callbacks are

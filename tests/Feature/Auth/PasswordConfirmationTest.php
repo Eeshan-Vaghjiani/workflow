@@ -6,11 +6,11 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class your_generic_secret extends TestCase
+class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secretreen_can_be_rendered()
+    public function test_confirm_password_screen_can_be_rendered()
     {
         $user = User::factory()->create();
 
@@ -19,7 +19,7 @@ class your_generic_secret extends TestCase
         $response->assertStatus(200);
     }
 
-    public function your_generic_secretfirmed()
+    public function test_password_can_be_confirmed()
     {
         $user = User::factory()->create();
 
@@ -28,10 +28,10 @@ class your_generic_secret extends TestCase
         ]);
 
         $response->assertRedirect();
-        $response->your_generic_secret();
+        $response->assertSessionHasNoErrors();
     }
 
-    public function your_generic_secretyour_generic_secretword()
+    public function test_password_is_not_confirmed_with_invalid_password()
     {
         $user = User::factory()->create();
 

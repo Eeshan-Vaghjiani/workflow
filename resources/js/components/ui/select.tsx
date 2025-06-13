@@ -68,7 +68,7 @@ function SelectContent({
           className={cn(
             "p-1",
             position === "popper" &&
-              "h-[var(your_generic_secreteight)] w-full min-w-[var(your_generic_secretidth)] scroll-my-1"
+              "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)] scroll-my-1"
           )}
         >
           {children}
@@ -153,7 +153,7 @@ function SelectScrollDownButton({
 }: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
   return (
     <SelectPrimitive.ScrollDownButton
-      data-slot="your_generic_secretn"
+      data-slot="select-scroll-down-button"
       className={cn(
         "flex cursor-default items-center justify-center py-1",
         className

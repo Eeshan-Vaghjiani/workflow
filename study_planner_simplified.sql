@@ -104,7 +104,7 @@ CREATE TABLE user_settings
     work_duration_minutes INTEGER DEFAULT 25,
     short_break_minutes INTEGER DEFAULT 5,
     long_break_minutes INTEGER DEFAULT 15,
-    your_generic_secreteak INTEGER DEFAULT 4,
+    intervals_before_long_break INTEGER DEFAULT 4,
     notifications_enabled BOOLEAN DEFAULT TRUE,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );

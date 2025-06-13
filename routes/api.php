@@ -9,7 +9,7 @@ use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\API\TaskController;
 use App\Http\Controllers\API\GroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
-use App\Http\Controllers\API\DirectMessageController;
+use App\Http\Controllers\DirectMessageController;
 use App\Http\Controllers\API\AITaskController;
 use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
 use App\Http\Controllers\API\ChatController;
@@ -152,11 +152,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{group}/typing', [GroupChatController::class, 'typing']);
 
     // Direct Messages
-    Route::get('direct-messages', [DirectMessageController::class, 'index']);
-    Route::get('direct-messages/{user}', [DirectMessageController::class, 'messages']);
-    Route::post('direct-messages/{user}', [DirectMessageController::class, 'store']);
-    Route::post('direct-messages/{user}/read', [DirectMessageController::class, 'markAsRead']);
-    Route::post('direct-messages/{user}/typing', [DirectMessageController::class, 'typing']);
+    Route::get('/messages/{userId}', [DirectMessageController::class, 'index']);
+    Route::post('/messages', [DirectMessageController::class, 'store']);
+    Route::delete('/messages/{id}', [DirectMessageController::class, 'destroy']);
 
     // AI Task Creation
     Route::post('groups/{group}/ai/tasks', [AITaskController::class, 'createFromPrompt']);

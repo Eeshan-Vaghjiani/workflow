@@ -12,7 +12,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class NewDirectMessage implements ShouldBroadcast
+class MessageDeleted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -24,7 +24,7 @@ class NewDirectMessage implements ShouldBroadcast
     public $message;
 
     /**
-     * The formatted message data.
+     * The message data.
      *
      * @var array
      */
@@ -39,10 +39,9 @@ class NewDirectMessage implements ShouldBroadcast
         $this->messageData = $messageData;
 
         // Log for debugging
-        Log::debug('NewDirectMessage event created', [
-            'receiver_id' => $message->receiver_id,
-            'sender_id' => $message->sender_id,
-            'message_id' => $message->id
+        Log::debug('MessageDeleted event created', [
+            'message_id' => $message->id,
+            'deleted_by' => $messageData['deleted_by'] ?? null,
         ]);
     }
 
@@ -64,7 +63,7 @@ class NewDirectMessage implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'message.new';
+        return 'message.deleted';
     }
 
     /**
@@ -74,37 +73,6 @@ class NewDirectMessage implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        // Make sure we include all necessary data
-        $enhancedData = $this->messageData;
-
-        if (!isset($enhancedData['sender_id'])) {
-            $enhancedData['sender_id'] = $this->message->sender_id;
-        }
-
-        if (!isset($enhancedData['receiver_id'])) {
-            $enhancedData['receiver_id'] = $this->message->receiver_id;
-        }
-
-        // Add a timestamp if not present
-        if (!isset($enhancedData['created_at'])) {
-            $enhancedData['created_at'] = $this->message->created_at;
-        }
-
-        // Ensure we have the user data
-        if (!isset($enhancedData['user']) && isset($this->message->sender)) {
-            $enhancedData['user'] = [
-                'id' => $this->message->sender->id,
-                'name' => $this->message->sender->name,
-                'avatar' => $this->message->sender->avatar,
-            ];
-        }
-
-        Log::debug('Broadcasting message data:', [
-            'messageData' => $enhancedData,
-            'channel' => 'chat',
-            'event' => 'message.new'
-        ]);
-
-        return $enhancedData;
+        return $this->messageData;
     }
 }

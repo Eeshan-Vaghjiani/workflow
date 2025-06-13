@@ -129,15 +129,13 @@ try {
     // Make sure cookies are sent with the request
     Pusher.logToConsole = true; // Enable Pusher logging for debugging
 
-    window.Echo = new Echo({
-        broadcaster: 'pusher',
-        key: import.meta.env.VITE_PUSHER_APP_KEY || '17b1123fdac52c500a2b',
+    // Create a new Pusher instance with debug logging
+    const pusherOptions = {
         cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
         forceTLS: true,
-        // Enable WebSockets and disable stats to improve reliability
         enabledTransports: ['ws', 'wss'],
-        disableStats: true,
-        // Simplified authorizer for debugging
+        disableStats: false,
+        enableStats: true,
         authEndpoint: '/broadcasting/auth',
         auth: {
             headers: {
@@ -145,6 +143,14 @@ try {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         }
+    };
+
+    console.log('Pusher options:', pusherOptions);
+
+    window.Echo = new Echo({
+        broadcaster: 'pusher',
+        key: import.meta.env.VITE_PUSHER_APP_KEY || '17b1123fdac52c500a2b',
+        ...pusherOptions
     });
 
     console.log('Echo initialized successfully');
@@ -152,10 +158,53 @@ try {
     // Test Echo connection
     window.Echo.connector.pusher.connection.bind('connected', () => {
         console.log('Successfully connected to Pusher');
+
+        // Test subscribing to the public channel
+        try {
+            const channel = window.Echo.channel('chat');
+            console.log('Successfully subscribed to chat channel');
+
+            // Listen for events on the channel
+            channel.listen('message.new', (data) => {
+                console.log('Received message.new event on chat channel:', data);
+            });
+
+            channel.listen('message.deleted', (data) => {
+                console.log('Received message.deleted event on chat channel:', data);
+            });
+
+            // Also listen for the raw event names
+            channel.listen('.NewDirectMessage', (data) => {
+                console.log('Received raw NewDirectMessage event:', data);
+            });
+
+            channel.listen('.MessageDeleted', (data) => {
+                console.log('Received raw MessageDeleted event:', data);
+            });
+        } catch (channelError) {
+            console.error('Error subscribing to chat channel:', channelError);
+        }
     });
 
     window.Echo.connector.pusher.connection.bind('error', (err) => {
         console.error('Pusher connection error:', err);
+    });
+
+    // Add more connection state logging
+    window.Echo.connector.pusher.connection.bind('state_change', (states) => {
+        console.log('Pusher connection state changed from', states.previous, 'to', states.current);
+    });
+
+    window.Echo.connector.pusher.connection.bind('disconnected', () => {
+        console.log('Disconnected from Pusher');
+    });
+
+    window.Echo.connector.pusher.connection.bind('connecting', () => {
+        console.log('Connecting to Pusher...');
+    });
+
+    window.Echo.connector.pusher.connection.bind('reconnecting', () => {
+        console.log('Reconnecting to Pusher...');
     });
 } catch (error) {
     console.error('Failed to initialize Echo:', error);

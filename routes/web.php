@@ -161,8 +161,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
 
         // Direct messages
-        Route::get('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'messages']);
-        Route::post('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'store']);
+        Route::get('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'messages']);
+        Route::post('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'store']);
+        Route::delete('/direct-messages/{message}', [App\Http\Controllers\API\DirectMessageController::class, 'destroy']);
     });
 
     // Calendar, Pomodoro, and Study Planner

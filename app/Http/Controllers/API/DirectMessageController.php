@@ -18,20 +18,20 @@ class DirectMessageController extends Controller
     public function index()
     {
         $user = auth()->user();
-        
+
         // Get all direct message conversations
         $conversations = DirectMessage::where('sender_id', $user->id)
             ->orWhere('receiver_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy(function ($message) use ($user) {
-                return $message->sender_id == $user->id 
-                    ? $message->receiver_id 
+                return $message->sender_id == $user->id
+                    ? $message->receiver_id
                     : $message->sender_id;
             })
             ->map(function ($messages, $userId) use ($user) {
                 $otherUser = User::find($userId);
-                
+
                 if (!$otherUser) {
                     Log::warning('Missing user in direct message conversation', [
                         'user_id' => $userId,
@@ -39,9 +39,9 @@ class DirectMessageController extends Controller
                     ]);
                     return null;
                 }
-                
+
                 $lastMessage = $messages->sortByDesc('created_at')->first();
-                
+
                 return [
                     'user' => [
                         'id' => $otherUser->id,
@@ -63,7 +63,7 @@ class DirectMessageController extends Controller
             })
             ->filter()
             ->values();
-        
+
         return response()->json([
             'conversations' => $conversations,
         ]);
@@ -76,15 +76,15 @@ class DirectMessageController extends Controller
     {
         try {
             $currentUser = auth()->user();
-            
+
             if (!$currentUser) {
                 Log::error('Unauthorized access to direct messages');
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
-            
+
             // Convert $userId to integer if it's a string
             $userId = (int) $userId;
-            
+
             // Check if the user exists
             $user = User::find($userId);
             if (!$user) {
@@ -92,18 +92,18 @@ class DirectMessageController extends Controller
                     'requested_user_id' => $userId,
                     'current_user' => $currentUser->id
                 ]);
-                
+
                 return response()->json([
                     'error' => 'User not found',
                     'user_id' => $userId
                 ], 404);
             }
-            
+
             Log::info('Fetching direct messages', [
                 'current_user' => $currentUser->id,
                 'other_user' => $userId
             ]);
-            
+
             $messages = DirectMessage::where(function ($query) use ($currentUser, $userId) {
                     $query->where('sender_id', $currentUser->id)
                         ->where('receiver_id', $userId);
@@ -128,20 +128,20 @@ class DirectMessageController extends Controller
                         'user' => $message->sender,
                     ];
                 });
-            
+
             // Mark all messages from this user as read
             DirectMessage::where('sender_id', $userId)
                 ->where('receiver_id', $currentUser->id)
                 ->where('read', false)
                 ->update(['read' => true]);
-            
+
             $userData = [
                 'id' => $user->id,
                 'name' => $user->name,
                 'avatar' => $user->avatar,
                 'status' => $user->status ?? 'offline',
             ];
-            
+
             return response()->json([
                 'user' => $userData,
                 'messages' => $messages,
@@ -151,14 +151,14 @@ class DirectMessageController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to fetch messages',
                 'message' => $e->getMessage()
             ], 500);
         }
     }
-    
+
     /**
      * Send a direct message to a user.
      */
@@ -168,10 +168,10 @@ class DirectMessageController extends Controller
             $validated = $request->validate([
                 'message' => 'required|string|max:1000',
             ]);
-            
+
             $currentUser = auth()->user();
             $userId = (int) $userId;
-            
+
             // Check if user exists
             $receiver = User::find($userId);
             if (!$receiver) {
@@ -179,13 +179,13 @@ class DirectMessageController extends Controller
                     'receiver_id' => $userId,
                     'sender_id' => $currentUser->id
                 ]);
-                
+
                 return response()->json([
                     'error' => 'User not found',
                     'user_id' => $userId
                 ], 404);
             }
-            
+
             // Create the message
             $message = DirectMessage::create([
                 'sender_id' => $currentUser->id,
@@ -193,10 +193,10 @@ class DirectMessageController extends Controller
                 'message' => $validated['message'],
                 'read' => false,
             ]);
-            
+
             // Load sender relationship
             $message->load('sender:id,name,avatar');
-            
+
             // Format for response
             $messageData = [
                 'id' => $message->id,
@@ -205,49 +205,55 @@ class DirectMessageController extends Controller
                 'timestamp' => $message->created_at->format('g:i A'),
                 'date' => $message->created_at->format('M j, Y'),
                 'created_at' => $message->created_at,
-                'is_from_me' => true,
+                'is_from_me' => false,
                 'user_id' => $currentUser->id,
-                'user' => $message->sender,
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $userId,
+                'user' => [
+                    'id' => $currentUser->id,
+                    'name' => $currentUser->name,
+                    'avatar' => $currentUser->avatar
+                ],
             ];
-            
+
             // Broadcast the message
-            broadcast(new NewDirectMessage($message, $messageData))->toOthers();
-            
+            broadcast(new NewDirectMessage($message, $messageData));
+
             Log::info('Direct message sent', [
                 'sender_id' => $currentUser->id,
                 'receiver_id' => $userId,
                 'message_id' => $message->id
             ]);
-            
+
             return response()->json($messageData);
         } catch (\Exception $e) {
             Log::error('Error sending direct message', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to send message',
                 'message' => $e->getMessage()
             ], 500);
         }
     }
-    
+
     /**
      * Mark messages as read
      */
     public function markAsRead(Request $request, $userId)
     {
         $currentUser = auth()->user();
-        
+
         DirectMessage::where('sender_id', $userId)
             ->where('receiver_id', $currentUser->id)
             ->where('read', false)
             ->update(['read' => true]);
-        
+
         return response()->json(['success' => true]);
     }
-    
+
     /**
      * Notify user is typing
      */
@@ -256,4 +262,56 @@ class DirectMessageController extends Controller
         // You can implement real-time typing indicators here
         return response()->json(['success' => true]);
     }
-} 
+
+    /**
+     * Delete a message.
+     */
+    public function destroy($messageId)
+    {
+        try {
+            $currentUser = auth()->user();
+
+            // Find the message
+            $message = \App\Models\DirectMessage::findOrFail($messageId);
+
+            // Check if the user is authorized to delete this message
+            if ($message->sender_id !== $currentUser->id) {
+                return response()->json([
+                    'error' => 'Unauthorized to delete this message'
+                ], 403);
+            }
+
+            // Soft delete the message
+            $message->delete();
+
+            // Broadcast message deletion to both sender and receiver
+            $messageData = [
+                'id' => $message->id,
+                'deleted_by' => $currentUser->id
+            ];
+
+            // Create a custom event for message deletion
+            broadcast(new \App\Events\MessageDeleted($message, $messageData));
+
+            \Illuminate\Support\Facades\Log::info('Direct message deleted', [
+                'message_id' => $message->id,
+                'deleted_by' => $currentUser->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Message deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error deleting direct message', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to delete message',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+}

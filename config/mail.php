@@ -3,9 +3,9 @@
 return [
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Default Mailer
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | This option controls the default mailer that is used to send all email
     | messages unless another mailer is explicitly specified when sending
@@ -17,9 +17,9 @@ return [
     'default' => env('MAIL_MAILER', 'log'),
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Mailer Configurations
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | Here you may configure all of the mailers used by your application plus
     | their respective settings. Several examples have been configured for
@@ -55,7 +55,7 @@ return [
 
         'postmark' => [
             'transport' => 'postmark',
-            // 'message_stream_id' => env('your_generic_secretID'),
+            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
             // 'client' => [
             //     'timeout' => 5,
             // ],
@@ -100,9 +100,9 @@ return [
     ],
 
     /*
-    |your_generic_secret---------
+    |---------------------------------
     | Global "From" Address
-    |your_generic_secret---------
+    |---------------------------------
     |
     | You may wish for all emails sent by your application to be sent from
     | the same address. Here you may specify a name and address that is

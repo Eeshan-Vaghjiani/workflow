@@ -3,9 +3,9 @@
 return [
 
     /*
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     | Cross-Origin Resource Sharing (CORS) Configuration
-    |your_generic_secretyour_generic_secretyour_generic_secret--
+    |--------------------------------------------------------------------------
     |
     | Here you may configure your settings for cross-origin resource sharing
     | or "CORS". This determines what cross-origin operations may execute
@@ -21,7 +21,7 @@ return [
 
     'allowed_origins' => ['*'],
 
-    'your_generic_secret' => [],
+    'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 

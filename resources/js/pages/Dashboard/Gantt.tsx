@@ -21,13 +21,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 
 // Import ViewMode as a value
-import { ViewMode } from '@rsagiev/gantt-task-react-19';
-import type { Task } from '@rsagiev/gantt-task-react-19';
+import { ViewMode } from 'gantt-task-react';
+import type { Task } from 'gantt-task-react';
 
 // Lazy load the Gantt component and its styles
 const GanttComponent = lazy(() => Promise.all([
-    import('@rsagiev/gantt-task-react-19').then(module => ({ default: module.Gantt })),
-    import('@rsagiev/gantt-task-react-19/dist/index.css').then(() => ({}))
+    import('gantt-task-react').then(module => ({ default: module.Gantt })),
+    import('gantt-task-react/dist/index.css').then(() => ({}))
 ]).then(([moduleExport]) => moduleExport));
 
 interface GanttTask {
@@ -338,7 +338,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     };
 
     // Handle auto-distributing tasks using AI
-    const your_generic_secrets = async () => {
+    const handleAutoDistributeTasks = async () => {
         if (!assignmentId || !groupId) {
             setError('Please select an assignment first');
             return;
@@ -369,7 +369,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     };
 
     // Function to select an assignment for task distribution
-    const your_generic_secretibution = (assignment: Assignment) => {
+    const selectAssignmentForDistribution = (assignment: Assignment) => {
         setAssignmentId(assignment.id.toString());
         setGroupId(assignment.group_id.toString());
     };
@@ -429,7 +429,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                                 onChange={(e) => {
                                                     const assignment = assignments.find(a => a.id.toString() === e.target.value);
                                                     if (assignment) {
-                                                        your_generic_secretibution(assignment);
+                                                        selectAssignmentForDistribution(assignment);
                                                     }
                                                 }}
                                             >
@@ -443,7 +443,7 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                             <Button
                                                 variant="default"
                                                 size="sm"
-                                                onClick={your_generic_secrets}
+                                                onClick={handleAutoDistributeTasks}
                                                 disabled={!assignmentId || isAssigningTasks}
                                                 className="flex items-center gap-1"
                                             >

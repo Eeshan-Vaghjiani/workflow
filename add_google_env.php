@@ -9,8 +9,8 @@ $envContent = preg_replace("/OPENROUTER_VERIFY_SSL=falseGOOGLE_CLIENT_ID=.*/", "
 // Add Google credentials properly
 if (strpos($envContent, "GOOGLE_CLIENT_ID") === false) {
     $envContent .= "\n\n# Google Calendar API credentials\n";
-    $envContent .= "GOOGLE_CLIENT_ID=your_generic_secretRE\n";
-    $envContent .= "GOOGLE_CLIENT_SECRET=your_generic_secretT_HERE\n";
+    $envContent .= "GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE\n";
+    $envContent .= "GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE\n";
     $envContent .= "GOOGLE_REDIRECT_URI=http://localhost:8000/google/callback\n";
 
     file_put_contents($envFile, $envContent);

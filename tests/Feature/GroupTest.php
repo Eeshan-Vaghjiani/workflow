@@ -11,7 +11,7 @@ class GroupTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function your_generic_secretup()
+    public function test_user_can_create_group()
     {
         $user = User::factory()->create();
         
@@ -28,7 +28,7 @@ class GroupTest extends TestCase
         ]);
     }
 
-    public function your_generic_secret_groups()
+    public function test_user_can_view_their_groups()
     {
         $user = User::factory()->create();
         $group = Group::factory()->create(['created_by' => $user->id]);
@@ -40,7 +40,7 @@ class GroupTest extends TestCase
         $response->assertSee($group->name);
     }
 
-    public function your_generic_secretbers_to_group()
+    public function test_user_can_invite_members_to_group()
     {
         $leader = User::factory()->create();
         $newMember = User::factory()->create();
@@ -56,7 +56,7 @@ class GroupTest extends TestCase
         $this->assertTrue($group->members->contains($newMember));
     }
 
-    public function your_generic_secretccess_group()
+    public function test_non_member_cannot_access_group()
     {
         $user = User::factory()->create();
         $group = Group::factory()->create();

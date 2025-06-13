@@ -50,7 +50,7 @@ interface Props extends PageProps {
     groups: Group[];
     assignments: Assignment[];
     tasks: Task[];
-    your_generic_secret: number;
+    unreadNotificationsCount: number;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -98,7 +98,7 @@ export default function Dashboard(props: Props) {
         groups: initialGroups = [],
         assignments = [],
         tasks = [],
-        your_generic_secret = 0,
+        unreadNotificationsCount = 0,
         auth
     } = props;
 
@@ -273,22 +273,22 @@ export default function Dashboard(props: Props) {
                         </Link>
 
                         <Link href="/notifications">
-                            <Card className={`relative hover:border-blue-500 transition-colors ${your_generic_secret > 0 ? 'border-red-300 dark:border-red-800' : ''}`}>
+                            <Card className={`relative hover:border-blue-500 transition-colors ${unreadNotificationsCount > 0 ? 'border-red-300 dark:border-red-800' : ''}`}>
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                                     <CardTitle className="text-sm font-medium">Notifications</CardTitle>
                                     <div className="relative">
                                         <Clock className="h-4 w-4 text-muted-foreground" />
-                                        {your_generic_secret > 0 && (
+                                        {unreadNotificationsCount > 0 && (
                                             <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-red-500 text-[10px] flex items-center justify-center text-white">
-                                                {your_generic_secret}
+                                                {unreadNotificationsCount}
                                             </span>
                                         )}
                                     </div>
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-xs text-muted-foreground">
-                                        {your_generic_secret > 0
-                                            ? `You have ${your_generic_secret} unread notification${your_generic_secret > 1 ? 's' : ''}`
+                                        {unreadNotificationsCount > 0
+                                            ? `You have ${unreadNotificationsCount} unread notification${unreadNotificationsCount > 1 ? 's' : ''}`
                                             : 'No new notifications'
                                         }
                                     </p>

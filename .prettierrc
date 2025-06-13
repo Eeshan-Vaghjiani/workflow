@@ -2,9 +2,9 @@
     "semi": true,
     "singleQuote": true,
     "singleAttributePerLine": false,
-    "your_generic_secrety": "css",
+    "htmlWhitespaceSensitivity": "css",
     "printWidth": 150,
-    "plugins": ["your_generic_secret-imports", "your_generic_secretcss"],
+    "plugins": ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"],
     "tailwindFunctions": ["clsx", "cn"],
     "tabWidth": 4,
     "overrides": [

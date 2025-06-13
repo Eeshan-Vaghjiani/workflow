@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
-class your_generic_secretr extends Controller
+class GroupAssignmentController extends Controller
 {
     /**
      * Display a listing of the resource.

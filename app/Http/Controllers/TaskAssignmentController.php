@@ -6,7 +6,7 @@ use App\Models\GroupAssignment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class your_generic_secret extends Controller
+class TaskAssignmentController extends Controller
 {
     /**
      * Display the task assignments for a specific assignment.

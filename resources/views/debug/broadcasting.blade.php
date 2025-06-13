@@ -12,7 +12,7 @@
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
         <h1 class="text-2xl font-bold mb-6">Broadcasting Authentication Debug</h1>
-
+        
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-gray-50 p-4 rounded border">
                 <h2 class="text-lg font-semibold mb-3">Authentication Status</h2>
@@ -23,7 +23,7 @@
                     <p><span class="font-medium">Socket ID:</span> <span id="socket-id">{{ $socketId }}</span></p>
                 </div>
             </div>
-
+            
             <div class="bg-gray-50 p-4 rounded border">
                 <h2 class="text-lg font-semibold mb-3">Broadcasting Config</h2>
                 <div class="space-y-2">
@@ -34,7 +34,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div class="mt-6 flex space-x-4">
             <div class="flex-1">
                 <label class="block mb-2 font-medium text-sm">Channel Name</label>
@@ -47,26 +47,26 @@
                     <input type="text" id="channel-input" value="chat.{{ $userId }}" class="flex-1 px-3 py-2 border-t border-b border-r rounded-r-md">
                 </div>
             </div>
-
+            
             <div>
                 <label class="block mb-2 font-medium text-sm">Event Name</label>
                 <input type="text" id="event-input" value="message.new" class="w-full px-3 py-2 border rounded-md">
             </div>
         </div>
-
+        
         <div class="mt-4 space-x-2">
             <button id="test-auth" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Test Auth</button>
             <button id="subscribe" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Subscribe</button>
             <button id="unsubscribe" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700" disabled>Unsubscribe</button>
             <button id="send-message" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700" disabled>Send Test Message</button>
         </div>
-
+        
         <div class="mt-6">
             <h2 class="text-lg font-semibold mb-3">Events Log</h2>
             <div id="events-log" class="h-64 overflow-y-auto bg-gray-50 p-4 rounded border text-sm font-mono"></div>
         </div>
     </div>
-
+    
     <script>
         // Utility functions
         function log(message, type = 'info') {
@@ -76,25 +76,25 @@
             logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
             eventsLog.prepend(logEntry);
         }
-
+        
         log('Page loaded');
-
+        
         // Variables
         let pusher = null;
         let channel = null;
-
+        
         // Initialize Axios with CSRF token
         axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         axios.defaults.withCredentials = true;
-
+        
         // Button handlers
         document.getElementById('test-auth').addEventListener('click', async () => {
             try {
                 const socketId = document.getElementById('socket-id').textContent;
                 const channelName = getFullChannelName();
-
+                
                 log(`Testing auth for channel: ${channelName} with socket ID: ${socketId}`);
-
+                
                 const response = await axios.post('{{ $authEndpoint }}', {
                     socket_id: socketId,
                     channel_name: channelName
@@ -104,21 +104,21 @@
                         'Accept': 'application/json'
                     }
                 });
-
+                
                 log(`Auth successful! Response: ${JSON.stringify(response.data)}`, 'success');
             } catch (error) {
                 log(`Auth failed: ${error.response ? error.response.status + ' ' + JSON.stringify(error.response.data) : error.message}`, 'error');
                 console.error('Full error:', error);
             }
         });
-
+        
         document.getElementById('subscribe').addEventListener('click', () => {
             try {
                 // Initialize Pusher if needed
                 if (!pusher) {
                     log('Initializing Pusher');
-
-                    pusher = new Pusher('{{ env('PUSHER_APP_KEY') }}', {
+                    
+                    pusher = new Pusher('{{ env('PUSHER_APP_KEY', '17b1123fdac52c500a2b') }}', {
                         cluster: '{{ env('PUSHER_APP_CLUSTER', 'mt1') }}',
                         authEndpoint: '{{ $authEndpoint }}',
                         auth: {
@@ -128,28 +128,28 @@
                             }
                         }
                     });
-
+                    
                     pusher.connection.bind('connected', () => {
                         log('Connected to Pusher', 'success');
                         document.getElementById('socket-id').textContent = pusher.connection.socket_id;
                     });
-
+                    
                     pusher.connection.bind('error', (err) => {
                         log(`Pusher connection error: ${JSON.stringify(err)}`, 'error');
                     });
                 }
-
+                
                 const channelName = getFullChannelName();
                 const eventName = document.getElementById('event-input').value;
-
+                
                 log(`Subscribing to channel: ${channelName}`);
-
+                
                 // Unsubscribe from existing channel if any
                 if (channel) {
                     pusher.unsubscribe(channel.name);
                     log(`Unsubscribed from previous channel: ${channel.name}`);
                 }
-
+                
                 // Subscribe to channel based on prefix
                 const prefix = document.getElementById('channel-prefix').value;
                 if (prefix === 'private-') {
@@ -159,27 +159,27 @@
                 } else {
                     channel = pusher.subscribe(channelName);
                 }
-
+                
                 channel.bind(eventName, (data) => {
                     log(`Received event '${eventName}': ${JSON.stringify(data)}`, 'success');
                 });
-
+                
                 channel.bind('pusher:subscription_succeeded', () => {
                     log(`Successfully subscribed to ${channelName}`, 'success');
                     document.getElementById('unsubscribe').disabled = false;
                     document.getElementById('send-message').disabled = false;
                 });
-
+                
                 channel.bind('pusher:subscription_error', (error) => {
                     log(`Error subscribing to ${channelName}: ${JSON.stringify(error)}`, 'error');
                 });
-
+                
             } catch (error) {
                 log(`Error: ${error.message}`, 'error');
                 console.error('Full error:', error);
             }
         });
-
+        
         document.getElementById('unsubscribe').addEventListener('click', () => {
             if (channel) {
                 pusher.unsubscribe(channel.name);
@@ -189,52 +189,52 @@
                 document.getElementById('send-message').disabled = true;
             }
         });
-
+        
         document.getElementById('send-message').addEventListener('click', async () => {
             try {
                 if (!channel) {
                     log('No active channel subscription', 'error');
                     return;
                 }
-
+                
                 const eventName = document.getElementById('event-input').value;
                 const channelName = getFullChannelName();
-
+                
                 log(`Sending test message to ${channelName} with event ${eventName}`);
-
+                
                 const response = await axios.post('/api/chat-test', {
                     event: eventName,
                     message: 'Test message sent at ' + new Date().toLocaleTimeString(),
                     channel_type: document.getElementById('channel-prefix').value === 'private-' ? 'private' : 'public',
                     user_id: {{ $userId }},
                 });
-
+                
                 log(`Message sent: ${JSON.stringify(response.data)}`, 'success');
             } catch (error) {
                 log(`Error sending message: ${error.response ? error.response.status + ' ' + JSON.stringify(error.response.data) : error.message}`, 'error');
                 console.error('Full error:', error);
             }
         });
-
+        
         // Update displayed channel info when inputs change
         document.getElementById('channel-prefix').addEventListener('change', updateChannelDisplay);
         document.getElementById('channel-input').addEventListener('input', updateChannelDisplay);
         document.getElementById('event-input').addEventListener('input', updateEventDisplay);
-
+        
         function updateChannelDisplay() {
-            document.getElementById('channel-type').textContent =
-                document.getElementById('channel-prefix').value === 'private-' ? 'private' :
+            document.getElementById('channel-type').textContent = 
+                document.getElementById('channel-prefix').value === 'private-' ? 'private' : 
                 document.getElementById('channel-prefix').value === 'presence-' ? 'presence' : 'public';
-
-            document.getElementById('channel-name').textContent =
+            
+            document.getElementById('channel-name').textContent = 
                 document.getElementById('channel-input').value;
         }
-
+        
         function updateEventDisplay() {
-            document.getElementById('event-name').textContent =
+            document.getElementById('event-name').textContent = 
                 document.getElementById('event-input').value;
         }
-
+        
         function getFullChannelName() {
             const prefix = document.getElementById('channel-prefix').value;
             const channelName = document.getElementById('channel-input').value;
@@ -242,4 +242,4 @@
         }
     </script>
 </body>
-</html>
+</html> 

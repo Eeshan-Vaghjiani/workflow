@@ -19,29 +19,29 @@ return new class extends Migration
 
         // Add indexes to group_tasks table
         Schema::table('group_tasks', function (Blueprint $table) use ($indexExists) {
-            if (!$indexExists('group_tasks', 'your_generic_secretr_id_index')) {
+            if (!$indexExists('group_tasks', 'group_tasks_assigned_user_id_index')) {
                 $table->index('assigned_user_id');
             }
-            if (!$indexExists('group_tasks', 'your_generic_secret')) {
+            if (!$indexExists('group_tasks', 'group_tasks_status_index')) {
                 $table->index('status');
             }
-            if (!$indexExists('group_tasks', 'your_generic_secretd_status_index')) {
+            if (!$indexExists('group_tasks', 'group_tasks_assignment_id_status_index')) {
                 $table->index(['assignment_id', 'status']);
             }
-            if (!$indexExists('group_tasks', 'your_generic_secretyour_generic_secret')) {
+            if (!$indexExists('group_tasks', 'group_tasks_assignment_id_assigned_user_id_index')) {
                 $table->index(['assignment_id', 'assigned_user_id']);
             }
         });
 
         // Add indexes to group_assignments table
         Schema::table('group_assignments', function (Blueprint $table) use ($indexExists) {
-            if (!$indexExists('group_assignments', 'your_generic_secret_index')) {
+            if (!$indexExists('group_assignments', 'group_assignments_status_index')) {
                 $table->index('status');
             }
-            if (!$indexExists('group_assignments', 'your_generic_secretid_status_index')) {
+            if (!$indexExists('group_assignments', 'group_assignments_group_id_status_index')) {
                 $table->index(['group_id', 'status']);
             }
-            if (!$indexExists('group_assignments', 'your_generic_secrette_index')) {
+            if (!$indexExists('group_assignments', 'group_assignments_due_date_index')) {
                 $table->index('due_date');
             }
         });
@@ -49,10 +49,10 @@ return new class extends Migration
         // Add indexes to group_messages table
         if (Schema::hasTable('group_messages')) {
             Schema::table('group_messages', function (Blueprint $table) use ($indexExists) {
-                if (!$indexExists('group_messages', 'your_generic_secrett_index')) {
+                if (!$indexExists('group_messages', 'group_messages_created_at_index')) {
                     $table->index('created_at');
                 }
-                if (!$indexExists('group_messages', 'your_generic_secretcreated_at_index')) {
+                if (!$indexExists('group_messages', 'group_messages_group_id_created_at_index')) {
                     $table->index(['group_id', 'created_at']);
                 }
             });
@@ -61,13 +61,13 @@ return new class extends Migration
         // Add indexes to direct_messages table
         if (Schema::hasTable('direct_messages')) {
             Schema::table('direct_messages', function (Blueprint $table) use ($indexExists) {
-                if (!$indexExists('direct_messages', 'your_generic_secretd_receiver_id_index')) {
+                if (!$indexExists('direct_messages', 'direct_messages_sender_id_receiver_id_index')) {
                     $table->index(['sender_id', 'receiver_id']);
                 }
-                if (!$indexExists('direct_messages', 'your_generic_secret_id_read_index')) {
+                if (!$indexExists('direct_messages', 'direct_messages_receiver_id_read_index')) {
                     $table->index(['receiver_id', 'read']);
                 }
-                if (!$indexExists('direct_messages', 'your_generic_secretat_index')) {
+                if (!$indexExists('direct_messages', 'direct_messages_created_at_index')) {
                     $table->index('created_at');
                 }
             });

@@ -4,16 +4,16 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\GroupMemberController;
-use App\Http\Controllers\your_generic_secretr;
+use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\API\TaskController;
 use App\Http\Controllers\API\GroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
 use App\Http\Controllers\API\DirectMessageController;
 use App\Http\Controllers\API\AITaskController;
-use App\Http\Controllers\GroupChatController as your_generic_secret;
+use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
 use App\Http\Controllers\API\ChatController;
-use App\Http\Controllers\API\your_generic_secret;
+use App\Http\Controllers\API\TaskAssignmentController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\StudyPlannerController;
@@ -21,9 +21,9 @@ use App\Http\Controllers\PomodoroController;
 use App\Http\Controllers\CalendarController;
 
 /*
-|your_generic_secretyour_generic_secretyour_generic_secret--
+|--------------------------------------------------------------------------
 | API Routes
-|your_generic_secretyour_generic_secretyour_generic_secret--
+|--------------------------------------------------------------------------
 |
 | Here is where you can register API routes for your application. These
 | routes are loaded by the RouteServiceProvider and all of them will
@@ -126,11 +126,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('groups/{group}/members/{user}', [GroupMemberController::class, 'destroy']);
 
     // Group Assignments
-    Route::get('groups/{group}/assignments', [your_generic_secretr::class, 'index']);
-    Route::post('groups/{group}/assignments', [your_generic_secretr::class, 'store']);
-    Route::get('groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'show']);
-    Route::put('groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'update']);
-    Route::delete('groups/{group}/assignments/{assignment}', [your_generic_secretr::class, 'destroy']);
+    Route::get('groups/{group}/assignments', [GroupAssignmentController::class, 'index']);
+    Route::post('groups/{group}/assignments', [GroupAssignmentController::class, 'store']);
+    Route::get('groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'show']);
+    Route::put('groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'update']);
+    Route::delete('groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'destroy']);
 
     // Tasks
     Route::get('groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index']);
@@ -171,8 +171,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{groupId}/assignments/{assignmentId}/auto-distribute', [App\Http\Controllers\GroupTaskController::class, 'autoDistributeTasksAPI']);
 
     // Task assignment routes
-    Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\your_generic_secret::class, 'getAssignmentStats']);
-    Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks']);
+    Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\TaskAssignmentController::class, 'getAssignmentStats']);
+    Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\TaskAssignmentController::class, 'autoDistributeTasks']);
 
     // Google Calendar API routes
     Route::post('/calendar/sync', [CalendarController::class, 'sync']);
@@ -208,8 +208,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // Group messages API
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/groups/{group}/messages', [your_generic_secret::class, 'getMessagesAPI']);
-    Route::post('/groups/{group}/messages', [your_generic_secret::class, 'storeAPI']);
+    Route::get('/groups/{group}/messages', [GroupChatControllerGroup::class, 'getMessagesAPI']);
+    Route::post('/groups/{group}/messages', [GroupChatControllerGroup::class, 'storeAPI']);
 });
 
 // Add a public endpoint for AI tasks (no auth required)
@@ -405,7 +405,7 @@ Route::post('test-ai-tasks', function(Illuminate\Http\Request $request) {
 });
 
 // Add a test endpoint for OpenRouter API
-Route::get('/your_generic_secreton', function() {
+Route::get('/test-openrouter-connection', function() {
     $aiService = app(App\Services\AIService::class);
     $result = $aiService->testConnection();
 
@@ -582,8 +582,8 @@ Route::get('/auth/check', function(Request $request) {
 
 // Add direct web authenticated routes for assignment stats
 Route::middleware(['web', 'auth'])->group(function () {
-    Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\your_generic_secret::class, 'getAssignmentStats']);
-    Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\your_generic_secret::class, 'autoDistributeTasks']);
+    Route::get('groups/{groupId}/assignments/{assignmentId}/assignment-stats', [App\Http\Controllers\API\TaskAssignmentController::class, 'getAssignmentStats']);
+    Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\TaskAssignmentController::class, 'autoDistributeTasks']);
 });
 
 // Study Planner API Routes

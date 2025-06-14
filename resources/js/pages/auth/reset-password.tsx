@@ -42,14 +42,14 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
             <form onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email" className="dark:text-gray-300">Email</Label>
                         <Input
                             id="email"
                             type="email"
                             name="email"
                             autoComplete="email"
                             value={data.email}
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                             readOnly
                             onChange={(e) => setData('email', e.target.value)}
                         />
@@ -57,14 +57,14 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password" className="dark:text-gray-300">Password</Label>
                         <Input
                             id="password"
                             type="password"
                             name="password"
                             autoComplete="new-password"
                             value={data.password}
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                             autoFocus
                             onChange={(e) => setData('password', e.target.value)}
                             placeholder="Password"
@@ -73,14 +73,14 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password_confirmation">Confirm password</Label>
+                        <Label htmlFor="password_confirmation" className="dark:text-gray-300">Confirm password</Label>
                         <Input
                             id="password_confirmation"
                             type="password"
                             name="password_confirmation"
                             autoComplete="new-password"
                             value={data.password_confirmation}
-                            className="mt-1 block w-full"
+                            className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                             onChange={(e) => setData('password_confirmation', e.target.value)}
                             placeholder="Confirm password"
                         />

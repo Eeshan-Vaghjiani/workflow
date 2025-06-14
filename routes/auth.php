@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\TwoFactorAuthVerificationController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 use Laravel\WorkOS\Http\Requests\AuthKitAuthenticationRequest;
@@ -79,4 +80,13 @@ Route::middleware('auth')->group(function () {
         ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+});
+
+// Add our two-factor verification routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('two-factor-verify', [TwoFactorAuthVerificationController::class, 'show'])
+        ->name('two-factor.verify');
+    Route::post('two-factor-verify', [TwoFactorAuthVerificationController::class, 'verify']);
+    Route::post('two-factor-recovery', [TwoFactorAuthVerificationController::class, 'recoveryCode'])
+        ->name('two-factor.recovery-code');
 });

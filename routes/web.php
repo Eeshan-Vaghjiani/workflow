@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
+use App\Http\Middleware\TwoFactorAuthenticationMiddleware;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,7 +43,12 @@ Route::get('/auth-debug', function () {
     return Inertia::render('AuthDebug');
 })->name('auth.debug');
 
-Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class])->group(function () {
+Route::middleware([
+    'auth',
+    'verified',
+    ValidateSessionWithWorkOS::class,
+    'two_factor'
+])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/calendar', [DashboardController::class, 'calendar'])->name('dashboard.calendar');

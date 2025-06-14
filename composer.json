@@ -14,6 +14,7 @@
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.1",
         "laravel/tinker": "^2.10.1",
+        "laravel/workos": "^0.2.1",
         "pusher/pusher-php-server": "^7.2",
         "tightenco/ziggy": "^2.4"
     },

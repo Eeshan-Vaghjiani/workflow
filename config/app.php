@@ -50,6 +50,7 @@ return [
         App\Providers\BroadcastServiceProvider::class, // Enable broadcasting
         // App\Providers\EventServiceProvider::class, // Uncomment if using events
         App\Providers\RouteServiceProvider::class,
+        App\Providers\WorkOSServiceProvider::class,
 
     ])->toArray(),
 

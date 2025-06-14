@@ -9,17 +9,45 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
+use Laravel\WorkOS\Http\Requests\AuthKitAuthenticationRequest;
+use Laravel\WorkOS\Http\Requests\AuthKitLoginRequest;
+use Laravel\WorkOS\Http\Requests\AuthKitLogoutRequest;
+use Laravel\WorkOS\User;
+use App\Models\User as AppUser;
+use Illuminate\Support\Str;
 
+// WorkOS AuthKit routes
+Route::get('login', function (AuthKitLoginRequest $request) {
+    return $request->redirect();
+})->middleware(['guest'])->name('login');
+
+Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
+    return tap(to_route('dashboard'), fn () => $request->authenticate(
+        null, // Use default findUsing
+        function (User $user) {
+            // Custom createUsing function that generates a secure password
+            return AppUser::create([
+                'name' => $user->firstName.' '.$user->lastName,
+                'email' => $user->email,
+                'email_verified_at' => now(),
+                'workos_id' => $user->id,
+                'avatar' => $user->avatar ?? '',
+                'password' => bcrypt(Str::random(32)), // Generate a secure random password
+            ]);
+        }
+    ));
+})->middleware(['guest']);
+
+Route::post('logout', function (AuthKitLogoutRequest $request) {
+    return $request->logout();
+})->middleware(['auth'])->name('logout');
+
+// Keep the existing routes for password reset and registration
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])
         ->name('register');
 
     Route::post('register', [RegisteredUserController::class, 'store']);
-
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
-
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
     Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
         ->name('password.request');
@@ -34,6 +62,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
+// Keep the existing routes for email verification and password confirmation
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
@@ -50,7 +79,4 @@ Route::middleware('auth')->group(function () {
         ->name('password.confirm');
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
-
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
 });

@@ -16,6 +16,8 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
+use App\Http\Middleware\TwoFactorAuthenticationMiddleware;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,7 +43,12 @@ Route::get('/auth-debug', function () {
     return Inertia::render('AuthDebug');
 })->name('auth.debug');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware([
+    'auth',
+    'verified',
+    ValidateSessionWithWorkOS::class,
+    'two_factor'
+])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/calendar', [DashboardController::class, 'calendar'])->name('dashboard.calendar');
@@ -161,8 +168,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/groups/{group}/messages', [App\Http\Controllers\GroupChatController::class, 'storeAPI']);
 
         // Direct messages
-        Route::get('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'messages']);
-        Route::post('/direct-messages/{user}', [App\Http\Controllers\DirectMessageController::class, 'store']);
+        Route::get('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'messages']);
+        Route::post('/direct-messages/{user}', [App\Http\Controllers\API\DirectMessageController::class, 'store']);
+        Route::delete('/direct-messages/{message}', [App\Http\Controllers\API\DirectMessageController::class, 'destroy']);
     });
 
     // Calendar, Pomodoro, and Study Planner

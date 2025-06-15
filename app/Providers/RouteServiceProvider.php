@@ -28,6 +28,9 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Manually register the two-factor middleware
+        app('router')->aliasMiddleware('two_factor', \App\Http\Middleware\TwoFactorAuthenticationMiddleware::class);
+
         $this->routes(function () {
             // API routes that need the /api prefix
             Route::middleware('api')
@@ -39,4 +42,4 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/web.php'));
         });
     }
-} 
+}

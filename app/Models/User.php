@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 
 class User extends Authenticatable
 {
@@ -22,6 +23,11 @@ class User extends Authenticatable
         'email',
         'password',
         'last_login_at',
+        'workos_id',
+        'avatar',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
     ];
 
     /**
@@ -32,6 +38,9 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'workos_id',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -45,6 +54,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'last_login_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -75,5 +85,56 @@ class User extends Authenticatable
     {
         // This is a self-referential relationship, needed for compatibility
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Determine if two-factor authentication has been enabled.
+     */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return ! is_null($this->two_factor_confirmed_at);
+    }
+
+    /**
+     * Get the user's two-factor recovery codes.
+     */
+    public function recoveryCodes(): array
+    {
+        return json_decode(decrypt($this->two_factor_recovery_codes), true);
+    }
+
+    /**
+     * Replace the user's recovery codes.
+     */
+    public function replaceRecoveryCodes(array $codes): void
+    {
+        $this->forceFill([
+            'two_factor_recovery_codes' => encrypt(json_encode($codes)),
+        ])->save();
+    }
+
+    /**
+     * Generate new recovery codes for the user.
+     */
+    public function generateRecoveryCodes(): void
+    {
+        $this->forceFill([
+            'two_factor_recovery_codes' => encrypt(json_encode(Collection::times(8, function () {
+                return sprintf('%s-%s-%s-%s',
+                    $this->generateRecoveryCodeSegment(),
+                    $this->generateRecoveryCodeSegment(),
+                    $this->generateRecoveryCodeSegment(),
+                    $this->generateRecoveryCodeSegment()
+                );
+            })->all())),
+        ])->save();
+    }
+
+    /**
+     * Generate a new recovery code segment.
+     */
+    protected function generateRecoveryCodeSegment(): string
+    {
+        return strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
     }
 }

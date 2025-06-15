@@ -17,7 +17,8 @@ class CreateUsersTable extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('avatar')->nullable();
+            $table->string('workos_id')->nullable()->unique();
+            $table->text('avatar')->nullable();
             $table->enum('status', ['online', 'offline', 'away'])->default('offline');
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();

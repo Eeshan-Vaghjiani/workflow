@@ -45,4 +45,10 @@ return [
         ],
     ],
 
+    'workos' => [
+        'client_id' => env('WORKOS_CLIENT_ID'),
+        'secret' => env('WORKOS_API_KEY'),
+        'redirect_url' => env('WORKOS_REDIRECT_URL', 'http://127.0.0.1:8000/authenticate'),
+    ],
+
 ];

@@ -10,17 +10,22 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
         href: '/settings/profile',
-        icon: null,
+        icon: undefined,
     },
     {
         title: 'Password',
         href: '/settings/password',
-        icon: null,
+        icon: undefined,
     },
     {
         title: 'Appearance',
         href: '/settings/appearance',
-        icon: null,
+        icon: undefined,
+    },
+    {
+        title: 'Two-Factor Authentication',
+        href: '/settings/two-factor-auth',
+        icon: undefined,
     },
 ];
 

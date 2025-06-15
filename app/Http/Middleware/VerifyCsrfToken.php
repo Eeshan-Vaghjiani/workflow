@@ -21,6 +21,9 @@ class VerifyCsrfToken extends Middleware
         'study-sessions',
         'study-tasks',
         'api/web/study-sessions',
-        'api/web/study-tasks'
+        'api/web/study-tasks',
+        // Temporarily exclude message API routes for debugging
+        'api/messages/*',
+        'api/messages'
     ];
 }

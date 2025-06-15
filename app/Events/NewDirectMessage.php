@@ -22,7 +22,7 @@ class NewDirectMessage implements ShouldBroadcast
      * @var \App\Models\DirectMessage
      */
     public $message;
-    
+
     /**
      * The formatted message data.
      *
@@ -37,7 +37,7 @@ class NewDirectMessage implements ShouldBroadcast
     {
         $this->message = $message;
         $this->messageData = $messageData;
-        
+
         // Log for debugging
         Log::debug('NewDirectMessage event created', [
             'receiver_id' => $message->receiver_id,
@@ -53,15 +53,9 @@ class NewDirectMessage implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        Log::debug('Broadcasting direct message', [
-            'to_user' => $this->message->receiver_id, 
-            'from_user' => $this->message->sender_id,
-            'channel' => 'chat.'.$this->message->receiver_id
-        ]);
-        
-        // Only broadcast to the receiver's channel - they'll receive it on their own channel
+        // Use simple public channels for reliable delivery
         return [
-            new PrivateChannel('chat.'.$this->message->receiver_id),
+            new Channel('chat'),
         ];
     }
 
@@ -72,7 +66,7 @@ class NewDirectMessage implements ShouldBroadcast
     {
         return 'message.new';
     }
-    
+
     /**
      * Get the data to broadcast.
      *
@@ -80,21 +74,37 @@ class NewDirectMessage implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        // Make sure we include sender/receiver info
+        // Make sure we include all necessary data
         $enhancedData = $this->messageData;
-        
+
         if (!isset($enhancedData['sender_id'])) {
             $enhancedData['sender_id'] = $this->message->sender_id;
         }
-        
+
         if (!isset($enhancedData['receiver_id'])) {
             $enhancedData['receiver_id'] = $this->message->receiver_id;
         }
-        
+
+        // Add a timestamp if not present
+        if (!isset($enhancedData['created_at'])) {
+            $enhancedData['created_at'] = $this->message->created_at;
+        }
+
+        // Ensure we have the user data
+        if (!isset($enhancedData['user']) && isset($this->message->sender)) {
+            $enhancedData['user'] = [
+                'id' => $this->message->sender->id,
+                'name' => $this->message->sender->name,
+                'avatar' => $this->message->sender->avatar,
+            ];
+        }
+
         Log::debug('Broadcasting message data:', [
             'messageData' => $enhancedData,
+            'channel' => 'chat',
+            'event' => 'message.new'
         ]);
-        
+
         return $enhancedData;
     }
-} 
+}

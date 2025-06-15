@@ -51,7 +51,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
+                        <Label htmlFor="email" className="dark:text-gray-300">Email address</Label>
                         <Input
                             id="email"
                             type="email"
@@ -62,15 +62,16 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
                             placeholder="email@example.com"
+                            className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                         />
                         <InputError message={errors.email} />
                     </div>
 
                     <div className="grid gap-2">
                         <div className="flex items-center">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password" className="dark:text-gray-300">Password</Label>
                             {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
+                                <TextLink href={route('password.request')} className="ml-auto text-sm dark:text-gray-300 dark:hover:text-white" tabIndex={5}>
                                     Forgot password?
                                 </TextLink>
                             )}
@@ -84,6 +85,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
                             placeholder="Password"
+                            className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                         />
                         <InputError message={errors.password} />
                     </div>
@@ -95,8 +97,9 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             checked={data.remember}
                             onClick={() => setData('remember', !data.remember)}
                             tabIndex={3}
+                            className="dark:border-gray-600"
                         />
-                        <Label htmlFor="remember">Remember me</Label>
+                        <Label htmlFor="remember" className="dark:text-gray-300">Remember me</Label>
                     </div>
 
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
@@ -105,15 +108,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     </Button>
                 </div>
 
-                <div className="text-muted-foreground text-center text-sm">
+                <div className="text-muted-foreground text-center text-sm dark:text-gray-400">
                     Don't have an account?{' '}
-                    <TextLink href={route('register')} tabIndex={5}>
+                    <TextLink href={route('register')} tabIndex={5} className="dark:text-gray-300 dark:hover:text-white">
                         Sign up
                     </TextLink>
                 </div>
             </form>
 
-            {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
+            {status && <div className="mb-4 text-center text-sm font-medium text-green-600 dark:text-green-400">{status}</div>}
         </AuthLayout>
     );
 }

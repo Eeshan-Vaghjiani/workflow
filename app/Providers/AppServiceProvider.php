@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Register custom FileService for when you explicitly want to use it
         $this->app->singleton(FileService::class);
-        
+
         // Register AIService
         $this->app->singleton(AIService::class);
     }
@@ -49,14 +49,24 @@ class AppServiceProvider extends ServiceProvider
                 'trace' => $e->getTraceAsString()
             ]);
         });
-        
+
         // Configure Sanctum for local development authentication
         $this->configureSanctum();
-        
+
         // Configure session for authentication
         $this->configureSession();
+
+        // Disable SSL verification for WorkOS in local environment
+        if ($this->app->environment('local')) {
+            // This is only for local development to bypass SSL certificate issues
+            Config::set('services.workos.ssl_verify', false);
+
+            // Set PHP cURL options globally
+            ini_set('curl.cainfo', '');
+            putenv('CURL_CA_BUNDLE=');
+        }
     }
-    
+
     /**
      * Configure Sanctum for SPA authentication
      */
@@ -79,17 +89,17 @@ class AppServiceProvider extends ServiceProvider
             '127.0.0.1:5177',
             '::1',
         ];
-        
+
         // Get current stateful domains and merge
         $currentDomains = Config::get('sanctum.stateful', []);
         if (is_string($currentDomains)) {
             $currentDomains = explode(',', $currentDomains);
         }
-        
+
         $allDomains = array_unique(array_merge($currentDomains, $domains));
         Config::set('sanctum.stateful', $allDomains);
     }
-    
+
     /**
      * Configure session for authentication
      */
@@ -97,16 +107,16 @@ class AppServiceProvider extends ServiceProvider
     {
         // Set session domain to allow cross-domain cookies
         Config::set('session.domain', '127.0.0.1');
-        
+
         // Set SameSite attribute to lax for local development
         Config::set('session.same_site', 'lax');
-        
+
         // Ensure cookies can be sent in cross-origin requests
         Config::set('cors.supports_credentials', true);
         Config::set('cors.allowed_origins', ['http://127.0.0.1:8000']);
         Config::set('cors.allowed_headers', ['*']);
         Config::set('cors.paths', ['api/*', 'sanctum/csrf-cookie', 'auth/*']);
-        
+
         // Set secure cookie to false for local development
         Config::set('session.secure', false);
     }

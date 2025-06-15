@@ -19,15 +19,41 @@ use Illuminate\Support\Str;
 
 // WorkOS AuthKit routes
 Route::get('login', function (AuthKitLoginRequest $request) {
+    // Just return the redirect without trying to set the URI
     return $request->redirect();
 })->middleware(['guest'])->name('login');
 
 Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
-    return tap(to_route('dashboard'), fn () => $request->authenticate(
-        null, // Use default findUsing
+    return tap(to_route('auth.success'), fn () => $request->authenticate(
+        function ($workosId) {
+            // First try to find user by WorkOS ID
+            $existingUser = AppUser::where('workos_id', $workosId)->first();
+
+            // If found by WorkOS ID, return the user
+            if ($existingUser) {
+                $existingUser->update(['last_login_at' => now()]);
+                return $existingUser;
+            }
+
+            // No user found by WorkOS ID, return null to proceed to createUsing
+            return null;
+        },
         function (User $user) {
-            // Custom createUsing function that generates a secure password
-            return AppUser::create([
+            // Check if a user with this email already exists
+            $existingUser = AppUser::where('email', $user->email)->first();
+
+            if ($existingUser) {
+                // Update the existing user with WorkOS data
+                $existingUser->update([
+                    'workos_id' => $user->id,
+                    'avatar' => $user->avatar ?? $existingUser->avatar,
+                    'last_login_at' => now(),
+                ]);
+                return $existingUser;
+            }
+
+            // Create a new user if no existing user was found
+            $newUser = AppUser::create([
                 'name' => $user->firstName.' '.$user->lastName,
                 'email' => $user->email,
                 'email_verified_at' => now(),
@@ -35,9 +61,15 @@ Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
                 'avatar' => $user->avatar ?? '',
                 'password' => bcrypt(Str::random(32)), // Generate a secure random password
             ]);
+
+            // Only for brand new users, mark the session as already 2FA authenticated
+            // since they couldn't have set up 2FA yet
+            session(['two_factor_authenticated' => true]);
+
+            return $newUser;
         }
     ));
-})->middleware(['guest']);
+})->middleware(['guest'])->name('authenticate');
 
 Route::post('logout', function (AuthKitLogoutRequest $request) {
     return $request->logout();

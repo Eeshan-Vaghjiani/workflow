@@ -46,11 +46,8 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
-        // App\Providers\AuthServiceProvider::class, // Uncomment if authentication is required
-        App\Providers\BroadcastServiceProvider::class, // Enable broadcasting
-        // App\Providers\EventServiceProvider::class, // Uncomment if using events
-        App\Providers\RouteServiceProvider::class,
         App\Providers\WorkOSServiceProvider::class,
+        App\Providers\RouteServiceProvider::class,
 
     ])->toArray(),
 

@@ -17,8 +17,9 @@ use App\Models\Group;
 
 // Private chat channel for direct messages - log details for debugging
 Broadcast::channel('chat.{userId}', function ($user, $userId) {
-    $isAuthorized = (int) $user->id === (int) $userId;
-    
+    // Always allow access during debugging
+    $isAuthorized = true;
+
     // Log authorization attempt for debugging
     Log::debug('Chat channel authorization attempt', [
         'channel' => 'chat.'.$userId,
@@ -26,12 +27,10 @@ Broadcast::channel('chat.{userId}', function ($user, $userId) {
         'requested_user_id' => $userId,
         'authorized' => $isAuthorized
     ]);
-    
-    // During debugging, we'll allow all authenticated users to connect
-    // to any chat channel to rule out permissions issues
-    return true; // Temporarily allow any authenticated user
-    
-    // Use the correct authorization logic (commented out during debugging)
+
+    return $isAuthorized;
+
+    // Use the correct authorization logic when going to production:
     // return (int) $user->id === (int) $userId;
 });
 
@@ -44,19 +43,19 @@ Broadcast::channel('group.{groupId}', function ($user, $groupId) {
             'user_id' => $user->id,
             'group_id' => $groupId
         ]);
-        
+
         // During debugging, allow any authenticated user
         return [
             'id' => $user->id,
             'name' => $user->name,
             'avatar' => $user->avatar ?? null,
         ];
-        
+
         /* Normal logic (commented during debugging)
         $group = Group::findOrFail($groupId);
-        
+
         $isMember = $group->members()->where('user_id', $user->id)->exists();
-        
+
         if ($isMember) {
             return [
                 'id' => $user->id,
@@ -64,7 +63,7 @@ Broadcast::channel('group.{groupId}', function ($user, $groupId) {
                 'avatar' => $user->avatar,
             ];
         }
-        
+
         return false;
         */
     } catch (\Exception $e) {
@@ -75,4 +74,9 @@ Broadcast::channel('group.{groupId}', function ($user, $groupId) {
         ]);
         return false;
     }
-}); 
+});
+
+// Public chat channel for development
+Broadcast::channel('chat', function () {
+    return true;
+});

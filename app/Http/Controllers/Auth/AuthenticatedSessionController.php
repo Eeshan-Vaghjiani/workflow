@@ -55,8 +55,8 @@ class AuthenticatedSessionController extends Controller
                 $user->save();
             }
 
-            // Return JSON response for API requests
-            if ($request->expectsJson() || $request->is('api/*')) {
+            // Return JSON response ONLY for API requests, not for Inertia requests
+            if (($request->expectsJson() || $request->is('api/*')) && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => true,
                     'user' => $user,
@@ -66,12 +66,8 @@ class AuthenticatedSessionController extends Controller
                 ]);
             }
 
-            // Always redirect to dashboard after successful login
-            if ($request->header('X-Inertia')) {
-                return redirect()->route('dashboard');
-            }
-
-            return redirect()->route('dashboard');
+            // For Inertia requests or regular web requests, redirect to dashboard
+            return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             Log::error('Login Error', [
                 'error' => $e->getMessage(),
@@ -79,7 +75,7 @@ class AuthenticatedSessionController extends Controller
             ]);
 
             // Return JSON error for API requests
-            if ($request->expectsJson() || $request->is('api/*')) {
+            if (($request->expectsJson() || $request->is('api/*')) && !$request->header('X-Inertia')) {
                 return response()->json([
                     'success' => false,
                     'message' => 'The provided credentials do not match our records.',

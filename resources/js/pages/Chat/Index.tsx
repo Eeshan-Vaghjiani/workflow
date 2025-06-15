@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Search, Users, Clock, ArrowLeftCircle, Plus, User } from 'lucide-react';
+import { Send, Search, Users, Clock, ArrowLeftCircle, Plus, User, Trash } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import axios from 'axios';
 
@@ -71,7 +71,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
     const fetchChats = async () => {
       try {
         setIsLoading(true);
-        
+
         // Get CSRF token from meta tag
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         const authHeaders = {
@@ -79,18 +79,18 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           'Accept': 'application/json',
           'X-Requested-With': 'XMLHttpRequest'
         };
-        
+
         // Fetch groups using the correct chat groups endpoint
         const groupsResponse = await axios.get(window.location.origin + '/api/chat/groups', {
           withCredentials: true,
           headers: authHeaders
         });
-        
+
         // Check if the response contains data directly or has a nested data property
         const groupsData = groupsResponse.data.data || groupsResponse.data;
-        
+
         console.log('Groups response:', groupsData);
-        
+
         const groups = Array.isArray(groupsData) ? groupsData.map((group: any) => ({
           id: group.id,
           name: group.name,
@@ -102,7 +102,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           } : undefined,
           unreadCount: group.unreadCount || 0
         })) : [];
-        
+
         // Fetch direct message conversations
         try {
           const directMessagesResponse = await axios.get(window.location.origin + '/api/direct-messages', {
@@ -110,9 +110,9 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
             headers: authHeaders
           });
           const directMessagesData = directMessagesResponse.data.conversations || directMessagesResponse.data || [];
-          
+
           console.log('Direct messages response:', directMessagesData);
-          
+
           const directChats = Array.isArray(directMessagesData) ? directMessagesData.map((conversation: any) => ({
             id: conversation.user.id,
             name: conversation.user.name,
@@ -124,7 +124,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
             } : undefined,
             unreadCount: conversation.unreadCount || 0
           })) : [];
-          
+
           // Combine groups and direct messages
           setChats([...groups, ...directChats] as Chat[]);
         } catch (dmError) {
@@ -132,7 +132,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           // Continue with just groups if direct messages fail
           setChats(groups as Chat[]);
         }
-        
+
         setIsLoading(false);
       } catch (error) {
         console.error('Error fetching chats:', error);
@@ -144,17 +144,17 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         });
       }
     };
-    
+
     fetchChats();
   }, []);
 
-  // Fetch messages for the selected chat
+  // Set up real-time updates for the current chat
   useEffect(() => {
-    if (selectedChat) {
+    if (selectedChat?.id) {
       const fetchMessages = async () => {
         try {
           setLoadingMessages(true);
-          
+
           // Get CSRF token from meta tag
           const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
           const authHeaders = {
@@ -162,7 +162,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
             'Accept': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
           };
-          
+
           // First check if we're authenticated
           try {
             const authCheckResponse = await axios.get(window.location.origin + '/debug/auth-status', {
@@ -182,12 +182,12 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           } catch (authError) {
             console.error('Auth check failed:', authError);
           }
-          
+
           let response;
           let messagesFetched = false;
           let attempts = 0;
           const maxAttempts = 3;
-          
+
           // Try multiple endpoints with retry logic
           while (!messagesFetched && attempts < maxAttempts) {
             attempts++;
@@ -246,18 +246,18 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
           }
-          
+
           if (!messagesFetched) {
             throw new Error('Failed to fetch messages after multiple attempts');
           }
-          
+
           const responseData = response?.data ? (
-            Array.isArray(response.data) ? response.data : 
-            response.data.messages || response.data.data || []
+            Array.isArray(response.data) ? response.data :
+              response.data.messages || response.data.data || []
           ) : [];
-          
+
           console.log('Fetched messages:', responseData);
-          
+
           setMessages(responseData);
           setLoadingMessages(false);
         } catch (error) {
@@ -270,137 +270,163 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           });
         }
       };
-      
+
       fetchMessages();
-      
-      // Set up Pusher channel for real-time updates based on chat type
+
+      // Set up Pusher channel for real-time updates
       try {
         // Check if Echo is properly initialized
         if (typeof window.Echo === 'undefined') {
           console.error('Echo is not defined. Real-time messaging will not work.');
           return;
         }
-        
-        // Determine correct channel name
-        let channelName;
-        if (selectedChat.type === 'group') {
-          channelName = `group.${selectedChat.id}`;
-        } else {
-          // For direct messages, we listen on our own user channel
-          channelName = `chat.${auth.user.id}`;
+
+        // Use a single public channel for all messages
+        const channelName = 'chat';
+        console.log('Setting up listener on channel:', channelName);
+
+        // Subscribe to the public channel
+        const channel = window.Echo.channel(channelName);
+
+        if (!channel) {
+          console.error('Failed to subscribe to channel:', channelName);
+          return;
         }
-        
-        console.log('Joining channel:', channelName);
-        
-        let channel: any;
-        
-        // Function to handle channel subscription with retries
-        const subscribeToChannel = (usePrivate = false, attempt = 1) => {
-          const maxAttempts = 3;
-          
-          try {
-            if (usePrivate) {
-              // Attempt to join as a private channel
-              console.log(`Attempt ${attempt}: Joining private channel: ${channelName}`);
-              channel = window.Echo.private(channelName);
-              console.log('Successfully subscribed to private channel:', channelName);
-            } else {
-              // Use public channel during debugging
-              console.log(`Attempt ${attempt}: Joining public channel: ${channelName}`);
-              channel = window.Echo.channel(channelName);
-              console.log('Successfully subscribed to public channel:', channelName);
-            }
-            
-            // Set up error handler
-            channel.error((err: any) => {
-              console.error(`Error on channel ${channelName}:`, err);
-              
-              // If this is a public channel and we got an error, try private
-              if (!usePrivate && attempt <= maxAttempts) {
-                console.log('Public channel error, trying private channel instead');
-                subscribeToChannel(true, attempt + 1);
-              } 
-              // If this is already a private channel or we've exceeded retries, give up
-              else if (attempt < maxAttempts) {
-                console.log(`Retrying channel subscription (attempt ${attempt + 1}/${maxAttempts})`);
-                setTimeout(() => {
-                  subscribeToChannel(usePrivate, attempt + 1);
-                }, 1000); // Wait a second before retrying
-              }
-            });
-            
-            // Listen for appropriate event based on chat type
-            const eventName = selectedChat.type === 'group' ? 'new-message' : 'message.new';
-            
-            console.log(`Setting up listener for event: ${eventName} on channel: ${channelName}`);
-            
-            // Clear any existing listeners for this event to prevent duplicates
-            channel.stopListening(eventName);
-            
-            // Set up message listener
-            channel.listen(eventName, (data: any) => {
-              console.log(`Received ${eventName} event:`, data);
-              
-              // For direct messages, only process if they're from the selected user
-              if (selectedChat.type === 'direct' && 
-                  data.user && 
-                  data.user.id !== selectedChat.id && 
-                  data.user_id !== selectedChat.id) {
-                console.log('Ignoring message from different user than currently selected');
-                return;
-              }
-              
-              // Only add the message if it's not already in our list
-              // Generate a truly unique key to avoid duplicates
+
+        console.log('Successfully subscribed to channel:', channelName);
+
+        // Listen for new messages with debug logging
+        channel.listen('message.new', (data: any) => {
+          console.log(`Received message.new event on ${channelName}:`, data);
+
+          // Only process messages relevant to the current chat
+          if ((selectedChat.type === 'direct' &&
+            (data.sender_id === selectedChat.id || data.receiver_id === selectedChat.id)) ||
+            (selectedChat.type === 'group' && data.group_id === selectedChat.id)) {
+
+            console.log('Message is relevant to current chat, updating state');
+
+            // Force update messages immediately
+            setMessages(prevMessages => {
+              // Generate a unique key for the new message
               const generateUniqueKey = (msg: any) => {
                 return `${msg.id || ''}-${msg.user_id || ''}-${new Date(msg.created_at || '').getTime() || Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
               };
-              
-              // Check both by ID and by content/timestamp to handle potential duplicates
-              const isDuplicate = messages.some(msg => 
-                (msg.id === data.id) || 
-                (msg.user_id === data.user_id && 
-                 (msg.content === data.content || msg.message === data.message) &&
-                 Math.abs(new Date(msg.created_at).getTime() - new Date(data.created_at || '').getTime()) < 1000)
+
+              // Check if this message is already in our list to avoid duplicates
+              const isDuplicate = prevMessages.some(msg =>
+                (msg.id === data.id) ||
+                (msg.user_id === data.user_id &&
+                  (msg.content === data.content || msg.message === data.message) &&
+                  Math.abs(new Date(msg.created_at).getTime() - new Date(data.created_at || '').getTime()) < 1000)
               );
-              
+
               if (!isDuplicate) {
                 console.log('Adding new message to state:', data);
                 // Add a unique key to the message to help React identify it
-                const messageWithKey = { ...data, _key: generateUniqueKey(data) };
-                setMessages(prevMessages => [...prevMessages, messageWithKey]);
+                const messageWithKey = {
+                  ...data,
+                  _key: generateUniqueKey(data),
+                  // Ensure is_from_me is correctly set based on the current user
+                  is_from_me: data.user_id === currentUser.id || data.sender_id === currentUser.id
+                };
+
+                // Schedule scrolling after the state update
+                setTimeout(() => {
+                  if (messagesContainerRef.current) {
+                    messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+                  }
+                }, 100);
+
+                return [...prevMessages, messageWithKey];
               } else {
                 console.log('Duplicate message detected, not adding to state');
+                return prevMessages;
               }
             });
-          } catch (error) {
-            console.error(`Channel subscription error (attempt ${attempt}/${maxAttempts}):`, error);
-            
-            // If we get an error trying one type, try the other
-            if (usePrivate && attempt <= maxAttempts) {
-              console.log('Error with private channel, trying public channel');
-              subscribeToChannel(false, attempt + 1);
-            } else if (!usePrivate && attempt <= maxAttempts) {
-              console.log('Error with public channel, trying private channel');
-              subscribeToChannel(true, attempt + 1);
-            } else if (attempt < maxAttempts) {
-              console.log(`Retrying subscription (attempt ${attempt + 1}/${maxAttempts})`);
-              setTimeout(() => {
-                subscribeToChannel(usePrivate, attempt + 1);
-              }, 1000);
-            }
+          } else {
+            console.log('Message is for another chat, updating chat list');
+            // This message is for another chat, update the chat list
+            setChats(prevChats => {
+              // Find the chat with the sender
+              const chatIndex = prevChats.findIndex(
+                chat => chat.type === 'direct' &&
+                  (chat.id === data.sender_id || chat.id === data.user_id)
+              );
+
+              if (chatIndex >= 0) {
+                // Update existing chat
+                const updatedChats = [...prevChats];
+                updatedChats[chatIndex] = {
+                  ...updatedChats[chatIndex],
+                  lastMessage: {
+                    content: data.content || data.message,
+                    timestamp: data.created_at,
+                  },
+                  unreadCount: (updatedChats[chatIndex].unreadCount || 0) + 1,
+                };
+                return updatedChats;
+              } else if (data.user) {
+                // Create new chat if it doesn't exist
+                const newChat: Chat = {
+                  id: data.sender_id || data.user.id,
+                  name: data.user.name,
+                  type: 'direct',
+                  avatar: data.user.avatar,
+                  lastMessage: {
+                    content: data.content || data.message,
+                    timestamp: data.created_at,
+                  },
+                  unreadCount: 1,
+                };
+                return [...prevChats, newChat];
+              }
+              return prevChats;
+            });
+
+            // Show notification
+            toast({
+              title: `New message from ${data.user?.name || 'Someone'}`,
+              description: data.content || data.message,
+              duration: 5000,
+            });
           }
-        };
-        
-        // Start with public channel during debugging
-        subscribeToChannel(false, 1);
-        
+        });
+
+        // Also listen for the raw event name
+        channel.listen('.NewDirectMessage', (data: any) => {
+          console.log('Received raw NewDirectMessage event:', data);
+          // Process the message the same way as message.new
+          // ... (copy the same logic as above)
+        });
+
+        // Listen for message deletion events
+        channel.listen('message.deleted', (data: any) => {
+          console.log(`Received message.deleted event:`, data);
+
+          // Remove the message from the local state
+          if (data.id) {
+            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== data.id));
+          }
+        });
+
+        // Also listen for the raw event name
+        channel.listen('.MessageDeleted', (data: any) => {
+          console.log('Received raw MessageDeleted event:', data);
+          // Process the deletion the same way as message.deleted
+          if (data.id) {
+            setMessages(prevMessages => prevMessages.filter(msg => msg.id !== data.id));
+          }
+        });
+
         // Cleanup function to unsubscribe when component unmounts or selectedChat changes
         return () => {
           console.log('Leaving channel:', channelName);
           if (channel) {
-            const eventName = selectedChat.type === 'group' ? 'new-message' : 'message.new';
-            channel.stopListening(eventName);
+            channel.stopListening('message.new');
+            channel.stopListening('message.deleted');
+            channel.stopListening('.NewDirectMessage');
+            channel.stopListening('.MessageDeleted');
             window.Echo.leave(channelName);
           }
         };
@@ -408,7 +434,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         console.error('Error setting up real-time channel:', error);
       }
     }
-  }, [selectedChat?.id]);
+  }, [selectedChat?.id, currentUser?.id]);
 
   // Scroll to bottom when messages change
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -430,7 +456,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
 
     try {
       setIsSending(true);
-      
+
       // Get CSRF token from meta tag
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
       const authHeaders = {
@@ -438,13 +464,13 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest'
       };
-      
+
       let response;
       const messageText = newMessage.trim();
       let messageSent = false;
       let attempts = 0;
       const maxAttempts = 3;
-      
+
       // Try multiple endpoints with retry logic
       while (!messageSent && attempts < maxAttempts) {
         attempts++;
@@ -514,7 +540,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
-      
+
       if (!messageSent) {
         throw new Error('Failed to send message after multiple attempts');
       }
@@ -523,7 +549,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
 
       // Generate a unique temporary ID for local messages
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-      
+
       // Add the new message to the list locally (the Pusher event will add it properly)
       const tempMessage: Message = {
         id: tempId, // Use a unique string ID for temporary messages
@@ -533,33 +559,33 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         created_at: new Date().toISOString(),
         user: currentUser
       };
-      
+
       // Ensure we're not adding duplicates by checking content and timestamp
-      if (!messages.some(m => 
-          m.user_id === tempMessage.user_id && 
-          (m.message === tempMessage.message || m.content === tempMessage.content) && 
-          Math.abs(new Date(m.created_at).getTime() - new Date(tempMessage.created_at).getTime()) < 1000
+      if (!messages.some(m =>
+        m.user_id === tempMessage.user_id &&
+        (m.message === tempMessage.message || m.content === tempMessage.content) &&
+        Math.abs(new Date(m.created_at).getTime() - new Date(tempMessage.created_at).getTime()) < 1000
       )) {
         setMessages(prevMessages => [...prevMessages, tempMessage]);
       }
-      
+
       setNewMessage('');
 
       // Update the chat in the list with the last message
-      setChats(prevChats => 
-        prevChats.map(chat => 
-          chat.id === selectedChat.id 
+      setChats(prevChats =>
+        prevChats.map(chat =>
+          chat.id === selectedChat.id
             ? {
-                ...chat,
-                lastMessage: {
-                  content: messageText,
-                  timestamp: new Date().toISOString(),
-                },
-              }
+              ...chat,
+              lastMessage: {
+                content: messageText,
+                timestamp: new Date().toISOString(),
+              },
+            }
             : chat
         )
       );
-      
+
       setIsSending(false);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -571,26 +597,26 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
       });
     }
   };
-  
+
   // Search for users
   const searchUsers = async (query: string) => {
     if (query.length < 2) {
       setSearchResults([]);
       return;
     }
-    
+
     try {
       setIsSearchingUsers(true);
       console.log('Searching for users with query:', query);
-      
+
       // Get CSRF token from meta tag
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
       console.log('CSRF token available:', !!csrfToken);
-      
+
       // Use an absolute URL to ensure it goes through the web middleware
       const apiUrl = window.location.origin + `/api/chat/search-users?name=${encodeURIComponent(query)}`;
       console.log('Using API URL:', apiUrl);
-      
+
       const response = await axios.get(apiUrl, {
         withCredentials: true,
         headers: {
@@ -600,7 +626,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         }
       });
       console.log('User search results:', response.data);
-      
+
       // Check if the response contains an error
       if (response.data && response.data.error) {
         console.error('Search API returned error:', response.data.error);
@@ -613,7 +639,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         setIsSearchingUsers(false);
         return;
       }
-      
+
       // Make sure we got an array back
       if (!Array.isArray(response.data)) {
         console.error('Expected array of users but got:', typeof response.data, response.data);
@@ -627,11 +653,11 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         // Valid array response
         setSearchResults(response.data);
       }
-      
+
       setIsSearchingUsers(false);
     } catch (error) {
       console.error('Error searching users:', error);
-      
+
       // Extract the error message from Axios error
       let errorMessage = 'Failed to search for users';
       if (axios.isAxiosError(error)) {
@@ -643,40 +669,40 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           console.error('No response received:', error.request);
         }
       }
-      
+
       toast({
         title: 'Search Error',
         description: errorMessage,
         variant: 'destructive',
       });
-      
+
       setSearchResults([]);
       setIsSearchingUsers(false);
     }
   };
-  
+
   // Handle user search input change
   const handleUserSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    
+
     if (showUserSearch) {
       // Debounce search to avoid too many requests
       const timeoutId = setTimeout(() => {
         searchUsers(query);
       }, 300);
-      
+
       return () => clearTimeout(timeoutId);
     }
   };
-  
+
   // Start a new direct message chat with a user
   const startDirectChat = (user: User) => {
     // Check if we already have a chat with this user
     const existingChat = chats.find(
       chat => chat.type === 'direct' && chat.id === user.id
     );
-    
+
     if (existingChat) {
       setSelectedChat(existingChat);
     } else {
@@ -687,28 +713,101 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         type: 'direct' as const,
         avatar: user.avatar,
       };
-      
+
       setChats(prevChats => [...prevChats, newChat]);
       setSelectedChat(newChat);
     }
-    
+
     // Reset search
     setShowUserSearch(false);
     setSearchQuery('');
     setSearchResults([]);
   };
-  
-  const filteredChats = showUserSearch 
-    ? [] 
+
+  const filteredChats = showUserSearch
+    ? []
     : searchQuery
-      ? chats.filter(chat => 
-          chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
+      ? chats.filter(chat =>
+        chat.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
       : chats;
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Add deleteMessage function
+  const deleteMessage = async (messageId: number | string) => {
+    if (!selectedChat) return;
+
+    try {
+      // Get CSRF token from meta tag
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      const authHeaders = {
+        'X-CSRF-TOKEN': csrfToken || '',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      };
+
+      // Try multiple endpoints with retry logic
+      let response;
+      let success = false;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (!success && attempts < maxAttempts) {
+        attempts++;
+        try {
+          // Try web route first
+          response = await axios.delete(window.location.origin + `/messages/${messageId}`, {
+            withCredentials: true,
+            headers: authHeaders
+          });
+          console.log('Message deleted successfully via web route:', response?.data);
+          success = true;
+        } catch (webError) {
+          console.log(`Web route failed (attempt ${attempts}), trying API route...`);
+          try {
+            // Try API route
+            response = await axios.delete(window.location.origin + `/api/direct-messages/${messageId}`, {
+              withCredentials: true,
+              headers: authHeaders
+            });
+            console.log('Message deleted successfully via API route:', response?.data);
+            success = true;
+          } catch (apiError) {
+            console.error(`API route failed (attempt ${attempts})`, apiError);
+            if (attempts >= maxAttempts) {
+              throw apiError;
+            }
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+
+      if (!success) {
+        throw new Error('Failed to delete message after multiple attempts');
+      }
+
+      // Remove the message from the local state
+      setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+
+      toast({
+        title: 'Success',
+        description: 'Message deleted successfully',
+        variant: 'default',
+      });
+
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete message. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -720,8 +819,8 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
           <div className="p-4 border-b border-neutral-200 dark:border-neutral-700 shrink-0">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-bold">Chats</h2>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => {
                   setShowUserSearch(true);
@@ -744,7 +843,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
             </div>
             {showUserSearch && (
               <div className="flex items-center mt-2">
-                <button 
+                <button
                   className="text-sm text-blue-500 flex items-center"
                   onClick={() => {
                     setShowUserSearch(false);
@@ -758,7 +857,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
               {isLoading ? (
@@ -820,11 +919,10 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                   {filteredChats.map((chat) => (
                     <button
                       key={chat.id}
-                      className={`flex w-full items-center gap-2 rounded-md p-2 ${
-                        selectedChat?.id === chat.id 
-                          ? 'bg-neutral-100 dark:bg-neutral-800' 
-                          : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                      }`}
+                      className={`flex w-full items-center gap-2 rounded-md p-2 ${selectedChat?.id === chat.id
+                        ? 'bg-neutral-100 dark:bg-neutral-800'
+                        : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                        }`}
                       onClick={() => handleSelectChat(chat)}
                     >
                       <div className="relative">
@@ -880,9 +978,9 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
             {/* Chat Header */}
             <div className="flex items-center p-4 border-b border-neutral-200 dark:border-neutral-700 shrink-0 bg-white dark:bg-neutral-900">
               {window.innerWidth < 768 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="mr-2"
                   onClick={() => setSelectedChat(null)}
                 >
@@ -912,9 +1010,9 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                 </p>
               </div>
             </div>
-            
+
             {/* Messages Container */}
-            <div 
+            <div
               ref={messagesContainerRef}
               className="flex-1 overflow-y-auto p-4"
               style={{ height: 'calc(100% - 140px)' }} // Explicit calculation: full height minus header and input heights
@@ -931,41 +1029,58 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
               ) : (
                 <div className="space-y-4">
                   {messages.map((message, index) => {
-                    // Create a truly unique key using multiple unique properties plus a random component
-                    // This ensures each message will have a completely unique key even with fast rerenders
-                    const uniqueMessageId = typeof message.id === 'number' ? message.id : message.id || '';
-                    const uniqueKey = `msg-${uniqueMessageId}-${message.user_id}-${index}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                    
+                    const isFromMe = message.user_id === currentUser.id || message.is_from_me;
+                    const showAvatar = !isFromMe && (!messages[index - 1] || messages[index - 1].user_id !== message.user_id);
+
                     return (
                       <div
-                        key={uniqueKey}
-                        className={`flex ${message.user_id === currentUser.id ? 'justify-end' : 'justify-start'}`}
+                        key={message._key || message.id || index}
+                        className={`flex w-full ${isFromMe ? 'justify-end' : 'justify-start'} mb-2`}
                       >
-                        {message.user_id !== currentUser.id && (
-                          <Avatar className="h-8 w-8 mr-2 mt-1 shrink-0">
-                            <AvatarImage src={message.user?.avatar} alt={message.user?.name} />
-                            <AvatarFallback>
-                              {message.user?.name?.substring(0, 2).toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            message.user_id === currentUser.id
-                              ? 'bg-blue-500 text-white dark:bg-blue-600'
-                              : 'bg-neutral-100 dark:bg-neutral-800'
-                          }`}
-                        >
-                          {message.user_id !== currentUser.id && (
-                            <div className="text-xs font-medium mb-1 text-neutral-500 dark:text-neutral-300">
-                              {message.user?.name || 'Unknown User'}
-                            </div>
+                        <div className={`flex ${isFromMe ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 max-w-[80%]`}>
+                          {!isFromMe && showAvatar && (
+                            <Avatar className="h-8 w-8">
+                              {message.user?.avatar ? (
+                                <AvatarImage src={message.user.avatar} alt={message.user.name} />
+                              ) : (
+                                <AvatarFallback>
+                                  {message.user?.name?.substring(0, 2).toUpperCase() || 'U'}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
                           )}
-                          <div className="break-words">
-                            {message.content || message.message}
-                          </div>
-                          <div className="text-xs mt-1 opacity-70 text-right">
-                            {formatTime(message.created_at)}
+
+                          <div className="group relative">
+                            <div
+                              className={`rounded-lg p-3 ${isFromMe
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white'
+                                }`}
+                            >
+                              {message.content || message.message}
+                            </div>
+
+                            <div className="text-xs text-neutral-500 mt-1">
+                              {formatTime(message.created_at)}
+                            </div>
+
+                            {/* Delete button - only show for own messages */}
+                            {isFromMe && (
+                              <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-neutral-500 hover:text-red-500"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteMessage(message.id);
+                                  }}
+                                  title="Delete message"
+                                >
+                                  <Trash size={14} />
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -975,10 +1090,10 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                 </div>
               )}
             </div>
-            
+
             {/* Message Input - Fixed at the bottom */}
             <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 shrink-0 bg-white dark:bg-neutral-900">
-              <form 
+              <form
                 className="flex items-center gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -993,8 +1108,8 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                   disabled={isSending}
                   className="flex-1"
                 />
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isSending || !newMessage.trim()}
                   className="shrink-0"
                 >
@@ -1021,4 +1136,4 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
       </div>
     </AppLayout>
   );
-} 
+}

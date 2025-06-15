@@ -1,5 +1,20 @@
 <?php
 
+// Disable SSL verification for local development
+if (getenv('APP_ENV') === 'local') {
+    // Set PHP cURL options globally
+    ini_set('curl.cainfo', '');
+    putenv('CURL_CA_BUNDLE=');
+
+    // Direct override of PHP's default SSL verification settings
+    stream_context_set_default([
+        'ssl' => [
+            'verify_peer' => false,
+            'verify_peer_name' => false,
+        ],
+    ]);
+}
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

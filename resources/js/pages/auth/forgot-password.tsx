@@ -25,12 +25,12 @@ export default function ForgotPassword({ status }: { status?: string }) {
         <AuthLayout title="Forgot password" description="Enter your email to receive a password reset link">
             <Head title="Forgot password" />
 
-            {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
+            {status && <div className="mb-4 text-center text-sm font-medium text-green-600 dark:text-green-400">{status}</div>}
 
             <div className="space-y-6">
                 <form onSubmit={submit}>
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email address</Label>
+                        <Label htmlFor="email" className="dark:text-gray-300">Email address</Label>
                         <Input
                             id="email"
                             type="email"
@@ -40,6 +40,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             autoFocus
                             onChange={(e) => setData('email', e.target.value)}
                             placeholder="email@example.com"
+                            className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
                         />
 
                         <InputError message={errors.email} />
@@ -53,9 +54,9 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     </div>
                 </form>
 
-                <div className="text-muted-foreground space-x-1 text-center text-sm">
+                <div className="text-muted-foreground space-x-1 text-center text-sm dark:text-gray-400">
                     <span>Or, return to</span>
-                    <TextLink href={route('login')}>log in</TextLink>
+                    <TextLink href={route('login')} className="dark:text-gray-300 dark:hover:text-white">log in</TextLink>
                 </div>
             </div>
         </AuthLayout>

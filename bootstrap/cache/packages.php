@@ -34,6 +34,12 @@
       0 => 'Laravel\\Tinker\\TinkerServiceProvider',
     ),
   ),
+  'laravel/workos' => 
+  array (
+    'providers' => 
+    array (
+    ),
+  ),
   'nesbot/carbon' => 
   array (
     'providers' => 

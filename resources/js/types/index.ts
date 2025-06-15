@@ -3,6 +3,7 @@ export interface User {
     name: string
     email: string
     avatar?: string
+    workos_id?: string
 }
 
 export interface PageProps {

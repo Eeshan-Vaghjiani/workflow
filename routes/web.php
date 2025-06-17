@@ -64,16 +64,9 @@ Route::middleware([
     'two_factor'
 ])->group(function () {
     // Mpesa Payment Routes
-    Route::get('/mpesa', function() {
+    Route::get('/mpesa', function(Request $request) {
         return Inertia::render('MpesaPayment');
     })->name('mpesa.index');
-    Route::get('/api/mpesa', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.index');
-    Route::get('/api/mpesa-public', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.public');
-    Route::post('/mpesa/stk-push', [App\Http\Controllers\MpesaController::class, 'stkPush'])->name('mpesa.stk-push');
-    Route::get('/mpesa/status/{id}', [App\Http\Controllers\MpesaController::class, 'status'])->name('mpesa.status');
-    Route::post('/mpesa/mark-dismissed/{id}', [App\Http\Controllers\MpesaController::class, 'markDismissed'])->name('mpesa.mark-dismissed');
-    Route::post('/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.callback');
-    Route::post('/api/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.api.callback');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

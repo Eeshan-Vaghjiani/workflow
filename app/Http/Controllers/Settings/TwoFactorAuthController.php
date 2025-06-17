@@ -99,6 +99,12 @@ class TwoFactorAuthController extends Controller
     public function destroy(Request $request, TwoFactorAuthenticationService $twoFactorService): RedirectResponse
     {
         try {
+            // Log the request for debugging
+            \Illuminate\Support\Facades\Log::info('Attempting to disable 2FA', [
+                'user_id' => $request->user()->id,
+                'has_2fa' => $request->user()->hasTwoFactorEnabled(),
+            ]);
+
             $request->validate([
                 'password' => ['required', 'current_password'],
             ]);
@@ -109,11 +115,33 @@ class TwoFactorAuthController extends Controller
                 return back()->with('error', 'Two-factor authentication is not enabled.');
             }
 
+            // Disable 2FA
             $twoFactorService->disable($user);
+
+            // Mark the session as 2FA authenticated to avoid redirects
+            session(['two_factor_authenticated' => true]);
+
+            // Log success
+            \Illuminate\Support\Facades\Log::info('2FA disabled successfully', [
+                'user_id' => $user->id,
+            ]);
 
             return back()->with('status', 'Two-factor authentication has been disabled.');
         } catch (ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('2FA disable validation error', [
+                'errors' => $e->errors(),
+                'user_id' => $request->user()->id ?? 'unknown',
+            ]);
             return back()->withErrors($e->errors())->withInput();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('2FA disable error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $request->user()->id ?? 'unknown',
+            ]);
+            return back()->withErrors([
+                'password' => 'An error occurred while disabling two-factor authentication.',
+            ])->withInput();
         }
     }
 

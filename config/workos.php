@@ -3,16 +3,36 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | WorkOS Configuration
+    | WorkOS API Key
     |--------------------------------------------------------------------------
     |
-    | Here you may configure your settings for WorkOS integration.
+    | This value is the API key for your WorkOS account. This is used for
+    | authenticating API requests and should be kept secure.
     |
     */
-
-    'client_id' => env('WORKOS_CLIENT_ID'),
     'api_key' => env('WORKOS_API_KEY'),
-    'redirect_url' => env('WORKOS_REDIRECT_URL', 'http://127.0.0.1:8000/authenticate'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | WorkOS Client ID
+    |--------------------------------------------------------------------------
+    |
+    | This value is the client ID for your WorkOS application. This is used for
+    | authenticating with the WorkOS API.
+    |
+    */
+    'client_id' => env('WORKOS_CLIENT_ID'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | WorkOS Redirect URI
+    |--------------------------------------------------------------------------
+    |
+    | This value is the redirect URI for your WorkOS application. This is where
+    | users will be redirected after authenticating with WorkOS.
+    |
+    */
+    'redirect_uri' => env('WORKOS_REDIRECT_URI', 'http://127.0.0.1:8000/workos-callback'),
 
     // Disable SSL verification for local development only
     'api_options' => [

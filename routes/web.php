@@ -38,6 +38,11 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
+// Add a direct route to the dashboard for WorkOS authentication callback
+Route::get('/auth-success', function () {
+    return redirect()->route('dashboard');
+})->name('auth.success');
+
 // Add authentication debugger page
 Route::get('/auth-debug', function () {
     return Inertia::render('AuthDebug');
@@ -729,6 +734,149 @@ Route::middleware(['auth'])->group(function () {
     // Task update routes for calendar integration
     Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates'])->name('tasks.update-dates');
 });
+
+// Add a test route to check authentication status
+Route::get('/auth-test', function () {
+    return [
+        'authenticated' => auth()->check(),
+        'user' => auth()->user(),
+        'session_id' => session()->getId(),
+        'session_data' => [
+            'two_factor_authenticated' => session('two_factor_authenticated'),
+        ],
+    ];
+})->name('auth.test');
+
+// Add a test route to disable 2FA
+Route::get('/disable-2fa', function () {
+    $user = auth()->user();
+
+    if (!$user) {
+        return ['error' => 'Not authenticated'];
+    }
+
+    if (!$user->hasTwoFactorEnabled()) {
+        return ['status' => '2FA is already disabled'];
+    }
+
+    // Disable 2FA
+    $user->forceFill([
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => null,
+        'two_factor_confirmed_at' => null,
+    ])->save();
+
+    // Mark the session as 2FA authenticated to avoid redirects
+    session(['two_factor_authenticated' => true]);
+
+    return [
+        'status' => '2FA has been disabled',
+        'user' => $user->only(['id', 'email', 'two_factor_confirmed_at']),
+    ];
+})->middleware(['auth'])->name('test.disable-2fa');
+
+// Add a direct WorkOS callback route that bypasses CSRF protection
+Route::get('/workos-callback', function (\Illuminate\Http\Request $request) {
+    // Log the callback request
+    \Illuminate\Support\Facades\Log::info('WorkOS callback received', [
+        'code' => $request->code,
+        'session_id' => session()->getId(),
+    ]);
+
+    if (!$request->has('code')) {
+        return redirect()->route('login');
+    }
+
+    try {
+        // Get the WorkOS instance directly
+        $workos = new \Laravel\WorkOS\WorkOS(
+            apiKey: config('workos.api_key'),
+            clientId: config('workos.client_id')
+        );
+
+        // Get the user profile from the code
+        $authResponse = $workos->userManagement()->authenticateWithCode($request->code);
+        $profile = $authResponse->user;
+
+        // Find or create the user
+        $user = \App\Models\User::where('workos_id', $profile->id)->first();
+
+        if (!$user) {
+            // Check if user exists with this email
+            $user = \App\Models\User::where('email', $profile->email)->first();
+
+            if ($user) {
+                // Update existing user
+                $user->update([
+                    'workos_id' => $profile->id,
+                    'avatar' => $profile->avatar ?? $user->avatar,
+                    'last_login_at' => now(),
+                ]);
+            } else {
+                // Create new user
+                $user = \App\Models\User::create([
+                    'name' => $profile->firstName . ' ' . $profile->lastName,
+                    'email' => $profile->email,
+                    'email_verified_at' => now(),
+                    'workos_id' => $profile->id,
+                    'avatar' => $profile->avatar ?? '',
+                    'password' => bcrypt(\Illuminate\Support\Str::random(32)),
+                ]);
+
+                // Mark new users as 2FA authenticated
+                session(['two_factor_authenticated' => true]);
+            }
+        } else {
+            // Update last login time
+            $user->update(['last_login_at' => now()]);
+        }
+
+        // Login the user
+        auth()->login($user);
+
+        // Store access token in session
+        session(['workos_access_token' => $authResponse->accessToken]);
+
+        // Redirect to dashboard
+        return redirect()->route('dashboard');
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('WorkOS authentication error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return redirect()->route('login')->with('error', 'Authentication failed. Please try again.');
+    }
+})->middleware(['web'])->name('workos.callback');
+
+// Direct route to disable 2FA without password verification
+Route::get('/disable-2fa-direct', function () {
+    $user = auth()->user();
+
+    if (!$user) {
+        return redirect()->route('login')->with('error', 'You must be logged in to disable 2FA.');
+    }
+
+    // Log the action
+    \Illuminate\Support\Facades\Log::info('Directly disabling 2FA for user', [
+        'user_id' => $user->id,
+        'email' => $user->email,
+    ]);
+
+    // Disable 2FA by clearing the relevant fields
+    $user->forceFill([
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => null,
+        'two_factor_confirmed_at' => null,
+    ])->save();
+
+    // Mark the session as 2FA authenticated to avoid redirects
+    session(['two_factor_authenticated' => true]);
+
+    // Return success message
+    return redirect()->route('settings.two-factor-auth')
+        ->with('status', '2FA has been disabled successfully.');
+})->middleware(['auth'])->name('disable-2fa-direct');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Calendar, Clock, GitBranch } from 'lucide-react';
+import { Calendar, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageProps } from "@/types"
@@ -251,47 +251,37 @@ export default function Dashboard(props: Props) {
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-xs text-muted-foreground">
-                                        View assignments and tasks in a calendar format
-                                    </p>
+                                    <div className="text-sm">
+                                        Manage your tasks on a calendar
+                                    </div>
                                 </CardContent>
                             </Card>
                         </Link>
-
                         <Link href="/dashboard/gantt">
                             <Card className="hover:border-blue-500 transition-colors">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Gantt Chart</CardTitle>
+                                    <CardTitle className="text-sm font-medium">Gantt View</CardTitle>
                                     <GitBranch className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-xs text-muted-foreground">
-                                        Track project tasks and timelines with Gantt view
-                                    </p>
+                                    <div className="text-sm">
+                                        Track project progress and timelines
+                                    </div>
                                 </CardContent>
                             </Card>
                         </Link>
-
-                        <Link href="/notifications">
-                            <Card className={`relative hover:border-blue-500 transition-colors ${unreadNotificationsCount > 0 ? 'border-red-300 dark:border-red-800' : ''}`}>
+                        <Link href="/mpesa">
+                            <Card className="hover:border-blue-500 transition-colors">
                                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Notifications</CardTitle>
-                                    <div className="relative">
-                                        <Clock className="h-4 w-4 text-muted-foreground" />
-                                        {unreadNotificationsCount > 0 && (
-                                            <span className="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-red-500 text-[10px] flex items-center justify-center text-white">
-                                                {unreadNotificationsCount}
-                                            </span>
-                                        )}
-                                    </div>
+                                    <CardTitle className="text-sm font-medium">M-Pesa Payment</CardTitle>
+                                    <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 6V18M18 12H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-xs text-muted-foreground">
-                                        {unreadNotificationsCount > 0
-                                            ? `You have ${unreadNotificationsCount} unread notification${unreadNotificationsCount > 1 ? 's' : ''}`
-                                            : 'No new notifications'
-                                        }
-                                    </p>
+                                    <div className="text-sm">
+                                        Make payment with M-Pesa
+                                    </div>
                                 </CardContent>
                             </Card>
                         </Link>

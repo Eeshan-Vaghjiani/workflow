@@ -209,3 +209,26 @@ try {
 } catch (error) {
     console.error('Failed to initialize Echo:', error);
 }
+
+// Add axios request and response interceptors for debugging
+axios.interceptors.request.use(
+    config => {
+        console.log('Making request to:', config.url, config);
+        return config;
+    },
+    error => {
+        console.error('Request error:', error);
+        return Promise.reject(error);
+    }
+);
+
+axios.interceptors.response.use(
+    response => {
+        console.log('Response received:', response);
+        return response;
+    },
+    error => {
+        console.error('Response error:', error.response || error);
+        return Promise.reject(error);
+    }
+);

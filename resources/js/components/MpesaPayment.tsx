@@ -76,7 +76,6 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({
                             await axios.post(`/mpesa/mark-dismissed/${transactionId}`);
                         } catch (err) {
                             // If the endpoint doesn't exist yet, that's fine
-                            console.error('Could not mark transaction as dismissed:', err);
                         }
 
                         setError('Payment was not completed. The prompt may have been dismissed or timed out.');
@@ -184,13 +183,6 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({
                     </Alert>
                 )}
 
-                {success && !error && paymentStatus !== 'failed' && (
-                    <Alert className="mb-4">
-                        <AlertTitle>Success</AlertTitle>
-                        <AlertDescription>{success}</AlertDescription>
-                    </Alert>
-                )}
-
                 {paymentStatus === 'pending' && (
                     <div className="space-y-4 mb-4">
                         <Alert>
@@ -203,18 +195,13 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({
                             </AlertDescription>
                         </Alert>
                         <div className="flex justify-center">
-                            <div className="relative">
-                                <div className="h-24 w-24 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-xs text-muted-foreground">{statusCheckCount}/12</span>
-                                </div>
-                            </div>
+                            <div className="h-24 w-24 rounded-full border-4 border-muted border-t-primary animate-spin"></div>
                         </div>
                     </div>
                 )}
 
                 {/* Phone Number Form */}
-                {(!transactionId || paymentStatus === 'failed') && (
+                {(!transactionId || paymentStatus === 'failed' || paymentStatus === 'dismissed') && (
                     <form onSubmit={handleSubmit}>
                         <div className="space-y-4">
                             <div>
@@ -255,7 +242,7 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({
                 )}
 
                 {/* Try Again Button */}
-                {(paymentStatus === 'failed' && transactionId) && (
+                {(paymentStatus === 'failed' || paymentStatus === 'dismissed') && transactionId && (
                     <div className="mt-4">
                         <Button
                             onClick={tryAgain}

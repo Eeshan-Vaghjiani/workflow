@@ -1,34 +1,32 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
 import MpesaPayment from '@/components/MpesaPayment';
-import { AppShell } from '@/components/app-shell';
-import { AppHeader } from '@/components/app-header';
-import { AppContent } from '@/components/app-content';
+import AuthenticatedLayout from '@/layouts/AuthenticatedLayout';
+import { PageProps } from '@/types';
 
-export default function MpesaPaymentPage() {
-    const breadcrumbs = [
-        { title: 'Home', href: '/' },
-        { title: 'Payment', href: '/mpesa' }
-    ];
-
+export default function MpesaPaymentPage({ auth }: PageProps) {
     return (
-        <AppShell>
-            <Head title="Make Payment" />
-            <AppHeader breadcrumbs={breadcrumbs} />
-            <AppContent>
-                <div className="container py-6">
-                    <div className="max-w-xl mx-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-2xl font-bold">Make Payment with M-Pesa</h1>
+        <AuthenticatedLayout
+            user={auth.user}
+            header={<h2 className="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Pro Membership Payment</h2>}
+        >
+            <Head title="Pro Membership Payment" />
+            <div className="py-8">
+                <div className="max-w-xl mx-auto sm:px-6 lg:px-8">
+                    <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div className="p-6">
+                            <div className="mb-6">
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Pro Membership Payment</h1>
+                                <p className="text-gray-600 dark:text-gray-400">Upgrade to Pro Membership by paying via M-Pesa</p>
+                            </div>
+                            <MpesaPayment
+                                title="Pro Membership Payment"
+                                description="Pay your Pro Membership fee of KES 1,000 via M-Pesa"
+                            />
                         </div>
-                        <p className="text-muted-foreground mb-6">Complete your payment securely using M-Pesa</p>
-                        <MpesaPayment
-                            title="Complete Your Payment"
-                            description="Enter your phone number to receive an M-Pesa payment prompt"
-                        />
                     </div>
                 </div>
-            </AppContent>
-        </AppShell>
+            </div>
+        </AuthenticatedLayout>
     );
 }

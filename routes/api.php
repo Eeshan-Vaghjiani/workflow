@@ -632,3 +632,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/pomodoro/sessions', [\App\Http\Controllers\PomodoroController::class, 'recordSession']);
     Route::get('/pomodoro/stats', [\App\Http\Controllers\PomodoroController::class, 'getStats']);
 });
+
+// M-Pesa API Routes
+Route::post('/mpesa/stkpush', [App\Http\Controllers\MpesaController::class, 'stkPush'])->name('api.mpesa.stkpush');
+Route::post('/mpesa/check-status', [App\Http\Controllers\MpesaController::class, 'checkStatus'])->name('api.mpesa.check-status');
+Route::get('/mpesa', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.index');
+
+// M-Pesa callback URL (no auth required as it's called by Safaricom)
+Route::post('/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('api.mpesa.callback');

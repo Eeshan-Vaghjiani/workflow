@@ -120,7 +120,7 @@ window.Pusher = Pusher;
 
 // Log that we're initializing Echo
 console.log('Initializing Echo with:', {
-    key: import.meta.env.VITE_PUSHER_APP_KEY || '17b1123fdac52c500a2b',
+    key: import.meta.env.VITE_PUSHER_APP_KEY || '5a90cf232dedb766fb44',
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
     csrfToken: token ? 'Present' : 'Missing'
 });
@@ -149,7 +149,7 @@ try {
 
     window.Echo = new Echo({
         broadcaster: 'pusher',
-        key: import.meta.env.VITE_PUSHER_APP_KEY || '17b1123fdac52c500a2b',
+        key: import.meta.env.VITE_PUSHER_APP_KEY || '5a90cf232dedb766fb44',
         ...pusherOptions
     });
 

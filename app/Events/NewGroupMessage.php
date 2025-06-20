@@ -45,8 +45,7 @@ class NewGroupMessage implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel('group-chat'),
-            new PresenceChannel('group.'.$this->groupId),
+            new Channel('chat'),
         ];
     }
 
@@ -55,7 +54,7 @@ class NewGroupMessage implements ShouldBroadcast
      */
     public function broadcastAs(): string
     {
-        return 'NewGroupMessage';
+        return 'message.new';
     }
 
     /**
@@ -65,9 +64,10 @@ class NewGroupMessage implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        return [
-            'groupId' => $this->groupId,
-            'message' => $this->messageData,
-        ];
+        // Include the group_id in the message data for proper routing
+        $enhancedData = $this->messageData;
+        $enhancedData['group_id'] = $this->groupId;
+
+        return $enhancedData;
     }
 }

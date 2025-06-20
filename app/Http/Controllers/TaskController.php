@@ -24,7 +24,6 @@ class TaskController extends Controller
             })
             ->latest()
             ->get();
-
         return Inertia::render('TaskList', [
             'tasks' => $tasks
         ]);

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "92f891d9b0b7a017df144d0cadc5a8e1",
+    "content-hash": "3f9cbdcfa04c055d33c42b875c217a62",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -6491,16 +6491,16 @@
         },
         {
             "name": "workos/workos-php",
-            "version": "v4.24.0",
+            "version": "v4.25.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/workos/workos-php.git",
-                "reference": "343f1469b8facb24c70239e976e98ebbb214984e"
+                "reference": "a65be0b3db1d23541fbd36c938cc1bc694469a57"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/workos/workos-php/zipball/343f1469b8facb24c70239e976e98ebbb214984e",
-                "reference": "343f1469b8facb24c70239e976e98ebbb214984e",
+                "url": "https://api.github.com/repos/workos/workos-php/zipball/a65be0b3db1d23541fbd36c938cc1bc694469a57",
+                "reference": "a65be0b3db1d23541fbd36c938cc1bc694469a57",
                 "shasum": ""
             },
             "require": {
@@ -6531,9 +6531,9 @@
             "homepage": "https://workos.com",
             "support": {
                 "issues": "https://github.com/workos/workos-php/issues",
-                "source": "https://github.com/workos/workos-php/tree/v4.24.0"
+                "source": "https://github.com/workos/workos-php/tree/v4.25.0"
             },
-            "time": "2025-05-22T21:49:09+00:00"
+            "time": "2025-06-17T12:50:12+00:00"
         }
     ],
     "packages-dev": [

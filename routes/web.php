@@ -894,3 +894,7 @@ Route::get('/disable-2fa-direct', function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+Route::get('/phpinfo', function () {
+    phpinfo();
+});

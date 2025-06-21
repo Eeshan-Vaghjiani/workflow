@@ -60,9 +60,23 @@ class SyncGoogleCalendar extends Command
                 $this->info("Found {$tasks->count()} tasks and {$groupAssignments->count()} assignments.");
 
                 // Sync with Google Calendar
-                $calendar->syncEvents($tasks, $groupAssignments);
+                $this->output->write("Syncing with Google Calendar... ");
+                $result = $calendar->syncEvents($tasks, $groupAssignments);
+                $this->output->writeln("Done!");
 
-                $this->info("Calendar sync completed for user {$calendar->user_id}.");
+                // Display sync results if available
+                if (is_array($result)) {
+                    $this->info("Calendar sync completed for user {$calendar->user_id}:");
+                    $this->line("  - Created/Updated: {$result['success_count']} items");
+                    $this->line("  - Skipped (unchanged): {$result['skip_count']} items");
+                    $this->line("  - Deleted: {$result['deleted_count']} items");
+
+                    if ($result['failure_count'] > 0) {
+                        $this->warn("  - Failed: {$result['failure_count']} items");
+                    }
+                } else {
+                    $this->info("Calendar sync completed for user {$calendar->user_id}.");
+                }
             } catch (\Exception $e) {
                 $this->error("Error syncing calendar for user {$calendar->user_id}: {$e->getMessage()}");
                 Log::error('Calendar sync command failed', [

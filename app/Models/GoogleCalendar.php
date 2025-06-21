@@ -66,45 +66,89 @@ class GoogleCalendar extends Model
             }
 
             $successCount = 0;
+            $skipCount = 0;
             $failureCount = 0;
+            $deletedCount = 0;
+
+            // Track all current local IDs to detect deleted items
+            $currentLocalIds = [];
 
             // Sync tasks
             foreach ($tasks as $task) {
                 try {
                     $localId = 'wf-task-' . $task->id;
-                    $eventData = $this->createEventDataForTask($task);
+                    $currentLocalIds[] = $localId;
 
-                    // Always ensure localId is in extendedProperties
-                    if (!isset($eventData['extendedProperties'])) {
-                        $eventData['extendedProperties'] = ['private' => []];
-                    }
-                    if (!isset($eventData['extendedProperties']['private'])) {
-                        $eventData['extendedProperties']['private'] = [];
-                    }
-                    $eventData['extendedProperties']['private']['localId'] = $localId;
-                    $eventData['extendedProperties']['private']['appSource'] = 'workflow';
+                    // Check if task needs to be synced by comparing last_updated with last_synced
+                    $needsSync = true;
 
                     if (isset($existingEventMap[$localId])) {
-                        // Update existing event using Google's event ID
-                        $this->updateEvent($existingEventMap[$localId]['id'], $eventData);
-                        $successCount++;
-                    } else {
-                        // Create new event
-                        $retryCount = 0;
-                        $maxRetries = 3;
+                        // Check if the task has been modified since last sync
+                        $lastSyncTime = null;
+                        if (isset($existingEventMap[$localId]['extendedProperties']['private']['lastSyncTime'])) {
+                            $lastSyncTime = Carbon::parse($existingEventMap[$localId]['extendedProperties']['private']['lastSyncTime']);
+                        }
 
-                        while ($retryCount < $maxRetries) {
-                            try {
-                                $this->createEvent($eventData);
-                                $successCount++;
-                                break; // Success, exit the retry loop
-                            } catch (\Exception $e) {
-                                $retryCount++;
-                                if ($retryCount >= $maxRetries) {
-                                    throw $e; // Re-throw after max retries
+                        $lastUpdateTime = $task->updated_at ?? Carbon::now();
+
+                        if ($lastSyncTime && $lastUpdateTime->lte($lastSyncTime)) {
+                            // Task hasn't changed since last sync, skip it
+                            $needsSync = false;
+                            $skipCount++;
+                            \Illuminate\Support\Facades\Log::info('Skipping unchanged task', [
+                                'task_id' => $task->id,
+                                'title' => $task->title,
+                                'last_update' => $lastUpdateTime->toIso8601String(),
+                                'last_sync' => $lastSyncTime->toIso8601String()
+                            ]);
+                        }
+                    }
+
+                    if ($needsSync) {
+                        $eventData = $this->createEventDataForTask($task);
+
+                        // Add sync timestamp to track when this was last synced
+                        $currentTime = Carbon::now()->toIso8601String();
+                        if (!isset($eventData['extendedProperties'])) {
+                            $eventData['extendedProperties'] = ['private' => []];
+                        }
+                        if (!isset($eventData['extendedProperties']['private'])) {
+                            $eventData['extendedProperties']['private'] = [];
+                        }
+                        $eventData['extendedProperties']['private']['localId'] = $localId;
+                        $eventData['extendedProperties']['private']['appSource'] = 'workflow';
+                        $eventData['extendedProperties']['private']['lastSyncTime'] = $currentTime;
+
+                        if (isset($existingEventMap[$localId])) {
+                            // Update existing event using Google's event ID
+                            $this->updateEvent($existingEventMap[$localId]['id'], $eventData);
+                            $successCount++;
+                            \Illuminate\Support\Facades\Log::info('Updated task in Google Calendar', [
+                                'task_id' => $task->id,
+                                'title' => $task->title
+                            ]);
+                        } else {
+                            // Create new event
+                            $retryCount = 0;
+                            $maxRetries = 3;
+
+                            while ($retryCount < $maxRetries) {
+                                try {
+                                    $this->createEvent($eventData);
+                                    $successCount++;
+                                    \Illuminate\Support\Facades\Log::info('Created task in Google Calendar', [
+                                        'task_id' => $task->id,
+                                        'title' => $task->title
+                                    ]);
+                                    break; // Success, exit the retry loop
+                                } catch (\Exception $e) {
+                                    $retryCount++;
+                                    if ($retryCount >= $maxRetries) {
+                                        throw $e; // Re-throw after max retries
+                                    }
+                                    // Wait briefly before retrying
+                                    usleep(500000); // 0.5 seconds
                                 }
-                                // Wait briefly before retrying
-                                usleep(500000); // 0.5 seconds
                             }
                         }
                     }
@@ -123,39 +167,78 @@ class GoogleCalendar extends Model
             foreach ($assignments as $assignment) {
                 try {
                     $localId = 'wf-assignment-' . $assignment->id;
-                    $eventData = $this->createEventDataForAssignment($assignment);
+                    $currentLocalIds[] = $localId;
 
-                    // Always ensure localId is in extendedProperties
-                    if (!isset($eventData['extendedProperties'])) {
-                        $eventData['extendedProperties'] = ['private' => []];
-                    }
-                    if (!isset($eventData['extendedProperties']['private'])) {
-                        $eventData['extendedProperties']['private'] = [];
-                    }
-                    $eventData['extendedProperties']['private']['localId'] = $localId;
-                    $eventData['extendedProperties']['private']['appSource'] = 'workflow';
+                    // Check if assignment needs to be synced
+                    $needsSync = true;
 
                     if (isset($existingEventMap[$localId])) {
-                        // Update existing event using Google's event ID
-                        $this->updateEvent($existingEventMap[$localId]['id'], $eventData);
-                        $successCount++;
-                    } else {
-                        // Create new event
-                        $retryCount = 0;
-                        $maxRetries = 3;
+                        // Check if the assignment has been modified since last sync
+                        $lastSyncTime = null;
+                        if (isset($existingEventMap[$localId]['extendedProperties']['private']['lastSyncTime'])) {
+                            $lastSyncTime = Carbon::parse($existingEventMap[$localId]['extendedProperties']['private']['lastSyncTime']);
+                        }
 
-                        while ($retryCount < $maxRetries) {
-                            try {
-                                $this->createEvent($eventData);
-                                $successCount++;
-                                break; // Success, exit the retry loop
-                            } catch (\Exception $e) {
-                                $retryCount++;
-                                if ($retryCount >= $maxRetries) {
-                                    throw $e; // Re-throw after max retries
+                        $lastUpdateTime = $assignment->updated_at ?? Carbon::now();
+
+                        if ($lastSyncTime && $lastUpdateTime->lte($lastSyncTime)) {
+                            // Assignment hasn't changed since last sync, skip it
+                            $needsSync = false;
+                            $skipCount++;
+                            \Illuminate\Support\Facades\Log::info('Skipping unchanged assignment', [
+                                'assignment_id' => $assignment->id,
+                                'title' => $assignment->title,
+                                'last_update' => $lastUpdateTime->toIso8601String(),
+                                'last_sync' => $lastSyncTime->toIso8601String()
+                            ]);
+                        }
+                    }
+
+                    if ($needsSync) {
+                        $eventData = $this->createEventDataForAssignment($assignment);
+
+                        // Add sync timestamp
+                        $currentTime = Carbon::now()->toIso8601String();
+                        if (!isset($eventData['extendedProperties'])) {
+                            $eventData['extendedProperties'] = ['private' => []];
+                        }
+                        if (!isset($eventData['extendedProperties']['private'])) {
+                            $eventData['extendedProperties']['private'] = [];
+                        }
+                        $eventData['extendedProperties']['private']['localId'] = $localId;
+                        $eventData['extendedProperties']['private']['appSource'] = 'workflow';
+                        $eventData['extendedProperties']['private']['lastSyncTime'] = $currentTime;
+
+                        if (isset($existingEventMap[$localId])) {
+                            // Update existing event using Google's event ID
+                            $this->updateEvent($existingEventMap[$localId]['id'], $eventData);
+                            $successCount++;
+                            \Illuminate\Support\Facades\Log::info('Updated assignment in Google Calendar', [
+                                'assignment_id' => $assignment->id,
+                                'title' => $assignment->title
+                            ]);
+                        } else {
+                            // Create new event
+                            $retryCount = 0;
+                            $maxRetries = 3;
+
+                            while ($retryCount < $maxRetries) {
+                                try {
+                                    $this->createEvent($eventData);
+                                    $successCount++;
+                                    \Illuminate\Support\Facades\Log::info('Created assignment in Google Calendar', [
+                                        'assignment_id' => $assignment->id,
+                                        'title' => $assignment->title
+                                    ]);
+                                    break; // Success, exit the retry loop
+                                } catch (\Exception $e) {
+                                    $retryCount++;
+                                    if ($retryCount >= $maxRetries) {
+                                        throw $e; // Re-throw after max retries
+                                    }
+                                    // Wait briefly before retrying
+                                    usleep(500000); // 0.5 seconds
                                 }
-                                // Wait briefly before retrying
-                                usleep(500000); // 0.5 seconds
                             }
                         }
                     }
@@ -170,15 +253,46 @@ class GoogleCalendar extends Model
                 }
             }
 
+            // Delete events that no longer exist in our database
+            foreach ($existingEventMap as $localId => $event) {
+                if (!in_array($localId, $currentLocalIds)) {
+                    try {
+                        // This event doesn't exist in our database anymore, delete it from Google Calendar
+                        \Illuminate\Support\Facades\Log::info('Deleting event that no longer exists locally', [
+                            'local_id' => $localId,
+                            'google_event_id' => $event['id'],
+                            'summary' => $event['summary']
+                        ]);
+                        $this->deleteEvent($event['id']);
+                        $deletedCount++;
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Error deleting obsolete event', [
+                            'local_id' => $localId,
+                            'google_event_id' => $event['id'],
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            }
+
             // Log sync results
             \Illuminate\Support\Facades\Log::info('Google Calendar sync completed', [
                 'user_id' => $this->user_id,
                 'success_count' => $successCount,
+                'skip_count' => $skipCount,
+                'deleted_count' => $deletedCount,
                 'failure_count' => $failureCount,
                 'total_items' => count($tasks) + count($assignments)
             ]);
 
-            return true;
+            // Return statistics about the sync operation
+            return [
+                'success_count' => $successCount,
+                'skip_count' => $skipCount,
+                'deleted_count' => $deletedCount,
+                'failure_count' => $failureCount,
+                'total_items' => count($tasks) + count($assignments)
+            ];
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Critical error in Google Calendar sync', [
                 'user_id' => $this->user_id,

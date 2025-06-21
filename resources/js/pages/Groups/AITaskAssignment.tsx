@@ -7,11 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { BrainCircuit, Loader2, Sparkles, CalendarRange, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { BrainCircuit, Loader2, Sparkles, CalendarRange, Clock, AlertCircle, RefreshCw, Users } from 'lucide-react';
 import axios, { AxiosError } from 'axios';
 import { useToast } from '@/components/ui/use-toast';
 import { type BreadcrumbItem } from '@/types';
 import { format, parseISO } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
 
 // Helper function to format dates in DD/MM/YYYY format
 const formatDate = (dateString: string): string => {
@@ -52,6 +53,23 @@ interface Assignment {
 interface AIResponse {
     assignment: Assignment;
     tasks: Task[];
+    workloadStats?: WorkloadStats;
+}
+
+interface WorkloadMember {
+    id: number;
+    name: string;
+    taskCount: number;
+    totalEffort: number;
+    totalImportance: number;
+    weightedWorkload: number;
+    percentage: number;
+    tasks: Task[];
+}
+
+interface WorkloadStats {
+    distribution: WorkloadMember[];
+    hasUnassignedTasks: boolean;
 }
 
 interface AITaskAssignmentProps {
@@ -64,6 +82,7 @@ interface AITaskAssignmentProps {
         id: number;
         title: string;
     };
+    workloadStats?: WorkloadStats;
 }
 
 interface ErrorResponse {
@@ -72,12 +91,13 @@ interface ErrorResponse {
     redirect?: string;
 }
 
-export default function AITaskAssignment({ group, assignment }: AITaskAssignmentProps) {
+export default function AITaskAssignment({ group, assignment, workloadStats }: AITaskAssignmentProps) {
     const [prompt, setPrompt] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<AIResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isReassigning, setIsReassigning] = useState(false);
+    const [workloadStatsState, setWorkloadStats] = useState<WorkloadStats | null>(workloadStats || null);
     const { toast } = useToast();
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -154,6 +174,12 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
                 }
             } else {
                 setResult(response.data);
+
+                // Check if workload stats are included in the response
+                if (response.data.workloadStats) {
+                    setWorkloadStats(response.data.workloadStats);
+                }
+
                 toast({
                     title: 'Success!',
                     description: 'AI has generated tasks based on your description',
@@ -287,6 +313,11 @@ export default function AITaskAssignment({ group, assignment }: AITaskAssignment
                     ...result,
                     tasks: response.data.tasks
                 });
+
+                // Update workload stats if included in the response
+                if (response.data.workloadStats) {
+                    setWorkloadStats(response.data.workloadStats);
+                }
 
                 toast({
                     title: 'Success!',
@@ -492,6 +523,65 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                     </TableBody>
                                 </Table>
                             </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {workloadStatsState && workloadStatsState.distribution.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Users className="h-5 w-5 text-primary" />
+                                Member Workload Preview
+                            </CardTitle>
+                            <CardDescription>
+                                This shows how workload would be distributed if these tasks are saved.
+                                <span className="text-amber-500 font-medium block mt-1">
+                                    Note: Tasks are not saved until you click "Save Assignment"
+                                </span>
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-6">
+                                {workloadStatsState.distribution.map((member) => (
+                                    <div key={member.id} className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                                                    {member.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium">{member.name}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {member.taskCount} tasks
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-medium">{member.percentage.toFixed(1)}%</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Total Effort: {member.totalEffort} hours
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Progress value={member.percentage} className="h-2" />
+                                        <div className="text-xs text-muted-foreground">
+                                            <span>Task Details:</span>
+                                            <p>Total Effort: {member.totalEffort} hours</p>
+                                            <p>Importance Score: {member.totalImportance}</p>
+                                            <div className="mt-1">
+                                                {member.tasks.map((task, idx) => (
+                                                    <Badge key={idx} variant="outline" className="mr-1 mb-1">
+                                                        {task.title}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                        {result && (
                             <CardFooter className="flex justify-end p-4 pt-0">
                                 <Button onClick={handleSave} disabled={isLoading}>
                                     {isLoading ? (
@@ -500,11 +590,27 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                             Saving...
                                         </>
                                     ) : (
-                                        'Save Assignment & Tasks'
+                                        'Save Assignment'
                                     )}
                                 </Button>
                             </CardFooter>
-                        </Card>
+                        )}
+                    </Card>
+                )}
+
+                {/* If we have results but no workload stats, still show the save button */}
+                {result && (!workloadStatsState || !workloadStatsState.distribution.length) && (
+                    <div className="flex justify-end mt-4">
+                        <Button onClick={handleSave} disabled={isLoading}>
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save Assignment'
+                            )}
+                        </Button>
                     </div>
                 )}
             </div>

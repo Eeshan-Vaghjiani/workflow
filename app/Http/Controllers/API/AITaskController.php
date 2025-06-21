@@ -39,11 +39,23 @@ class AITaskController extends Controller
             ->select('users.id', 'users.name', 'users.email')
             ->get();
 
+        // Get all tasks for this group to calculate workload stats
+        $tasks = GroupTask::whereHas('assignment', function($query) use ($group) {
+            $query->where('group_id', $group->id);
+        })->with('assigned_user:id,name')->get();
+
+        // Calculate workload distribution
+        $workloadDistribution = $this->calculateWorkloadDistribution($tasks, $members);
+
         return Inertia::render('Groups/AITaskAssignment', [
             'group' => [
                 'id' => $group->id,
                 'name' => $group->name,
                 'members' => $members
+            ],
+            'workloadStats' => [
+                'distribution' => $workloadDistribution,
+                'hasUnassignedTasks' => $tasks->contains('assigned_user_id', null)
             ]
         ]);
     }
@@ -68,6 +80,12 @@ class AITaskController extends Controller
             ->select('users.id', 'users.name', 'users.email')
             ->get();
 
+        // Get tasks for this assignment to calculate workload stats
+        $tasks = $assignment->tasks()->with('assigned_user:id,name')->get();
+
+        // Calculate workload distribution
+        $workloadDistribution = $this->calculateWorkloadDistribution($tasks, $members);
+
         return Inertia::render('Groups/AITaskAssignment', [
             'group' => [
                 'id' => $group->id,
@@ -77,8 +95,56 @@ class AITaskController extends Controller
             'assignment' => [
                 'id' => $assignment->id,
                 'title' => $assignment->title
+            ],
+            'workloadStats' => [
+                'distribution' => $workloadDistribution,
+                'hasUnassignedTasks' => $tasks->contains('assigned_user_id', null)
             ]
         ]);
+    }
+
+    /**
+     * Calculate workload distribution statistics
+     * Similar to the one in TaskAssignmentController but adapted for our needs
+     */
+    private function calculateWorkloadDistribution($tasks, $groupMembers)
+    {
+        $distribution = [];
+        $totalEffort = $tasks->sum('effort_hours');
+        $totalImportance = $tasks->sum('importance');
+
+        foreach ($groupMembers as $member) {
+            $memberTasks = $tasks->where('assigned_user_id', $member->id);
+            $taskCount = $memberTasks->count();
+            $memberEffort = $memberTasks->sum('effort_hours');
+            $memberImportance = $memberTasks->sum('importance');
+
+            $percentage = $totalEffort > 0 ? ($memberEffort / $totalEffort) * 100 : 0;
+
+            $distribution[] = [
+                'id' => $member->id,
+                'name' => $member->name,
+                'taskCount' => $taskCount,
+                'totalEffort' => $memberEffort,
+                'totalImportance' => $memberImportance,
+                'weightedWorkload' => ($memberEffort * 0.7) + ($memberImportance * 0.3),
+                'percentage' => round($percentage, 1),
+                'tasks' => $memberTasks->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'description' => $task->description,
+                        'effort' => $task->effort_hours,
+                        'importance' => $task->importance,
+                        'status' => $task->status,
+                        'start_date' => $task->start_date,
+                        'end_date' => $task->end_date,
+                    ];
+                })->values()->toArray()
+            ];
+        }
+
+        return $distribution;
     }
 
     /**
@@ -150,6 +216,67 @@ class AITaskController extends Controller
 
                 return response()->json(['error' => $result['error']], 500);
             }
+
+            // Get the group members with their user data
+            $members = $group->members()
+                ->select('users.id', 'users.name', 'users.email')
+                ->get();
+
+            // Get existing tasks for this group to calculate current workload
+            $existingTasks = GroupTask::whereHas('assignment', function($query) use ($group) {
+                $query->where('group_id', $group->id);
+            })->with('assigned_user:id,name')->get();
+
+            // Create temporary task objects from the generated tasks
+            $generatedTasks = collect();
+            foreach ($result['tasks'] as $taskData) {
+                // Find the user ID based on the name if assigned
+                $assignedUserId = null;
+                $assignedUserName = null;
+
+                if (!empty($taskData['assigned_to_name'])) {
+                    $user = $members->where('name', $taskData['assigned_to_name'])->first();
+                    if ($user) {
+                        $assignedUserId = $user->id;
+                        $assignedUserName = $user->name;
+                    }
+                } elseif (!empty($taskData['assigned_user_id'])) {
+                    $user = $members->where('id', $taskData['assigned_user_id'])->first();
+                    if ($user) {
+                        $assignedUserId = $user->id;
+                        $assignedUserName = $user->name;
+                    }
+                }
+
+                // Create a temporary task object with the same structure as DB tasks
+                $task = new \stdClass();
+                $task->id = 'temp_' . uniqid();
+                $task->title = $taskData['title'];
+                $task->description = $taskData['description'];
+                $task->start_date = $taskData['start_date'];
+                $task->end_date = $taskData['end_date'];
+                $task->priority = $taskData['priority'];
+                $task->effort_hours = $taskData['effort_hours'];
+                $task->importance = $taskData['importance'];
+                $task->assigned_user_id = $assignedUserId;
+                $task->assigned_user = $assignedUserName ? (object)['id' => $assignedUserId, 'name' => $assignedUserName] : null;
+
+                $generatedTasks->push($task);
+            }
+
+            // Combine existing and generated tasks to show projected workload
+            $combinedTasks = $existingTasks->concat($generatedTasks);
+
+            // Calculate workload distribution based on combined tasks
+            $workloadDistribution = $this->calculateWorkloadDistribution($combinedTasks, $members);
+
+            // Add workload stats to the response
+            $result['workloadStats'] = [
+                'distribution' => $workloadDistribution,
+                'hasUnassignedTasks' => $combinedTasks->contains(function($task) {
+                    return empty($task->assigned_user_id);
+                })
+            ];
 
             // Log successful processing
             Log::info('AI Task Generation: Successful processing', [
@@ -442,7 +569,7 @@ class AITaskController extends Controller
     }
 
     /**
-     * Distribute tasks among group members using AI
+     * Automatically distribute tasks among group members
      */
     public function autoDistributeTasks(Request $request, Group $group)
     {
@@ -454,25 +581,105 @@ class AITaskController extends Controller
         // Validate request
         $validated = $request->validate([
             'tasks' => 'required|array',
-            'tasks.*.id' => 'nullable|integer',
-            'tasks.*.title' => 'required|string',
-            'tasks.*.effort_hours' => 'required|numeric|min:1',
-            'tasks.*.importance' => 'required|integer|min:1|max:5',
             'members' => 'required|array',
-            'members.*.id' => 'required|integer',
-            'members.*.name' => 'required|string',
         ]);
 
         try {
-            // Process task distribution with AI
-            $distributedTasks = $this->aiService->distributeTasks(
-                $validated['tasks'],
-                $validated['members']
-            );
+            $tasks = $validated['tasks'];
+            $members = $validated['members'];
+
+            // Create a weighted distribution of tasks based on effort and importance
+            $memberIds = array_column($members, 'id');
+            $memberCount = count($memberIds);
+
+            if ($memberCount === 0) {
+                return response()->json(['error' => 'No members available for task distribution'], 400);
+            }
+
+            // Shuffle the member IDs to ensure random initial assignment
+            shuffle($memberIds);
+
+            // Sort tasks by effort and importance (highest combined score first)
+            usort($tasks, function ($a, $b) {
+                $scoreA = ($a['effort_hours'] * 0.7) + ($a['importance'] * 0.3);
+                $scoreB = ($b['effort_hours'] * 0.7) + ($b['importance'] * 0.3);
+                return $scoreB <=> $scoreA;
+            });
+
+            // Assign tasks to members using a greedy algorithm
+            $memberWorkloads = array_fill_keys($memberIds, 0);
+
+            foreach ($tasks as &$task) {
+                // Find the member with the lowest current workload
+                $minWorkloadMemberId = array_keys($memberWorkloads, min($memberWorkloads))[0];
+
+                // Assign the task to this member
+                $task['assigned_user_id'] = $minWorkloadMemberId;
+
+                // Find the member name
+                $memberName = null;
+                foreach ($members as $member) {
+                    if ($member['id'] == $minWorkloadMemberId) {
+                        $memberName = $member['name'];
+                        break;
+                    }
+                }
+                $task['assigned_to_name'] = $memberName;
+
+                // Update the member's workload
+                $memberWorkloads[$minWorkloadMemberId] += ($task['effort_hours'] * 0.7) + ($task['importance'] * 0.3);
+            }
+
+            // Get the group members with their user data
+            $groupMembers = $group->members()
+                ->select('users.id', 'users.name', 'users.email')
+                ->get();
+
+            // Get existing tasks for this group to calculate current workload
+            $existingTasks = GroupTask::whereHas('assignment', function($query) use ($group) {
+                $query->where('group_id', $group->id);
+            })->with('assigned_user:id,name')->get();
+
+            // Create temporary task objects from the redistributed tasks
+            $generatedTasks = collect();
+            foreach ($tasks as $taskData) {
+                // Create a temporary task object with the same structure as DB tasks
+                $task = new \stdClass();
+                $task->id = 'temp_' . uniqid();
+                $task->title = $taskData['title'];
+                $task->description = $taskData['description'];
+                $task->start_date = $taskData['start_date'];
+                $task->end_date = $taskData['end_date'];
+                $task->priority = $taskData['priority'];
+                $task->effort_hours = $taskData['effort_hours'];
+                $task->importance = $taskData['importance'];
+                $task->assigned_user_id = $taskData['assigned_user_id'];
+
+                // Find the assigned user name
+                $assignedUserName = null;
+                if (!empty($taskData['assigned_user_id'])) {
+                    $user = $groupMembers->where('id', $taskData['assigned_user_id'])->first();
+                    if ($user) {
+                        $assignedUserName = $user->name;
+                    }
+                }
+                $task->assigned_user = $assignedUserName ? (object)['id' => $taskData['assigned_user_id'], 'name' => $assignedUserName] : null;
+
+                $generatedTasks->push($task);
+            }
+
+            // Calculate workload distribution based on the redistributed tasks
+            // For redistribution, we only consider the tasks being redistributed, not existing ones
+            $workloadDistribution = $this->calculateWorkloadDistribution($generatedTasks, $groupMembers);
 
             return response()->json([
-                'success' => true,
-                'tasks' => $distributedTasks
+                'tasks' => $tasks,
+                'workloadStats' => [
+                    'distribution' => $workloadDistribution,
+                    'hasUnassignedTasks' => $generatedTasks->contains(function($task) {
+                        return empty($task->assigned_user_id);
+                    })
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([

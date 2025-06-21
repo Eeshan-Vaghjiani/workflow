@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\GroupTask;
 use App\Models\Assignment;
+use App\Models\GroupAssignment;
 use App\Models\Group;
 use App\Models\GoogleCalendar;
 use Illuminate\Http\Request;
@@ -105,33 +106,37 @@ class CalendarController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'No calendar ID specified. Please reconnect your Google Calendar.',
+                'message' => 'No calendar ID specified. Please go to Calendar Settings and enter your Google Calendar ID.',
                 'error_code' => 'missing_calendar_id'
             ], 400);
         }
 
-        // Get all tasks and assignments
-        $tasks = GroupTask::where('assigned_user_id', $user->id)
-            ->with(['assignment'])
-            ->get();
-
-        // Use model query to get assignments instead of static method
-        $assignmentsQuery = Assignment::query();
-        $assignmentsQuery->whereHas('groups', function ($query) use ($user) {
-            $query->whereHas('users', function ($q) use ($user) {
-                $q->where('users.id', $user->id);
-            });
-        });
-        $assignments = $assignmentsQuery->get();
-
-        // Sync with Google Calendar
         try {
-            $googleCalendar->syncEvents($tasks, $assignments);
+            // Get all tasks assigned to the user
+            $tasks = GroupTask::where('assigned_user_id', $user->id)
+                ->with('assignment')
+                ->get();
+
+            // Get all group assignments for the user's groups
+            // Fix: Use GroupAssignment model instead of Assignment
+            $groupAssignments = GroupAssignment::whereHas('group.members', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })->get();
+
+            Log::info('Starting Google Calendar sync', [
+                'user_id' => $user->id,
+                'calendar_id' => $googleCalendar->calendar_id,
+                'tasks_count' => $tasks->count(),
+                'assignments_count' => $groupAssignments->count()
+            ]);
+
+            // Sync with Google Calendar
+            $googleCalendar->syncEvents($tasks, $groupAssignments);
 
             Log::info('Calendar sync successful', [
                 'user_id' => $user->id,
                 'tasks_count' => $tasks->count(),
-                'assignments_count' => $assignments->count()
+                'assignments_count' => $groupAssignments->count()
             ]);
 
             return response()->json([
@@ -139,7 +144,7 @@ class CalendarController extends Controller
                 'message' => 'Calendar synced successfully',
                 'data' => [
                     'tasks_count' => $tasks->count(),
-                    'assignments_count' => $assignments->count()
+                    'assignments_count' => $groupAssignments->count()
                 ]
             ]);
         } catch (\Exception $e) {
@@ -162,6 +167,9 @@ class CalendarController extends Controller
             } elseif (strpos($errorMessage, 'access_denied') !== false) {
                 $errorCode = 'access_denied';
                 $errorMessage = 'Access to your Google Calendar was denied. Please check your permissions.';
+            } elseif (strpos($errorMessage, 'Not Found') !== false || strpos($errorMessage, '404') !== false) {
+                $errorCode = 'calendar_not_found';
+                $errorMessage = 'Calendar ID not found. Please check your Calendar ID in the Calendar Settings page.';
             }
 
             return response()->json([

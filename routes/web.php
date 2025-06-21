@@ -64,16 +64,9 @@ Route::middleware([
     'two_factor'
 ])->group(function () {
     // Mpesa Payment Routes
-    Route::get('/mpesa', function() {
+    Route::get('/mpesa', function(Request $request) {
         return Inertia::render('MpesaPayment');
     })->name('mpesa.index');
-    Route::get('/api/mpesa', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.index');
-    Route::get('/api/mpesa-public', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.public');
-    Route::post('/mpesa/stk-push', [App\Http\Controllers\MpesaController::class, 'stkPush'])->name('mpesa.stk-push');
-    Route::get('/mpesa/status/{id}', [App\Http\Controllers\MpesaController::class, 'status'])->name('mpesa.status');
-    Route::post('/mpesa/mark-dismissed/{id}', [App\Http\Controllers\MpesaController::class, 'markDismissed'])->name('mpesa.mark-dismissed');
-    Route::post('/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.callback');
-    Route::post('/api/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('mpesa.api.callback');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -214,6 +207,7 @@ Route::middleware([
     Route::get('/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
     Route::get('/google/disconnect', [App\Http\Controllers\GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
     Route::get('/calendar/settings', [App\Http\Controllers\GoogleAuthController::class, 'settings'])->name('calendar.settings');
+    Route::post('/calendar/settings', [App\Http\Controllers\GoogleAuthController::class, 'saveSettings'])->name('calendar.save-settings');
 
     // Calendar sync route (web version)
     Route::post('/calendar/sync', [App\Http\Controllers\CalendarController::class, 'sync'])->name('calendar.sync');
@@ -901,3 +895,7 @@ Route::get('/disable-2fa-direct', function () {
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
+
+Route::get('/phpinfo', function () {
+    phpinfo();
+});

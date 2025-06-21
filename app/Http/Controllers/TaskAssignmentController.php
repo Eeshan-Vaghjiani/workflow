@@ -21,8 +21,6 @@ class TaskAssignmentController extends Controller
                       ->orderBy('order_index', 'asc');
             }])
             ->firstOrFail();
-            
-        // Verify the user is a member of the group
         if (!$assignment->group->members()->where('user_id', auth()->id())->exists()) {
             abort(403, 'You are not a member of this group');
         }

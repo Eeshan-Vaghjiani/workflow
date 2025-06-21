@@ -7,14 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { CalendarIcon, BrainCircuit, Loader2, Sparkles } from 'lucide-react';
+import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import axios from 'axios';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Member {
     id: number;
@@ -74,18 +76,16 @@ interface Props {
 }
 
 // Helper function to format dates in DD/MM/YYYY format
-const formatDate = (dateString: string): string => {
-    try {
-        return format(parseISO(dateString), 'dd/MM/yyyy');
-    } catch {
-        return dateString;
-    }
-};
+// This is used directly in the Calendar component format function
 
 export default function AIAssignmentEdit({ group, assignment, aiGeneratedAssignment }: Props) {
     const [activeTab, setActiveTab] = useState('details');
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date(assignment.due_date));
     const [redistributeTasks, setRedistributeTasks] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [isAiLoading, setIsAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+    const { toast } = useToast();
 
     const { data, setData, processing, errors } = useForm({
         title: assignment.title,
@@ -150,6 +150,61 @@ export default function AIAssignmentEdit({ group, assignment, aiGeneratedAssignm
         setData('tasks', updatedTasks);
     };
 
+    const handleAiEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!aiPrompt.trim()) {
+            setAiError('Please enter instructions for the AI');
+            return;
+        }
+
+        setIsAiLoading(true);
+        setAiError(null);
+
+        try {
+            // First ensure CSRF token is refreshed
+            await axios.get('/sanctum/csrf-cookie');
+
+            const response = await axios.post(`/groups/${group.id}/ai-tasks/generate`, {
+                prompt: `Please modify the following assignment based on these instructions: ${aiPrompt}\n\nCurrent Assignment: ${data.title}\nDescription: ${data.description}\nUnit: ${data.unit_name}\nDue Date: ${data.due_date}`,
+            }, {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+
+            if (response.data.error) {
+                setAiError(response.data.error);
+            } else if (response.data.assignment) {
+                // Update form data with AI suggestions
+                setData({
+                    ...data,
+                    title: response.data.assignment.title || data.title,
+                    description: response.data.assignment.description || data.description,
+                    unit_name: response.data.assignment.unit_name || data.unit_name,
+                    due_date: response.data.assignment.due_date || data.due_date,
+                });
+
+                // Switch to details tab to show changes
+                setActiveTab('details');
+
+                toast({
+                    title: 'Success!',
+                    description: 'AI has suggested changes to the assignment',
+                });
+            }
+        } catch (error) {
+            console.error('AI Edit Error:', error);
+            setAiError('Failed to process AI edit request. Please try again.');
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
+
     return (
         <AppLayout>
             <Head title={`Edit Assignment - ${assignment.title}`} />
@@ -167,6 +222,7 @@ export default function AIAssignmentEdit({ group, assignment, aiGeneratedAssignm
                             <TabsList className="mb-6">
                                 <TabsTrigger value="details">Assignment Details</TabsTrigger>
                                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
+                                <TabsTrigger value="ai-edit">AI Edit</TabsTrigger>
                                 <TabsTrigger value="prompt">Original Prompt</TabsTrigger>
                             </TabsList>
 
@@ -254,6 +310,60 @@ export default function AIAssignmentEdit({ group, assignment, aiGeneratedAssignm
                                                 {errors.status && <p className="text-sm text-red-500">{errors.status}</p>}
                                             </div>
                                         </div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="ai-edit">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <BrainCircuit className="h-5 w-5 text-primary" />
+                                            AI Assignment Editor
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Let AI help you improve or modify this assignment. Describe what changes you want to make.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <form onSubmit={handleAiEdit} className="space-y-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="ai-prompt">Instructions for AI</Label>
+                                                <Textarea
+                                                    id="ai-prompt"
+                                                    placeholder="Describe how you want to modify this assignment. For example: 'Make this assignment more challenging by adding critical thinking tasks' or 'Simplify the language to make it more accessible'"
+                                                    value={aiPrompt}
+                                                    onChange={(e) => setAiPrompt(e.target.value)}
+                                                    className="h-32"
+                                                />
+                                                <p className="text-sm text-muted-foreground">
+                                                    Be specific about what aspects of the assignment you want to change.
+                                                </p>
+                                            </div>
+
+                                            {aiError && (
+                                                <Alert variant="destructive">
+                                                    <AlertTitle>Error</AlertTitle>
+                                                    <AlertDescription>{aiError}</AlertDescription>
+                                                </Alert>
+                                            )}
+
+                                            <div className="flex justify-end">
+                                                <Button type="submit" disabled={isAiLoading || !aiPrompt.trim()}>
+                                                    {isAiLoading ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            Processing...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles className="mr-2 h-4 w-4" />
+                                                            Generate Suggestions
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        </form>
                                     </CardContent>
                                 </Card>
                             </TabsContent>

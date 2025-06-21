@@ -54,9 +54,19 @@ class NewDirectMessage implements ShouldBroadcast
     public function broadcastOn(): array
     {
         // Use simple public channels for reliable delivery
-        return [
+        $channels = [
             new Channel('chat'),
         ];
+
+        // Log the channel information for debugging
+        Log::debug('NewDirectMessage broadcasting on channels', [
+            'channels' => 'chat',
+            'message_id' => $this->message->id,
+            'sender_id' => $this->message->sender_id,
+            'receiver_id' => $this->message->receiver_id
+        ]);
+
+        return $channels;
     }
 
     /**

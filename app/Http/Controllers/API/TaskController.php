@@ -179,10 +179,17 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            // Validate input - more flexible validation
+            // Log request for debugging
+            \Illuminate\Support\Facades\Log::info('Calendar task update request', [
+                'task_id' => $id,
+                'user_id' => $user->id,
+                'request_data' => $request->all()
+            ]);
+
+            // Validate input with more flexible validation
             $validated = $request->validate([
-                'start_date' => 'required|date_format:Y-m-d',
-                'end_date' => 'required|date_format:Y-m-d',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date',
             ]);
 
             // Ensure end date is not before start date
@@ -199,21 +206,56 @@ class TaskController extends Controller
             $task->end_date = $validated['end_date'];
             $task->save();
 
+            // Sync with Google Calendar if connected
+            $googleCalendarSynced = false;
+
+            try {
+                $googleCalendar = \App\Models\GoogleCalendar::where('user_id', $user->id)->first();
+                if ($googleCalendar) {
+                    \Illuminate\Support\Facades\Log::info('Attempting to sync task to Google Calendar', [
+                        'task_id' => $task->id,
+                        'calendar_id' => $googleCalendar->calendar_id
+                    ]);
+
+                    // Add code to sync this specific task to Google Calendar
+                    $googleCalendar->syncSingleTask($task);
+
+                    \Illuminate\Support\Facades\Log::info('Successfully synced task to Google Calendar', [
+                        'task_id' => $task->id
+                    ]);
+
+                    $googleCalendarSynced = true;
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Failed to sync task to Google Calendar', [
+                    'task_id' => $task->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Don't fail the whole request if Google sync fails
+            }
+
             // Log the update
             \Illuminate\Support\Facades\Log::info('Task dates updated via calendar', [
                 'task_id' => $task->id,
                 'user_id' => $user->id,
                 'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date']
+                'end_date' => $validated['end_date'],
+                'google_sync' => $googleCalendarSynced
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Task dates updated successfully',
+                'google_sync' => $googleCalendarSynced,
                 'task' => $task
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Task date validation error', [
+                'task_id' => $id ?? null,
+                'errors' => $e->errors()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
@@ -222,6 +264,7 @@ class TaskController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error updating task dates', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'task_id' => $id ?? null
             ]);
 

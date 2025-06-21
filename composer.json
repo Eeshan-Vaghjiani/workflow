@@ -18,7 +18,8 @@
         "laravel/workos": "^0.2.1",
         "pragmarx/google2fa": "^8.0",
         "pusher/pusher-php-server": "^7.2",
-        "tightenco/ziggy": "^2.4"
+        "tightenco/ziggy": "^2.4",
+        "workos/workos-php": "^4.25"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

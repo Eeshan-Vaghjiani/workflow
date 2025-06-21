@@ -3,9 +3,13 @@ import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import AppLayout from '@/layouts/app-layout';
 import { useToast } from '@/components/ui/use-toast';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, CalendarIcon } from 'lucide-react';
+import axios, { AxiosError } from 'axios';
 
 interface GoogleCalendarInfo {
     calendar_id: string;
@@ -35,6 +39,8 @@ export default function Settings({
 }: PageProps) {
     const { toast } = useToast();
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [calendarId, setCalendarId] = useState(googleCalendarInfo?.calendar_id || '');
 
     React.useEffect(() => {
         if (flash?.success) {
@@ -73,6 +79,63 @@ export default function Settings({
         // Fallback to the route if no direct URL is provided
         setIsRedirecting(true);
         window.location.href = route('google.auth');
+    };
+
+    const handleSaveCalendarId = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!googleCalendarConnected) {
+            toast({
+                title: "Error",
+                description: "You need to connect your Google account first.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            // Get CSRF token
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            const response = await axios.post(route('calendar.save-settings'), {
+                calendar_id: calendarId
+            }, {
+                headers: {
+                    'X-CSRF-TOKEN': token,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (response.data.success) {
+                toast({
+                    title: "Success",
+                    description: "Google Calendar ID saved successfully.",
+                    variant: "default",
+                });
+            } else {
+                throw new Error(response.data.message || "Failed to save calendar ID");
+            }
+        } catch (error: unknown) {
+            console.error("Error saving calendar ID:", error);
+            let errorMessage = "Failed to save calendar ID";
+
+            if (error instanceof AxiosError) {
+                errorMessage = error.response?.data?.message || error.message;
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive",
+            });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const breadcrumbs = [
@@ -128,10 +191,6 @@ export default function Settings({
 
                                             <div className="space-y-2">
                                                 <div className="flex justify-between">
-                                                    <span className="font-medium">Calendar ID:</span>
-                                                    <span className="text-gray-600">{googleCalendarInfo?.calendar_id}</span>
-                                                </div>
-                                                <div className="flex justify-between">
                                                     <span className="font-medium">Connected on:</span>
                                                     <span className="text-gray-600">{googleCalendarInfo?.connected_at}</span>
                                                 </div>
@@ -142,6 +201,35 @@ export default function Settings({
                                                     </div>
                                                 )}
                                             </div>
+
+                                            <Separator className="my-4" />
+
+                                            <form onSubmit={handleSaveCalendarId} className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="calendar-id">Google Calendar ID</Label>
+                                                    <div className="flex items-center space-x-2">
+                                                        <CalendarIcon className="w-4 h-4 text-gray-400" />
+                                                        <Input
+                                                            id="calendar-id"
+                                                            value={calendarId}
+                                                            onChange={(e) => setCalendarId(e.target.value)}
+                                                            placeholder="primary or your_calendar_id@group.calendar.google.com"
+                                                            className="flex-1"
+                                                        />
+                                                    </div>
+                                                    <p className="text-sm text-gray-500">
+                                                        Use "primary" for your main calendar or enter a specific calendar ID.
+                                                        You can find your calendar ID in Google Calendar settings.
+                                                    </p>
+                                                </div>
+
+                                                <Button
+                                                    type="submit"
+                                                    disabled={isSaving || !calendarId}
+                                                >
+                                                    {isSaving ? 'Saving...' : 'Save Calendar ID'}
+                                                </Button>
+                                            </form>
                                         </div>
                                     ) : (
                                         <div className="space-y-4">
@@ -166,6 +254,7 @@ export default function Settings({
                                                     <li>You can choose any Google account, not just the one you use to log in</li>
                                                     <li>Google will ask for permission to access your calendar</li>
                                                     <li>You'll be redirected back to this page after connecting</li>
+                                                    <li>You'll need to specify which calendar to use for syncing</li>
                                                 </ul>
                                             </div>
                                         </div>

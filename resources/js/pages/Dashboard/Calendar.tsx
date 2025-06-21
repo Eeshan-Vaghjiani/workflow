@@ -5,7 +5,8 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { EventClickArg, EventApi, EventDropArg, EventResizeDoneArg } from '@fullcalendar/core';
+import { EventClickArg, EventApi, EventDropArg } from '@fullcalendar/core';
+import { EventResizeDoneArg } from '@fullcalendar/interaction';
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, RefreshCw, Settings, AlertTriangle } from 'lucide-react';
@@ -54,6 +55,37 @@ export default function Calendar({ events }: Props) {
     const { toast } = useToast();
     const calendarRef = useRef<FullCalendar>(null);
     const [localEvents, setLocalEvents] = useState<Event[]>(events);
+
+    // Helper function to format task data into calendar event format
+    const formatTaskForCalendar = (task: any): Event => {
+        return {
+            id: String(task.id),
+            title: task.title,
+            start: task.start_date,
+            end: task.end_date || task.due_date,
+            allDay: true,
+            backgroundColor: getPriorityColor(task.priority),
+            borderColor: getPriorityColor(task.priority),
+            textColor: '#ffffff',
+            extendedProps: {
+                group: task.group || "Unknown",
+                priority: task.priority || "medium",
+                status: task.status || "pending",
+                assignment: task.assignment?.title,
+                type: "task"
+            }
+        };
+    };
+
+    // Helper function to get color based on priority
+    const getPriorityColor = (priority: string): string => {
+        switch (priority) {
+            case 'high': return '#ef4444'; // Red
+            case 'medium': return '#f59e0b'; // Amber
+            case 'low': return '#10b981'; // Green
+            default: return '#6b7280'; // Gray
+        }
+    };
 
     // Update events to mark past due items
     const processedEvents = localEvents.map(event => {
@@ -125,11 +157,24 @@ export default function Calendar({ events }: Props) {
                 return;
             }
 
-            // Update the task in the backend using the web route instead of API route
-            const response = await axios.put(`/tasks/${id}`, {
+            // Extract required fields from the full event object
+            // This ensures we're sending all the data the backend expects
+            const payload = {
                 start_date: start,
-                end_date: end
-            }, {
+                end_date: end,
+                due_date: end, // Add due_date field to match backend validation requirement
+                title: event.title,
+                // Include any extendedProps needed by the backend
+                ...(event.extendedProps || {}),
+                // Ensure we have the required fields for validation
+                status: event.extendedProps?.status || 'pending',
+                priority: event.extendedProps?.priority || 'medium',
+            };
+
+            console.log('Updating task with payload:', payload, 'for task ID:', id);
+
+            // Update the task in the backend using the web route instead of API route
+            const response = await axios.put(`/tasks/${id}`, payload, {
                 headers: {
                     'X-CSRF-TOKEN': token,
                     'Content-Type': 'application/json',
@@ -139,24 +184,48 @@ export default function Calendar({ events }: Props) {
                 withCredentials: true
             });
 
-            if (response.data.success) {
-                // Update local state for the changed event
-                setLocalEvents(prev => prev.map(e => {
-                    if (e.id === id) {
-                        return {
-                            ...e,
-                            start,
-                            end: end || start
-                        };
-                    }
-                    return e;
-                }));
+            console.info('Task update response:', response.data);
+
+            // Consider the update successful if either:
+            // 1. response.data.success is true, OR
+            // 2. response.data.message contains "Task updated successfully"
+            const isSuccessful = response.data.success === true ||
+                (response.data.message && response.data.message.includes('Task updated successfully'));
+
+            if (isSuccessful) {
+                // If server response contains the updated task, use that data
+                if (response.data.task) {
+                    const updatedEvent = formatTaskForCalendar(response.data.task);
+                    setLocalEvents(prev =>
+                        prev.map(e => e.id === id ? updatedEvent : e)
+                    );
+                    console.info('UI state successfully updated with server response.');
+                } else {
+                    // Fall back to our local state update if server doesn't return the task
+                    setLocalEvents(prev => prev.map(e => {
+                        if (e.id === id) {
+                            return {
+                                ...e,
+                                start,
+                                end: end || start
+                            };
+                        }
+                        return e;
+                    }));
+                }
+
+                // Show different message based on Google Calendar sync
+                const syncMessage = response.data.google_sync
+                    ? "Task dates updated and synced with Google Calendar."
+                    : "Task dates updated successfully.";
 
                 toast({
                     title: "Event Updated",
-                    description: "Task dates have been updated successfully.",
+                    description: syncMessage,
                 });
             } else {
+                console.warn('Task update returned success: false', response.data);
+                info.revert(); // Revert the UI change if the server reports failure
                 throw new Error(response.data.message || 'Failed to update task');
             }
         } catch (error: any) {
@@ -167,10 +236,17 @@ export default function Calendar({ events }: Props) {
 
             if (error.response) {
                 // Handle specific error responses
+                console.error('Error response data:', error.response.data);
                 if (error.response.status === 401) {
                     errorMessage = "You need to be logged in to update tasks. Please refresh the page.";
                 } else if (error.response.status === 403) {
                     errorMessage = "You don't have permission to update this task.";
+                } else if (error.response.status === 422) {
+                    // Handle validation errors specifically
+                    errorMessage = "Validation error: " +
+                        (error.response.data?.errors ?
+                            Object.values(error.response.data.errors).flat().join(", ") :
+                            error.response.data.message || "Please check your input");
                 } else if (error.response.data && error.response.data.message) {
                     errorMessage = error.response.data.message;
                 }
@@ -264,6 +340,8 @@ export default function Calendar({ events }: Props) {
             setSyncing(false);
         }
     };
+
+
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

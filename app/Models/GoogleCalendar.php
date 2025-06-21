@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class GoogleCalendar extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'access_token',
@@ -213,7 +216,7 @@ class GoogleCalendar extends Model
 
             $events = [];
             $responseData = $response->json();
-            
+
             // Check if 'items' key exists
             if (!isset($responseData['items'])) {
                 \Illuminate\Support\Facades\Log::error('Google Calendar response missing items key', [
@@ -222,7 +225,7 @@ class GoogleCalendar extends Model
                 ]);
                 return $events;
             }
-            
+
             foreach ($responseData['items'] as $event) {
                 // Check for extendedProperties before accessing
                 if (isset($event['extendedProperties']['private']['appSource']) &&
@@ -251,6 +254,67 @@ class GoogleCalendar extends Model
     private function getEventIdForTask($task)
     {
         return 'task_' . $task->id;
+    }
+
+    /**
+     * Sync a single task to Google Calendar
+     *
+     * @param \App\Models\GroupTask $task
+     * @return bool
+     * @throws \Exception
+     */
+    public function syncSingleTask($task)
+    {
+        try {
+            // Check if token needs refresh
+            if ($this->token_expires_at && $this->token_expires_at->isPast()) {
+                $this->refreshToken();
+            }
+
+            // Verify we have a valid token
+            if (empty($this->access_token)) {
+                \Illuminate\Support\Facades\Log::error('Empty access token in syncSingleTask', [
+                    'user_id' => $this->user_id,
+                    'task_id' => $task->id
+                ]);
+                throw new \Exception('Google Calendar access token is empty or invalid. Please reconnect your account.');
+            }
+
+            $eventId = $this->getEventIdForTask($task);
+            $eventData = $this->createEventDataForTask($task);
+
+            // Check if event already exists
+            $response = Http::withoutVerifying()->withToken($this->access_token)
+                ->get("https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}");
+
+            if ($response->successful()) {
+                // Update existing event
+                $this->updateEvent($eventId, $eventData);
+                \Illuminate\Support\Facades\Log::info('Updated task event in Google Calendar', [
+                    'user_id' => $this->user_id,
+                    'task_id' => $task->id,
+                    'event_id' => $eventId
+                ]);
+            } else {
+                // Create new event
+                $this->createEvent($eventData, $eventId);
+                \Illuminate\Support\Facades\Log::info('Created task event in Google Calendar', [
+                    'user_id' => $this->user_id,
+                    'task_id' => $task->id,
+                    'event_id' => $eventId
+                ]);
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error syncing single task to Google Calendar', [
+                'user_id' => $this->user_id,
+                'task_id' => $task->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
     }
 
     private function getEventIdForAssignment($assignment)
@@ -316,18 +380,18 @@ class GoogleCalendar extends Model
         }
 
         $url = "https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events";
-        
+
         // If eventId is provided, add it to the request body
         if ($eventId) {
             $eventData['id'] = $eventId;
         }
-        
+
         \Illuminate\Support\Facades\Log::info('Creating Google Calendar event', [
             'user_id' => $this->user_id,
             'event_id' => $eventId,
             'url' => $url
         ]);
-        
+
         $response = Http::withoutVerifying()->withToken($this->access_token)
             ->post($url, $eventData);
 
@@ -358,13 +422,13 @@ class GoogleCalendar extends Model
         }
 
         $url = "https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}";
-        
+
         \Illuminate\Support\Facades\Log::info('Updating Google Calendar event', [
             'user_id' => $this->user_id,
             'event_id' => $eventId,
             'url' => $url
         ]);
-        
+
         $response = Http::withoutVerifying()->withToken($this->access_token)
             ->put($url, $eventData);
 
@@ -396,13 +460,13 @@ class GoogleCalendar extends Model
         }
 
         $url = "https://www.googleapis.com/calendar/v3/calendars/{$this->calendar_id}/events/{$eventId}";
-        
+
         \Illuminate\Support\Facades\Log::info('Deleting Google Calendar event', [
             'user_id' => $this->user_id,
             'event_id' => $eventId,
             'url' => $url
         ]);
-        
+
         $response = Http::withoutVerifying()->withToken($this->access_token)
             ->delete($url);
 

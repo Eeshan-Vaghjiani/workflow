@@ -21,6 +21,16 @@ class GoogleAuthController extends Controller
             $clientId = config('services.google.client_id');
             $redirectUri = config('services.google.redirect');
 
+            // Add thorough logging
+            \Illuminate\Support\Facades\Log::info('Google OAuth redirect attempt', [
+                'client_id' => substr($clientId ?? '', 0, 8) . '...',
+                'redirect_uri' => $redirectUri,
+                'user_id' => Auth::id() ?? 'guest',
+                'configured' => !empty($clientId) && !empty($redirectUri),
+                'server' => $_SERVER['SERVER_NAME'] ?? 'unknown',
+                'request_uri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+            ]);
+
             // Ensure we have the required values
             if (empty($clientId) || empty($redirectUri)) {
                 \Illuminate\Support\Facades\Log::error('Google OAuth missing configuration', [
@@ -48,22 +58,36 @@ class GoogleAuthController extends Controller
                 $params['login_hint'] = Auth::user()->email;
             }
 
-            // Log the redirect URL for debugging
+            // Log the redirect URL for debugging (sanitize the client_id)
+            $logParams = $params;
+            $logParams['client_id'] = substr($logParams['client_id'], 0, 8) . '...';
+
             \Illuminate\Support\Facades\Log::info('Google OAuth redirect URL', [
                 'url' => $url . '?' . http_build_query($params),
-                'params' => $params
+                'params' => $logParams
+            ]);
+
+            // Additional logging for debugging redirect issues
+            $finalRedirectUrl = $url . '?' . http_build_query($params);
+            \Illuminate\Support\Facades\Log::debug('Complete Google OAuth redirect URL', [
+                'full_url' => $finalRedirectUrl,
+                'redirect_uri' => $redirectUri,
+                'user_id' => Auth::id() ?? 'guest'
             ]);
 
             // Create a simple view with a redirect script to avoid CORS issues
             return view('google.redirect', [
-                'url' => $url . '?' . http_build_query($params),
+                'url' => $finalRedirectUrl,
                 'message' => 'Redirecting to Google Authentication...'
             ]);
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Google OAuth redirect error', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'redirect_uri' => $redirectUri ?? 'not set',
+                'client_id_set' => !empty($clientId),
+                'server_name' => $_SERVER['SERVER_NAME'] ?? 'unknown'
             ]);
 
             return redirect()->route('calendar.settings')
@@ -77,6 +101,19 @@ class GoogleAuthController extends Controller
     public function handleGoogleCallback(Request $request)
     {
         try {
+            // Log the full callback data for debugging (sanitize sensitive info)
+            $logData = $request->all();
+            if (isset($logData['code'])) {
+                $logData['code'] = substr($logData['code'], 0, 10) . '...';
+            }
+
+            Log::info('Google OAuth Callback received', [
+                'data' => $logData,
+                'user_id' => Auth::id() ?? 'guest',
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+
             // Check for errors from Google
             if ($request->has('error')) {
                 $error = $request->get('error');
@@ -109,6 +146,14 @@ class GoogleAuthController extends Controller
             $clientSecret = config('services.google.client_secret');
             $redirectUri = config('services.google.redirect');
 
+            // Log the configuration used (sanitize sensitive info)
+            Log::info('Google OAuth Config', [
+                'client_id' => substr($clientId ?? '', 0, 8) . '...',
+                'client_secret_exists' => !empty($clientSecret),
+                'redirect_uri' => $redirectUri,
+                'user_id' => Auth::id()
+            ]);
+
             // Validate config
             if (empty($clientId) || empty($clientSecret) || empty($redirectUri)) {
                 Log::error('Google OAuth Invalid Config', [
@@ -124,40 +169,70 @@ class GoogleAuthController extends Controller
 
             // Exchange authorization code for access token
             try {
-                $response = Http::withoutVerifying()->post('https://oauth2.googleapis.com/token', [
-                    'client_id' => config('services.google.client_id'),
-                    'client_secret' => config('services.google.client_secret'),
+                // First log the attempt
+                Log::info('Exchanging authorization code for access token', [
+                    'user_id' => Auth::id(),
+                    'code_length' => strlen($code)
+                ]);
+
+                $withoutVerify = config('services.google.verify_ssl') === false;
+                $httpClient = Http::withOptions([
+                    'verify' => !$withoutVerify
+                ]);
+
+                if ($withoutVerify) {
+                    Log::warning('SSL verification is disabled for Google API calls');
+                }
+
+                $response = $httpClient->post('https://oauth2.googleapis.com/token', [
+                    'client_id' => $clientId,
+                    'client_secret' => $clientSecret,
                     'code' => $code,
-                    'redirect_uri' => config('services.google.redirect'),
+                    'redirect_uri' => $redirectUri,
                     'grant_type' => 'authorization_code',
                 ]);
 
                 if (!$response->successful()) {
+                    $responseData = $response->json() ?? ['error' => 'Unknown error', 'error_description' => 'No response body'];
+
                     Log::error('Google OAuth Token Error', [
                         'status' => $response->status(),
-                        'response' => $response->json() ?? $response->body(),
+                        'error' => $responseData['error'] ?? 'Unknown error',
+                        'error_description' => $responseData['error_description'] ?? 'No description',
                         'user_id' => Auth::id()
                     ]);
 
                     return redirect()->route('calendar.settings')
-                        ->with('error', 'Failed to obtain authorization from Google');
+                        ->with('error', 'Failed to obtain authorization from Google: ' .
+                            ($responseData['error_description'] ?? $responseData['error'] ?? 'Unknown error'));
                 }
 
                 $tokenData = $response->json();
+                Log::info('Received OAuth token', [
+                    'user_id' => Auth::id(),
+                    'expires_in' => $tokenData['expires_in'] ?? 'not provided',
+                    'has_refresh_token' => isset($tokenData['refresh_token']),
+                    'token_type' => $tokenData['token_type'] ?? 'not provided'
+                ]);
 
                 // Make API call to get calendar info
-                $calendarResponse = Http::withoutVerifying()->withToken($tokenData['access_token'])
+                $calendarResponse = Http::withOptions([
+                    'verify' => !$withoutVerify
+                ])->withToken($tokenData['access_token'])
                     ->get('https://www.googleapis.com/calendar/v3/calendars/primary');
 
                 if (!$calendarResponse->successful()) {
+                    $calResponseData = $calendarResponse->json() ?? ['error' => 'Unknown error'];
+
                     Log::error('Google Calendar Fetch Error', [
                         'status' => $calendarResponse->status(),
-                        'response' => $calendarResponse->json() ?? $calendarResponse->body(),
+                        'error' => $calResponseData['error']['message'] ?? $calResponseData['error'] ?? 'Unknown error',
                         'user_id' => Auth::id()
                     ]);
 
                     return redirect()->route('calendar.settings')
-                        ->with('error', 'Failed to fetch Google Calendar information');
+                        ->with('error', 'Failed to fetch Google Calendar information: ' .
+                            ($calResponseData['error']['message'] ?? 'API error'));
                 }
 
                 $calendarData = $calendarResponse->json();
@@ -391,6 +466,61 @@ class GoogleAuthController extends Controller
                 'configValid' => false,
                 'error' => 'Error loading calendar settings: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Save the user's Google Calendar settings.
+     */
+    public function saveSettings(Request $request)
+    {
+        try {
+            // Validate request data
+            $validated = $request->validate([
+                'calendar_id' => 'required|string|max:255',
+            ]);
+
+            $user = Auth::user();
+
+            // Find the user's Google Calendar connection
+            $googleCalendar = GoogleCalendar::where('user_id', $user->id)->first();
+
+            if (!$googleCalendar) {
+                Log::warning('Attempted to save Google Calendar ID but no connection exists', [
+                    'user_id' => $user->id
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You need to connect your Google account before setting a calendar ID'
+                ], 400);
+            }
+
+            // Update the calendar ID
+            $googleCalendar->calendar_id = $validated['calendar_id'];
+            $googleCalendar->save();
+
+            Log::info('Google Calendar ID saved', [
+                'user_id' => $user->id,
+                'calendar_id' => $validated['calendar_id']
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Google Calendar ID saved successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error saving Google Calendar settings', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id() ?? 'Not authenticated'
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save settings: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

@@ -99,6 +99,13 @@ class AIService
                         $groupMembers[] = $member->name;
                     }
                 }
+
+                // DEBUG: Log team member data before prompt assembly
+                Log::info('DEBUG: Team members being added to prompt:', [
+                    'team_members' => json_encode($groupMembers, JSON_PRETTY_PRINT),
+                    'count' => count($groupMembers),
+                    'group_id' => $groupId
+                ]);
             } catch (\Exception $e) {
                 Log::warning('Could not get group members: ' . $e->getMessage());
             }
@@ -191,6 +198,13 @@ class AIService
             // Get a working model
             $modelToUse = $this->getWorkingModel();
 
+            // DEBUG: Log the final prompt before sending to OpenRouter
+            Log::info('DEBUG: Final prompt being sent to OpenRouter:', [
+                'model' => $modelToUse,
+                'system_message' => $systemMessage,
+                'user_prompt' => $prompt
+            ]);
+
             Log::info('Making OpenRouter API request', [
                 'model' => $modelToUse,
                 'system_message_length' => strlen($systemMessage),
@@ -210,43 +224,81 @@ class AIService
                 ]
             ]);
 
-            $response = $http->post($this->baseUrl . '/chat/completions', [
-                'model' => $modelToUse,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemMessage],
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'temperature' => 0.1,
-                'response_format' => ["type" => "json_object"],
-            ]);
-
-            // Calculate response time
-            $endTime = microtime(true);
-            $responseTime = round(($endTime - $startTime) * 1000); // in milliseconds
-
-            if ($response->failed()) {
-                Log::error('OpenRouter API request failed', [
-                    'status' => $response->status(),
-                    'reason' => $response->reason(),
-                    'body' => $response->body(),
-                    'response_time_ms' => $responseTime
+            try {
+                $response = $http->post($this->baseUrl . '/chat/completions', [
+                    'model' => $modelToUse,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemMessage],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => 0.1,
+                    'response_format' => ["type" => "json_object"],
                 ]);
 
-                // Update the AI prompt record with failure details
-                $aiPrompt->update([
-                    'response' => $response->body(),
-                    'response_time_ms' => $responseTime,
-                    'metadata' => [
+                // Calculate response time
+                $endTime = microtime(true);
+                $responseTime = round(($endTime - $startTime) * 1000); // in milliseconds
+
+                // DEBUG: Log the response status and raw response body
+                Log::info('DEBUG: OpenRouter response status:', [
+                    'status' => $response->status()
+                ]);
+
+                // Get and log the raw response body
+                $rawResponseText = $response->body();
+                Log::info('DEBUG: Raw OpenRouter response body:', [
+                    'raw_response' => $rawResponseText
+                ]);
+
+                if ($response->failed()) {
+                    Log::error('OpenRouter API request failed', [
                         'status' => $response->status(),
                         'reason' => $response->reason(),
+                        'body' => $rawResponseText,
                         'response_time_ms' => $responseTime
-                    ]
+                    ]);
+
+                    // Update the AI prompt record with failure details
+                    $aiPrompt->update([
+                        'response' => $rawResponseText,
+                        'response_time_ms' => $responseTime,
+                        'metadata' => [
+                            'status' => $response->status(),
+                            'reason' => $response->reason(),
+                            'response_time_ms' => $responseTime
+                        ]
+                    ]);
+
+                    return ['error' => 'OpenRouter API request failed: ' . $response->reason()];
+                }
+
+                // Now try to parse the text as JSON
+                $data = json_decode($rawResponseText, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('DEBUG: Error parsing OpenRouter response as JSON:', [
+                        'error' => json_last_error_msg(),
+                        'raw_response' => $rawResponseText
+                    ]);
+                    return ['error' => 'Failed to parse OpenRouter response: ' . json_last_error_msg()];
+                }
+
+            } catch (\Exception $e) {
+                Log::error('DEBUG: An error occurred during the OpenRouter call or JSON parsing:', [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
                 ]);
 
-                return ['error' => 'OpenRouter API request failed: ' . $response->reason()];
+                return [
+                    'error' => 'OpenRouter API call failed: ' . $e->getMessage(),
+                    'debug' => [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ]
+                ];
             }
-
-            $data = $response->json();
 
             if (!isset($data['choices'][0]['message']['content'])) {
                 Log::error('Invalid AI response', ['response' => $data]);
@@ -352,6 +404,12 @@ class AIService
                 return $tasks;
             }
 
+            // DEBUG: Log team members data before task distribution
+            Log::info('DEBUG: Team members for task distribution:', [
+                'members' => json_encode($groupMembers, JSON_PRETTY_PRINT),
+                'count' => count($groupMembers)
+            ]);
+
             $http = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
                 'Content-Type' => 'application/json',
@@ -383,6 +441,12 @@ class AIService
                 Log::warning('No valid tasks found for distribution');
                 return $tasks;
             }
+
+            // DEBUG: Log task data for distribution
+            Log::info('DEBUG: Tasks for distribution:', [
+                'tasks' => json_encode($taskData, JSON_PRETTY_PRINT),
+                'count' => count($taskData)
+            ]);
 
             // Prepare member data - ensure we only have valid members
             $memberData = [];
@@ -417,32 +481,70 @@ class AIService
                 'members' => $memberData
             ]);
 
+            // DEBUG: Log the final prompt before sending to OpenRouter
+            Log::info('DEBUG: Final prompt being sent to OpenRouter for task distribution:', [
+                'system_message' => $systemMessage,
+                'user_message' => $userMessage
+            ]);
+
             // Get a working model
             $modelToUse = $this->getWorkingModel();
 
             // Make API request
-            $response = $http->post($this->baseUrl . '/chat/completions', [
-                'model' => $modelToUse,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemMessage],
-                    ['role' => 'user', 'content' => $userMessage],
-                ],
-                'temperature' => 0.1,
-                'response_format' => ["type" => "json_object"],
-            ]);
-
-            if ($response->failed()) {
-                Log::error('OpenRouter API request failed for task distribution', [
-                    'status' => $response->status(),
-                    'reason' => $response->reason(),
-                    'body' => $response->body()
+            try {
+                $response = $http->post($this->baseUrl . '/chat/completions', [
+                    'model' => $modelToUse,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemMessage],
+                        ['role' => 'user', 'content' => $userMessage],
+                    ],
+                    'temperature' => 0.1,
+                    'response_format' => ["type" => "json_object"],
                 ]);
 
-                // Fallback: simple round-robin distribution
+                // DEBUG: Log the response status and raw response body
+                Log::info('DEBUG: OpenRouter task distribution response status:', [
+                    'status' => $response->status()
+                ]);
+
+                // Get and log the raw response body
+                $rawResponseText = $response->body();
+                Log::info('DEBUG: Raw OpenRouter task distribution response body:', [
+                    'raw_response' => $rawResponseText
+                ]);
+
+                if ($response->failed()) {
+                    Log::error('OpenRouter API request failed for task distribution', [
+                        'status' => $response->status(),
+                        'reason' => $response->reason(),
+                        'body' => $rawResponseText
+                    ]);
+
+                    // Fallback: simple round-robin distribution
+                    return $this->fallbackDistributeTasks($tasks, $groupMembers);
+                }
+
+                // Now try to parse the text as JSON
+                $data = json_decode($rawResponseText, true);
+
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('DEBUG: Error parsing OpenRouter task distribution response as JSON:', [
+                        'error' => json_last_error_msg(),
+                        'raw_response' => $rawResponseText
+                    ]);
+                    return $this->fallbackDistributeTasks($tasks, $groupMembers);
+                }
+
+            } catch (\Exception $e) {
+                Log::error('DEBUG: An error occurred during the OpenRouter task distribution call:', [
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
                 return $this->fallbackDistributeTasks($tasks, $groupMembers);
             }
-
-            $data = $response->json();
 
             if (!isset($data['choices'][0]['message']['content'])) {
                 Log::error('Invalid AI response for task distribution', ['response' => $data]);

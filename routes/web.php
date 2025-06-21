@@ -207,6 +207,7 @@ Route::middleware([
     Route::get('/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'handleGoogleCallback'])->name('google.callback');
     Route::get('/google/disconnect', [App\Http\Controllers\GoogleAuthController::class, 'disconnect'])->name('google.disconnect');
     Route::get('/calendar/settings', [App\Http\Controllers\GoogleAuthController::class, 'settings'])->name('calendar.settings');
+    Route::post('/calendar/settings', [App\Http\Controllers\GoogleAuthController::class, 'saveSettings'])->name('calendar.save-settings');
 
     // Calendar sync route (web version)
     Route::post('/calendar/sync', [App\Http\Controllers\CalendarController::class, 'sync'])->name('calendar.sync');

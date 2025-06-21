@@ -65,25 +65,67 @@ If you continue to have issues, check your Laravel logs at `storage/logs/laravel
 
 # Google Calendar Integration
 
-This application supports synchronizing tasks and assignments with Google Calendar.
+### Setup Instructions
 
-## Setup
+1. **Create Google API credentials:**
 
-1. Follow the detailed setup instructions in the [Google Calendar Setup Guide](./GOOGLE_CALENDAR_SETUP.md)
-2. Add the following to your `.env` file with your Google Cloud credentials:
+    - Visit [Google Cloud Console](https://console.cloud.google.com/)
+    - Create a new project (or select an existing one)
+    - Go to "APIs & Services" > "Library"
+    - Enable "Google Calendar API"
+    - Go to "APIs & Services" > "Credentials"
+    - Create OAuth 2.0 Client ID credentials
+    - Set authorized redirect URIs: `{your-app-url}/google/callback`
+    - Save your Client ID and Client Secret
 
-```
-GOOGLE_CLIENT_ID=your_client_id_here
-GOOGLE_CLIENT_SECRET=your_client_secret_here
-GOOGLE_REDIRECT_URI=http://localhost:8000/google/callback
-```
+2. **Configure Environment Variables:**
 
-## Usage
+    ```env
+    GOOGLE_CLIENT_ID=your-client-id
+    GOOGLE_CLIENT_SECRET=your-client-secret
+    GOOGLE_REDIRECT_URI=http://your-app-url/google/callback
+    ```
 
-1. Navigate to the Calendar page
-2. Click the "Settings" button to access calendar settings
-3. Click "Connect Google Calendar" to authenticate with Google
-4. Once connected, you can click "Sync with Google" on the Calendar page to sync your tasks and assignments
+3. **Connect your Google Calendar:**
+
+    - Log in to the application
+    - Go to Calendar settings
+    - Click "Connect Google Calendar"
+    - Follow the OAuth flow
+    - Grant the requested permissions
+
+4. **Set Your Calendar ID:**
+    - After connecting your Google account, you need to set which calendar to use
+    - Go to your Google Calendar in a browser
+    - Find the calendar you want to use in the left sidebar
+    - Click the three dots (⋮) next to it and select "Settings and sharing"
+    - Scroll down to "Integrate calendar" section
+    - Copy the Calendar ID
+    - Return to Calendar Settings in the application
+    - Paste the ID in the "Google Calendar ID" field
+    - Click "Save Calendar ID"
+    - For your primary calendar, you can simply use "primary" as the ID
+
+### Troubleshooting
+
+If calendar sync is not working:
+
+1. Check your Google Calendar connection in the settings page
+2. Make sure you've set a valid Calendar ID
+3. Verify that you have valid tokens in the database (google_calendars table)
+4. Examine logs for sync errors
+5. Test sync functionality with the command: `php test_google_calendar.php {user_id}`
+6. Ensure your Google API credentials have Calendar API access enabled
+7. Confirm that the redirect URIs in Google Cloud Console match your .env file setting
+
+#### Common Error Messages
+
+- **"No calendar ID specified"**: You need to set a Calendar ID in Calendar Settings
+- **"Calendar ID not found"**: The Calendar ID you entered doesn't exist or you don't have access to it
+- **"Google Calendar not connected"**: You need to connect your Google account first
+- **"Token revoked"** or **"Invalid token"**: Your Google connection has expired, reconnect it
+
+For comprehensive troubleshooting, see the [GOOGLE_CALENDAR_SETUP_GUIDE.md](GOOGLE_CALENDAR_SETUP_GUIDE.md)
 
 ## Features
 
@@ -91,14 +133,5 @@ GOOGLE_REDIRECT_URI=http://localhost:8000/google/callback
 - Color-coded events based on task priority
 - Task status and progress shown in event descriptions
 - Changes to tasks in the application are reflected in Google Calendar
-
-## Troubleshooting
-
-If you encounter issues with Google Calendar integration:
-
-1. Check that your Google Cloud project has the Google Calendar API enabled
-2. Verify your OAuth consent screen is properly configured with the required scopes
-3. Ensure the redirect URI in your Google Cloud Console matches your application's callback URL
-4. Check the application logs for detailed error messages
 
 For more information, see the [Google Calendar API documentation](https://developers.google.com/calendar/api/guides/overview).

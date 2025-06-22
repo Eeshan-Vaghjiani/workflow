@@ -18,6 +18,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
 use App\Http\Middleware\TwoFactorAuthenticationMiddleware;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\TwoFactorAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -898,4 +904,20 @@ require __DIR__.'/auth.php';
 
 Route::get('/phpinfo', function () {
     phpinfo();
+});
+
+// Chat routes
+Route::middleware(['auth'])->group(function () {
+    // Direct messages
+    Route::get('/web/direct-messages/{userId}', [ChatController::class, 'getDirectMessages']);
+    Route::post('/web/direct-messages/{userId}', [ChatController::class, 'sendDirectMessage']);
+    Route::delete('/messages/{id}', [ChatController::class, 'deleteMessage']);
+
+    // Group messages
+    Route::get('/chat/groups/{groupId}', [ChatController::class, 'getGroupMessages']);
+    Route::post('/chat/groups/{groupId}/messages', [ChatController::class, 'sendGroupMessage']);
+    Route::delete('/chat/groups/messages/{id}', [ChatController::class, 'deleteGroupMessage']);
+
+    // Typing indicator
+    Route::post('/chat/typing', [ChatController::class, 'typing']);
 });

@@ -18,7 +18,7 @@ class ChatController extends Controller
     public function getGroups()
     {
         $user = auth()->user();
-        
+
         $groups = $user->groups()
             ->get()
             ->map(function ($group) {
@@ -27,7 +27,7 @@ class ChatController extends Controller
                     ->with('user:id,name')
                     ->latest()
                     ->first();
-                
+
                 return [
                     'id' => $group->id,
                     'name' => $group->name,
@@ -42,10 +42,10 @@ class ChatController extends Controller
                     'memberCount' => $group->members()->count(),
                 ];
             });
-            
+
         return response()->json($groups);
     }
-    
+
     /**
      * Search for users by name.
      */
@@ -60,7 +60,7 @@ class ChatController extends Controller
                     'message' => 'You must be logged in to use this feature',
                 ], 401);
             }
-            
+
             Log::info('Search users request received', [
                 'request' => $request->all(),
                 'auth' => 'Authenticated user: ' . auth()->id(),
@@ -68,7 +68,7 @@ class ChatController extends Controller
                 'headers' => array_keys($request->headers->all()),
                 'session_id' => $request->session()->getId()
             ]);
-            
+
             // Check if we have a name parameter at all
             if (!$request->has('name')) {
                 Log::warning('Search users request missing name parameter');
@@ -83,7 +83,7 @@ class ChatController extends Controller
 
             // Use a more lenient validation
             $term = trim($request->input('name'));
-            
+
             if (empty($term) || strlen($term) < 2) {
                 Log::warning('Search term too short', ['term' => $term]);
                 return response()->json([
@@ -94,48 +94,48 @@ class ChatController extends Controller
             }
 
             $currentUserId = auth()->id();
-            
+
             Log::info('API Chat user search request', [
-                'term' => $term, 
+                'term' => $term,
                 'authenticated_user' => $currentUserId,
                 'request_path' => $request->path(),
                 'request_url' => $request->url(),
             ]);
-            
+
             // First do a simple count query to see how many users exist total
             $totalUserCount = User::count();
             $usersExceptCurrentCount = User::where('id', '!=', $currentUserId)->count();
-            
+
             Log::info('Database user counts', [
                 'total_users' => $totalUserCount,
                 'users_except_current' => $usersExceptCurrentCount
             ]);
-            
+
             // Make search more lenient by checking multiple columns and using lowercase
             $query = User::query();
-            
+
             if (auth()->check()) {
                 $query->where('id', '!=', $currentUserId);
             }
-            
+
             $query->where(function($q) use ($term) {
                 $q->where('name', 'LIKE', "%{$term}%")
                   ->orWhere('email', 'LIKE', "%{$term}%");
             });
-            
+
             // Log the raw SQL query for debugging
             $querySql = $query->toSql();
             $queryBindings = $query->getBindings();
-            
+
             Log::info('User search query', [
                 'query' => $querySql,
                 'bindings' => $queryBindings
             ]);
-            
+
             $users = $query->select('id', 'name', 'email', 'avatar')
                 ->take(10)
                 ->get();
-                
+
             // Log the search results for debugging
             Log::info('API User search results', [
                 'term' => $term,
@@ -151,7 +151,7 @@ class ChatController extends Controller
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
             ]);
-            
+
             return response()->json([
                 'error' => 'Failed to search for users',
                 'message' => $e->getMessage(),
@@ -169,20 +169,20 @@ class ChatController extends Controller
     public function getDirectMessages()
     {
         $user = auth()->user();
-        
+
         // Get all direct message conversations
         $conversations = DirectMessage::where('sender_id', $user->id)
             ->orWhere('receiver_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->get()
             ->groupBy(function ($message) use ($user) {
-                return $message->sender_id == $user->id 
-                    ? $message->receiver_id 
+                return $message->sender_id == $user->id
+                    ? $message->receiver_id
                     : $message->sender_id;
             })
             ->map(function ($messages, $userId) use ($user) {
                 $otherUser = User::find($userId);
-                
+
                 if (!$otherUser) {
                     Log::warning('Missing user in direct message conversation', [
                         'user_id' => $userId,
@@ -190,9 +190,9 @@ class ChatController extends Controller
                     ]);
                     return null;
                 }
-                
+
                 $lastMessage = $messages->sortByDesc('created_at')->first();
-                
+
                 return [
                     'user' => [
                         'id' => $otherUser->id,
@@ -214,7 +214,7 @@ class ChatController extends Controller
             })
             ->filter()
             ->values();
-        
+
         return response()->json([
             'conversations' => $conversations,
         ]);
@@ -257,4 +257,4 @@ class ChatController extends Controller
             ], 401);
         }
     }
-} 
+}

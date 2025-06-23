@@ -19,16 +19,21 @@ interface User {
 interface Message {
     id: number | string;
     content: string;
-    message: string;
-    user_id: number;
-    created_at: string;
-    user: {
+    message?: string;
+    user_id?: number;
+    sender_id?: number;
+    receiver_id?: number;
+    group_id?: number;
+    created_at?: string;
+    timestamp?: string;
+    user?: {
         id: number;
         name: string;
         avatar?: string;
     };
     _key?: string;
     is_from_me?: boolean;
+    status?: 'sent' | 'delivered' | 'read' | 'failed' | 'pending';
 }
 
 interface Chat {
@@ -54,6 +59,11 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
     const [chats, setChats] = useState<Chat[]>([]);
     const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
+
+    // Add state for direct and group messages
+    const [directMessages, setDirectMessages] = useState<Record<number, Message[]>>({});
+    const [groupMessages, setGroupMessages] = useState<Record<number, Message[]>>({});
+
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
@@ -297,164 +307,240 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
 
                 console.log('Successfully subscribed to channel:', channelName);
 
-                // CRITICAL FIX: Listen for the exact event name 'message.new' that the server is broadcasting
+                // Listen for events both with and without the dot prefix
+                // First try with the dot prefix (Laravel standard)
+                channel.listen('.message.new', (data: any) => {
+                    console.log(`Received .message.new event (with dot) on ${channelName}:`, data);
+                    handleNewMessage(data);
+                });
+
+                // Also listen without the dot prefix as fallback
                 channel.listen('message.new', (data: any) => {
-                    console.log(`Received message.new event on ${channelName}:`, data);
+                    console.log(`Received message.new event (no dot) on ${channelName}:`, data);
+                    handleNewMessage(data);
+                });
 
-                    // Extract the message data, handling both direct structure and nested structure
-                    const incomingMessage = data.message || data;
-                    if (!incomingMessage) {
-                        console.error('Received invalid message data:', data);
-                        return;
-                    }
+                // Extract message handling to avoid duplicate code
+                const handleNewMessage = (data: any) => {
+                    console.log('Raw message data received:', data);
 
-                    // Safely extract message properties
-                    const messageId = incomingMessage.id;
-                    const senderId = incomingMessage.sender_id || incomingMessage.user_id;
-                    const receiverId = incomingMessage.receiver_id;
-                    const groupId = incomingMessage.group_id;
-                    const content = incomingMessage.content || incomingMessage.message;
-                    const timestamp = incomingMessage.created_at || new Date().toISOString();
-                    const messageUser = incomingMessage.user || {
-                        id: senderId,
-                        name: incomingMessage.sender_name || 'Unknown User',
-                        avatar: incomingMessage.sender_avatar
-                    };
+                    try {
+                        // Deep extract the message data from various possible structures
+                        // If we have a .message property, use that, otherwise use data itself
+                        let incomingMessage = data;
 
-                    // Determine if the message belongs to the currently active chat
-                    const isForCurrentChat = selectedChat && (
-                        (selectedChat.type === 'direct' && (
-                            // Either sender->current user OR current user->receiver
-                            (senderId === selectedChat.id && receiverId === currentUser.id) ||
-                            (senderId === currentUser.id && receiverId === selectedChat.id)
-                        )) ||
-                        (selectedChat.type === 'group' && groupId === selectedChat.id)
-                    );
-
-                    if (isForCurrentChat) {
-                        console.log('Message is for current chat, updating messages state');
-
-                        // Add to messages state if it's for the current chat
-                        setMessages(prevMessages => {
-                            // Check if this message is already in our list to avoid duplicates
-                            const isDuplicate = prevMessages.some(msg =>
-                                (msg.id === messageId) ||
-                                (msg.user_id === senderId &&
-                                    (msg.content === content || msg.message === content) &&
-                                    Math.abs(new Date(msg.created_at).getTime() - new Date(timestamp).getTime()) < 1000)
-                            );
-
-                            if (!isDuplicate) {
-                                console.log('Adding new message to state:', incomingMessage);
-
-                                // Normalize message format to match our Message interface
-                                const normalizedMessage: Message = {
-                                    id: messageId || `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-                                    content: content,
-                                    message: content,
-                                    user_id: senderId,
-                                    created_at: timestamp,
-                                    user: messageUser,
-                                    is_from_me: senderId === currentUser.id
+                        // Handle both string and object message formats
+                        if (data.message) {
+                            console.log('Message found in .message property, type:', typeof data.message);
+                            // If message is a string, it's the content, not the full message object
+                            if (typeof data.message === 'string') {
+                                // Keep the original data but set explicit content
+                                incomingMessage = {
+                                    ...data,
+                                    content: data.message,
                                 };
-
-                                // Schedule scrolling after the state update
-                                setTimeout(() => {
-                                    if (messagesContainerRef.current) {
-                                        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-                                    }
-                                }, 100);
-
-                                return [...prevMessages, normalizedMessage];
+                                console.log('Message is string, created object:', incomingMessage);
                             } else {
-                                console.log('Duplicate message detected, not adding to state');
-                                return prevMessages;
+                                incomingMessage = data.message;
                             }
+                        } else if (data.data) {
+                            console.log('Message found in .data property');
+                            incomingMessage = data.data;
+                        }
+
+                        if (!incomingMessage) {
+                            console.error('No valid message data found in the event', data);
+                            return;
+                        }
+
+                        console.log('Incoming message structure:', incomingMessage);
+
+                        // Examine all possible properties where sender ID might be found
+                        console.log('Debug all possible ID fields:', {
+                            'incomingMessage.sender_id': incomingMessage.sender_id,
+                            'incomingMessage.user_id': incomingMessage.user_id,
+                            'data.sender_id': data.sender_id,
+                            'data.user_id': data.user_id,
+                            'incomingMessage.user?.id': incomingMessage.user?.id,
+                            'data.user?.id': data.user?.id
                         });
-                    } else {
-                        console.log('Message is for another chat, updating chat list');
 
-                        // This message is for a different chat or no chat is selected
-                        // Update the chat list to show new message indicator
-                        setChats(prevChats => {
-                            // Determine if this is a direct message or group message
-                            const isDirectMessage = !groupId && (senderId === currentUser.id || receiverId === currentUser.id);
-                            const isGroupMessage = !!groupId;
+                        // Safely extract message properties with detailed logging and fallbacks
+                        const messageId = incomingMessage.id || data.id;
+                        // Look in more places for sender ID
+                        const senderId = incomingMessage.sender_id || data.sender_id ||
+                            incomingMessage.user_id || data.user_id ||
+                            (incomingMessage.user ? incomingMessage.user.id : null) ||
+                            (data.user ? data.user.id : null);
+                        const receiverId = incomingMessage.receiver_id || data.receiver_id;
+                        const groupId = incomingMessage.group_id || data.group_id;
+                        // Ensure content is retrieved from the right property
+                        const content = incomingMessage.content ||
+                            (typeof incomingMessage.message === 'string' ? incomingMessage.message : '');
+                        const timestamp = incomingMessage.created_at || new Date().toISOString();
 
-                            if (isDirectMessage) {
-                                // For direct messages, find the chat with the other user
-                                const otherUserId = senderId === currentUser.id ? receiverId : senderId;
-                                const chatIndex = prevChats.findIndex(
-                                    chat => chat.type === 'direct' && chat.id === otherUserId
+                        // Use the user object if available, otherwise create one
+                        const messageUser = incomingMessage.user || {
+                            id: senderId,
+                            name: incomingMessage.sender_name || 'Unknown User',
+                            avatar: incomingMessage.sender_avatar
+                        };
+
+                        console.log('Extracted message data:', {
+                            messageId,
+                            senderId,
+                            receiverId,
+                            groupId,
+                            content,
+                            timestamp
+                        });
+
+                        // Only try to handle the message if we have at least the content
+                        if (!content && !messageId) {
+                            console.error('Missing critical message data (content and ID)', data);
+                            return;
+                        }
+
+                        // We can handle the message even without sender ID - just treat as an unknown user
+                        const processedMessage: Message = {
+                            id: messageId || new Date().getTime(), // Fallback to timestamp if no ID
+                            content: content || (typeof data.message === 'string' ? data.message : ''),
+                            sender_id: senderId,
+                            receiver_id: receiverId,
+                            group_id: groupId,
+                            timestamp: timestamp,
+                            is_from_me: senderId === currentUser.id,
+                            user: messageUser
+                        };
+
+                        console.log('Processed message for display:', processedMessage);
+
+                        // Handle direct messages and group messages accordingly
+                        if (processedMessage.group_id) {
+                            // Group chat message
+                            console.log('Adding message to group chat:', processedMessage.group_id);
+
+                            // Update messages if this is the active chat
+                            if (selectedChat && selectedChat.type === 'group' && selectedChat.id === processedMessage.group_id) {
+                                setMessages(prevMessages => [...prevMessages, processedMessage]);
+                                setTimeout(scrollToBottom, 100);
+                            }
+
+                            // Update group messages store
+                            setGroupMessages(prevMessages => {
+                                const groupId = processedMessage.group_id || 0;
+                                const updatedMessages = { ...prevMessages };
+
+                                if (!updatedMessages[groupId]) {
+                                    updatedMessages[groupId] = [];
+                                }
+
+                                // Check for duplicates
+                                const isDuplicate = updatedMessages[groupId].some(
+                                    (msg: Message) => msg.id === processedMessage.id
+                                );
+
+                                if (!isDuplicate) {
+                                    updatedMessages[groupId] = [...updatedMessages[groupId], processedMessage];
+                                }
+
+                                return updatedMessages;
+                            });
+
+                            // Update chat list with new message info
+                            setChats(prevChats => {
+                                const updatedChats = [...prevChats];
+                                const chatIndex = updatedChats.findIndex(
+                                    chat => chat.type === 'group' && chat.id === processedMessage.group_id
                                 );
 
                                 if (chatIndex >= 0) {
-                                    // Update existing chat with new message info
-                                    const updatedChats = [...prevChats];
                                     updatedChats[chatIndex] = {
                                         ...updatedChats[chatIndex],
                                         lastMessage: {
-                                            content: content,
-                                            timestamp: timestamp,
+                                            content: processedMessage.content,
+                                            timestamp: processedMessage.timestamp || new Date().toISOString(),
                                         },
-                                        // Only increment unread count if the message is not from the current user
-                                        unreadCount: senderId !== currentUser.id
+                                        unreadCount: processedMessage.sender_id !== currentUser.id
                                             ? (updatedChats[chatIndex].unreadCount || 0) + 1
                                             : updatedChats[chatIndex].unreadCount || 0,
                                     };
-                                    return updatedChats;
-                                } else if (senderId !== currentUser.id && messageUser) {
-                                    // Create new chat if it doesn't exist and message is from someone else
-                                    const newChat: Chat = {
-                                        id: senderId,
-                                        name: messageUser.name,
-                                        type: 'direct',
-                                        avatar: messageUser.avatar,
-                                        lastMessage: {
-                                            content: content,
-                                            timestamp: timestamp,
-                                        },
-                                        unreadCount: 1,
-                                    };
-                                    return [...prevChats, newChat];
                                 }
-                            } else if (isGroupMessage) {
-                                // For group messages, find the group chat
-                                const chatIndex = prevChats.findIndex(
-                                    chat => chat.type === 'group' && chat.id === groupId
-                                );
 
-                                if (chatIndex >= 0) {
-                                    // Update existing group chat
-                                    const updatedChats = [...prevChats];
-                                    updatedChats[chatIndex] = {
-                                        ...updatedChats[chatIndex],
-                                        lastMessage: {
-                                            content: content,
-                                            timestamp: timestamp,
-                                        },
-                                        // Only increment unread count if the message is not from the current user
-                                        unreadCount: senderId !== currentUser.id
-                                            ? (updatedChats[chatIndex].unreadCount || 0) + 1
-                                            : updatedChats[chatIndex].unreadCount || 0,
-                                    };
-                                    return updatedChats;
+                                return updatedChats;
+                            });
+                        } else {
+                            // Direct message - could be to or from current user
+                            const chatWithId = processedMessage.sender_id === currentUser.id
+                                ? processedMessage.receiver_id
+                                : processedMessage.sender_id;
+
+                            console.log('Adding direct message for chat with user:', chatWithId);
+
+                            if (chatWithId) {
+                                // If this is the active chat, update its messages
+                                if (selectedChat && selectedChat.type === 'direct' && selectedChat.id === chatWithId) {
+                                    setMessages(prevMessages => [...prevMessages, processedMessage]);
+                                    setTimeout(scrollToBottom, 100);
                                 }
+
+                                // Update direct messages store
+                                setDirectMessages(prevMessages => {
+                                    const updatedMessages = { ...prevMessages };
+
+                                    if (!updatedMessages[chatWithId]) {
+                                        updatedMessages[chatWithId] = [];
+                                    }
+
+                                    // Check for duplicates
+                                    const isDuplicate = updatedMessages[chatWithId].some(
+                                        (msg: Message) => msg.id === processedMessage.id
+                                    );
+
+                                    if (!isDuplicate) {
+                                        updatedMessages[chatWithId] = [...updatedMessages[chatWithId], processedMessage];
+                                    }
+
+                                    return updatedMessages;
+                                });
+
+                                // Update chat list with new message info
+                                setChats(prevChats => {
+                                    const updatedChats = [...prevChats];
+                                    const chatIndex = updatedChats.findIndex(
+                                        chat => chat.type === 'direct' && chat.id === chatWithId
+                                    );
+
+                                    if (chatIndex >= 0) {
+                                        updatedChats[chatIndex] = {
+                                            ...updatedChats[chatIndex],
+                                            lastMessage: {
+                                                content: processedMessage.content,
+                                                timestamp: processedMessage.timestamp || new Date().toISOString(),
+                                            },
+                                            unreadCount: processedMessage.sender_id !== currentUser.id
+                                                ? (updatedChats[chatIndex].unreadCount || 0) + 1
+                                                : updatedChats[chatIndex].unreadCount || 0,
+                                        };
+                                    }
+
+                                    return updatedChats;
+                                });
                             }
+                        }
 
-                            return prevChats;
-                        });
-
-                        // Show notification for messages not from the current user
-                        if (senderId !== currentUser.id) {
+                        // Add notification toast for messages not from current user
+                        if (processedMessage.sender_id !== currentUser.id) {
                             toast({
-                                title: `New message from ${messageUser.name || 'Someone'}`,
-                                description: content,
+                                title: `New message from ${processedMessage.user?.name || 'Unknown User'}`,
+                                description: processedMessage.content,
                                 duration: 5000,
                             });
                         }
+                    } catch (error) {
+                        console.error('Error handling new message:', error);
                     }
-                });
+                };
 
                 // Listen for message deletion events
                 channel.listen('message.deleted', (data: any) => {
@@ -474,7 +560,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                     console.log('Cleaning up Pusher listeners for channel:', channelName);
 
                     // Explicitly stop listening to all events
-                    channel.stopListening('message.new');
+                    channel.stopListening('.message.new');
                     channel.stopListening('message.deleted');
 
                     // Leave the channel to clean up resources
@@ -501,150 +587,132 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
         setSearchQuery('');
     };
 
-    const handleSendMessage = async () => {
-        if (!newMessage.trim() || !selectedChat || isSending) return;
+    // Add scrollToBottom function
+    const scrollToBottom = () => {
+        const messageContainer = document.querySelector('.chat-messages-container');
+        if (messageContainer) {
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+    };
+
+    const sendMessage = async () => {
+        if (!newMessage.trim() || !selectedChat) return;
+
+        setIsSending(true);
 
         try {
-            setIsSending(true);
-
-            // Get CSRF token from meta tag
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const authHeaders = {
-                'X-CSRF-TOKEN': csrfToken || '',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            };
+            console.log('Sending message to:', selectedChat.type, selectedChat.id);
 
             let response;
-            const messageText = newMessage.trim();
-            let messageSent = false;
-            let attempts = 0;
-            const maxAttempts = 3;
+            let messageData = null;
 
-            // Try multiple endpoints with retry logic
-            while (!messageSent && attempts < maxAttempts) {
-                attempts++;
+            // Record the message we're about to send for possible recovery
+            const pendingMessage: Message = {
+                id: Date.now(), // Temporary ID
+                content: newMessage,
+                timestamp: new Date().toISOString(),
+                is_from_me: true,
+                user: {
+                    id: currentUser.id,
+                    name: currentUser.name,
+                    avatar: currentUser.avatar
+                }
+            };
+
+            // Try different endpoints in sequence
+            try {
+                // Try web route first
+                response = await axios.post(`/web/direct-messages/${selectedChat.id}`, {
+                    message: newMessage
+                });
+                messageData = response.data;
+                console.log('Message sent successfully via web route:', messageData);
+            } catch (webError) {
+                console.warn('Web route failed, trying api/web route:', webError);
+
                 try {
-                    if (selectedChat.type === 'group') {
-                        // For group messages
-                        response = await axios.post(window.location.origin + `/api/web/groups/${selectedChat.id}/messages`, {
-                            message: messageText,
-                        }, {
-                            withCredentials: true,
-                            headers: authHeaders
-                        });
-                        messageSent = true;
-                    } else {
-                        // For direct messages - try different routes with a fallback approach
-                        try {
-                            // First try the web route
-                            response = await axios.post(window.location.origin + `/web/direct-messages/${selectedChat.id}`, {
-                                message: messageText,
-                            }, {
-                                withCredentials: true,
-                                headers: authHeaders
-                            });
-                            console.log('Message sent successfully via web route:', response?.data);
-                            messageSent = true;
-                        } catch (webError) {
-                            console.log(`Web route failed (attempt ${attempts}), trying API web fallback...`);
-                            try {
-                                // Try API web fallback
-                                response = await axios.post(window.location.origin + `/api/web/direct-messages/${selectedChat.id}`, {
-                                    message: messageText,
-                                }, {
-                                    withCredentials: true,
-                                    headers: authHeaders
-                                });
-                                console.log('Message sent successfully via API web fallback:', response?.data);
-                                messageSent = true;
-                            } catch (apiWebError) {
-                                console.log(`API web fallback failed (attempt ${attempts}), trying API route...`);
-                                try {
-                                    // Finally try the API route
-                                    response = await axios.post(window.location.origin + `/api/direct-messages/${selectedChat.id}`, {
-                                        message: messageText,
-                                    }, {
-                                        withCredentials: true,
-                                        headers: authHeaders
-                                    });
-                                    console.log('Message sent successfully via API route:', response?.data);
-                                    messageSent = true;
-                                } catch (apiError) {
-                                    console.error(`All API routes failed (attempt ${attempts})`, apiError);
-                                    if (attempts >= maxAttempts) {
-                                        throw apiError;
-                                    }
-                                    // Wait before retrying
-                                    await new Promise(resolve => setTimeout(resolve, 1000));
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error sending message (attempt ${attempts}):`, error);
-                    if (attempts >= maxAttempts) {
-                        throw error;
-                    }
-                    // Wait before retrying
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Try api/web route next
+                    response = await axios.post(`/api/web/direct-messages/${selectedChat.id}`, {
+                        message: newMessage
+                    });
+                    messageData = response.data;
+                    console.log('Message sent successfully via api/web route:', messageData);
+                } catch (apiWebError) {
+                    console.warn('api/web route failed, trying api/chat route:', apiWebError);
+
+                    // Last resort - try the group chat route pattern
+                    response = await axios.post(`/api/chat/groups/${selectedChat.id}/messages`, { message: newMessage });
+                    messageData = response.data;
+                    console.log('Message sent successfully via group chat route:', messageData);
                 }
             }
 
-            if (!messageSent) {
-                throw new Error('Failed to send message after multiple attempts');
-            }
+            // Manually add the message to the UI without waiting for the socket
+            if (selectedChat.type === 'direct') {
+                const newMessageObj = messageData || {
+                    ...pendingMessage,
+                    sender_id: currentUser.id,
+                    receiver_id: selectedChat.id,
+                };
 
-            console.log('Message sent, response:', response?.data);
+                setMessages(prevMessages => [...prevMessages, newMessageObj]);
+            } else {
+                const newMessageObj = messageData || {
+                    ...pendingMessage,
+                    sender_id: currentUser.id,
+                    group_id: selectedChat.id,
+                };
 
-            // Generate a unique temporary ID for local messages
-            const tempId = `temp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-            // Add the new message to the list locally (the Pusher event will add it properly)
-            const tempMessage: Message = {
-                id: tempId, // Use a unique string ID for temporary messages
-                content: messageText,
-                message: messageText,
-                user_id: currentUser.id,
-                created_at: new Date().toISOString(),
-                user: currentUser
-            };
-
-            // Ensure we're not adding duplicates by checking content and timestamp
-            if (!messages.some(m =>
-                m.user_id === tempMessage.user_id &&
-                (m.message === tempMessage.message || m.content === tempMessage.content) &&
-                Math.abs(new Date(m.created_at).getTime() - new Date(tempMessage.created_at).getTime()) < 1000
-            )) {
-                setMessages(prevMessages => [...prevMessages, tempMessage]);
+                setChats(prevChats => {
+                    const updatedChats = [...prevChats];
+                    updatedChats[selectedChat.id] = {
+                        ...updatedChats[selectedChat.id],
+                        lastMessage: {
+                            content: newMessageObj.content,
+                            timestamp: newMessageObj.timestamp,
+                        },
+                        unreadCount: currentUser.id !== updatedChats[selectedChat.id].id
+                            ? (updatedChats[selectedChat.id].unreadCount || 0) + 1
+                            : updatedChats[selectedChat.id].unreadCount || 0,
+                    };
+                    return updatedChats;
+                });
             }
 
             setNewMessage('');
+            scrollToBottom();
 
-            // Update the chat in the list with the last message
-            setChats(prevChats =>
-                prevChats.map(chat =>
-                    chat.id === selectedChat.id
-                        ? {
-                            ...chat,
-                            lastMessage: {
-                                content: messageText,
-                                timestamp: new Date().toISOString(),
-                            },
-                        }
-                        : chat
-                )
-            );
-
-            setIsSending(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error sending message:', error);
-            setIsSending(false);
+
+            // Even if the API call failed, add the message to the UI to improve UX
+            // Mark it with a 'pending' or 'failed' status that can be shown to the user
+            if (selectedChat.type === 'direct') {
+                const failedMessage: Message = {
+                    id: Date.now(),
+                    content: newMessage,
+                    timestamp: new Date().toISOString(),
+                    is_from_me: true,
+                    status: 'failed',
+                    sender_id: currentUser.id,
+                    receiver_id: selectedChat.id,
+                    user: {
+                        id: currentUser.id,
+                        name: currentUser.name,
+                        avatar: currentUser.avatar
+                    }
+                };
+
+                setMessages(prevMessages => [...prevMessages, failedMessage]);
+            }
+
             toast({
-                title: 'Error',
-                description: 'Failed to send message. Please try again.',
-                variant: 'destructive',
+                title: "Failed to send message",
+                description: "Your message could not be sent. It will appear locally only.",
+                variant: "destructive",
             });
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -1151,7 +1219,7 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                                 className="flex items-center gap-2"
                                 onSubmit={(e) => {
                                     e.preventDefault();
-                                    handleSendMessage();
+                                    sendMessage();
                                 }}
                             >
                                 <Input

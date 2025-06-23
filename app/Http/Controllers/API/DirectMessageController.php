@@ -217,8 +217,17 @@ class DirectMessageController extends Controller
                 ],
             ];
 
+            // Detailed logging for message data
+            Log::info('Direct message prepared for broadcast', [
+                'message_id' => $message->id,
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $userId,
+                'data' => $messageData,
+                'timestamp' => $message->created_at,
+            ]);
+
             // Broadcast the message
-            broadcast(new NewDirectMessage($message, $messageData));
+            broadcast(new NewDirectMessage($message, $messageData))->toOthers();
 
             Log::info('Direct message sent', [
                 'sender_id' => $currentUser->id,

@@ -152,9 +152,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{group}/typing', [GroupChatController::class, 'typing']);
 
     // Direct Messages
-    Route::get('/messages/{userId}', [DirectMessageController::class, 'index']);
-    Route::post('/messages', [DirectMessageController::class, 'store']);
-    Route::delete('/messages/{id}', [DirectMessageController::class, 'destroy']);
+    Route::get('/direct-messages', [\App\Http\Controllers\API\DirectMessageController::class, 'index']);
+    Route::get('/direct-messages/{userId}', [\App\Http\Controllers\API\DirectMessageController::class, 'messages']);
+    Route::post('/direct-messages/{userId}', [\App\Http\Controllers\API\DirectMessageController::class, 'store']);
+    Route::delete('/direct-messages/{messageId}', [\App\Http\Controllers\API\DirectMessageController::class, 'destroy']);
+    Route::post('/direct-messages/{userId}/read', [\App\Http\Controllers\API\DirectMessageController::class, 'markAsRead']);
 
     // AI Task Creation
     Route::post('groups/{group}/ai/tasks', [AITaskController::class, 'createFromPrompt']);
@@ -640,3 +642,7 @@ Route::get('/mpesa', [App\Http\Controllers\MpesaController::class, 'index'])->na
 
 // M-Pesa callback URL (no auth required as it's called by Safaricom)
 Route::post('/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('api.mpesa.callback');
+
+// Test routes
+Route::get('/broadcast-test', [App\Http\Controllers\API\ChatController::class, 'testBroadcast']);
+Route::post('/broadcast-test', [App\Http\Controllers\API\ChatController::class, 'testBroadcast']);

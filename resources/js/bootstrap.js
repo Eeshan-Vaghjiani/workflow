@@ -88,6 +88,9 @@ try {
         broadcaster: 'pusher',
         key: import.meta.env.VITE_PUSHER_APP_KEY || '5a90cf232dedb766fb44',
         cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
+        // Don't use custom WebSocket server for Pusher cloud
+        // wsHost: window.location.hostname,
+        // wsPort: 6001,
         forceTLS: true,
         enabledTransports: ['ws', 'wss'],
         disableStats: true,
@@ -104,19 +107,26 @@ try {
 
     // Log connection status
     window.Echo.connector.pusher.connection.bind('connected', () => {
-        console.log('Successfully connected to Pusher');
+        console.log('✅ Successfully connected to Pusher!', {
+            socketId: window.Echo.connector.pusher.connection.socket_id,
+            state: window.Echo.connector.pusher.connection.state
+        });
     });
 
     window.Echo.connector.pusher.connection.bind('connecting', () => {
-        console.log('Connecting to Pusher...');
+        console.log('🔄 Connecting to Pusher...', {
+            key: pusherConfig.key,
+            cluster: pusherConfig.cluster,
+            forceTLS: pusherConfig.forceTLS
+        });
     });
 
     window.Echo.connector.pusher.connection.bind('disconnected', () => {
-        console.log('Disconnected from Pusher');
+        console.log('❌ Disconnected from Pusher');
     });
 
-    window.Echo.connector.pusher.connection.bind('failed', () => {
-        console.error('Failed to connect to Pusher');
+    window.Echo.connector.pusher.connection.bind('failed', (error) => {
+        console.error('❌ Failed to connect to Pusher:', error);
     });
 
     // Log connection state changes

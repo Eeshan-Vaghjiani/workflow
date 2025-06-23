@@ -257,4 +257,69 @@ class ChatController extends Controller
             ], 401);
         }
     }
+
+    /**
+     * Test broadcasting with Pusher
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testBroadcast(Request $request)
+    {
+        try {
+            $testMessage = $request->input('message', 'Test message from ChatController at ' . now());
+
+            $user = auth()->user();
+            $userId = $user ? $user->id : 1;
+
+            $data = [
+                'message' => $testMessage,
+                'content' => $testMessage,
+                'timestamp' => now()->format('g:i A'),
+                'date' => now()->format('M j, Y'),
+                'created_at' => now(),
+                'user' => [
+                    'id' => $userId,
+                    'name' => $user ? $user->name : 'Test User',
+                    'avatar' => $user ? $user->avatar : null
+                ]
+            ];
+
+            // Create a temporary message for testing
+            $message = new \App\Models\DirectMessage([
+                'id' => 9999,
+                'sender_id' => $userId,
+                'receiver_id' => $userId,
+                'message' => $testMessage,
+                'created_at' => now()
+            ]);
+
+            // Log before broadcast
+            \Illuminate\Support\Facades\Log::info('Broadcasting test message', [
+                'data' => $data,
+                'channel' => 'chat',
+                'event' => 'message.new'
+            ]);
+
+            // Broadcast the event
+            broadcast(new \App\Events\NewDirectMessage($message, $data))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test broadcast sent',
+                'data' => $data,
+                'time' => now()
+            ]);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in test broadcast', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

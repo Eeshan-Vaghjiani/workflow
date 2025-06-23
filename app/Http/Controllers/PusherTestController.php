@@ -201,4 +201,81 @@ class PusherTestController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Send a test group message for debugging.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sendTestGroupMessage(Request $request)
+    {
+        try {
+            $sender = Auth::user();
+
+            if (!$sender) {
+                return response()->json([
+                    'error' => 'Not authenticated',
+                    'message' => 'You must be logged in to send messages'
+                ], 401);
+            }
+
+            // Get group ID from query
+            $groupId = $request->input('group_id');
+
+            if (!$groupId) {
+                return response()->json([
+                    'error' => 'Missing group ID',
+                    'message' => 'You must specify a group_id parameter'
+                ], 400);
+            }
+
+            $messageContent = $request->input('message', 'Test group message sent at ' . now());
+
+            // Create a group chat message
+            $message = new \App\Models\GroupChatMessage([
+                'user_id' => $sender->id,
+                'group_id' => $groupId,
+                'message' => $messageContent,
+            ]);
+
+            $message->save();
+            $message->load('user:id,name,avatar');
+
+            // Format the message data
+            $messageData = [
+                'id' => $message->id,
+                'content' => $message->message,
+                'message' => $message->message,
+                'timestamp' => $message->created_at->format('g:i A'),
+                'date' => $message->created_at->format('M j, Y'),
+                'created_at' => $message->created_at,
+                'sender_id' => $sender->id,
+                'user_id' => $sender->id,
+                'group_id' => $groupId,
+                'user' => [
+                    'id' => $sender->id,
+                    'name' => $sender->name,
+                    'avatar' => $sender->avatar
+                ],
+            ];
+
+            // Broadcast the message to the chat channel
+            broadcast(new \App\Events\NewGroupMessage($message, $messageData))->toOthers();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test group message sent successfully',
+                'data' => $messageData
+            ]);
+        } catch (\Exception $e) {
+            report($e);
+
+            return response()->json([
+                'error' => 'Failed to send test group message',
+                'message' => $e->getMessage(),
+                'trace' => app()->environment('local') ? $e->getTraceAsString() : null
+            ], 500);
+        }
+    }
 }

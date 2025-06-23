@@ -2,23 +2,25 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\ChatController;
+use App\Http\Controllers\API\DirectMessageController;
+use App\Http\Controllers\API\AITaskController;
+use App\Http\Controllers\API\TaskController;
+use App\Http\Controllers\API\AssignmentController;
+use App\Http\Controllers\GroupChatController;
+use App\Http\Controllers\PomodoroController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\GroupMemberController;
 use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
-use App\Http\Controllers\API\TaskController;
-use App\Http\Controllers\API\GroupChatController;
-use App\Http\Controllers\API\GroupMessageController;
-use App\Http\Controllers\DirectMessageController;
-use App\Http\Controllers\API\AITaskController;
 use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
-use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\TaskAssignmentController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\StudyPlannerController;
-use App\Http\Controllers\PomodoroController;
-use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CalendarController as CalendarControllerGroup;
+use App\Http\Controllers\MpesaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -175,7 +177,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{groupId}/assignments/{assignmentId}/distribute-tasks', [App\Http\Controllers\API\TaskAssignmentController::class, 'autoDistributeTasks']);
 
     // Google Calendar API routes
-    Route::post('/calendar/sync', [CalendarController::class, 'sync']);
+    Route::post('/calendar/sync', [CalendarControllerGroup::class, 'sync']);
 
     // Calendar task date updates
     Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates']);
@@ -184,8 +186,9 @@ Route::middleware('auth:sanctum')->group(function () {
 // Chat-specific API routes using web middleware for session auth
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/chat/groups', [ChatController::class, 'getGroups']);
+    Route::get('/chat/groups/{group}/messages', [GroupChatController::class, 'getMessagesAPI']);
+    Route::post('/chat/groups/{group}/messages', [GroupChatController::class, 'storeAPI']);
     Route::get('/chat/search-users', [ChatController::class, 'searchUsers']);
-    Route::get('/direct-messages', [ChatController::class, 'getDirectMessages']);
 });
 
 Route::middleware([
@@ -636,12 +639,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 // M-Pesa API Routes
-Route::post('/mpesa/stkpush', [App\Http\Controllers\MpesaController::class, 'stkPush'])->name('api.mpesa.stkpush');
-Route::post('/mpesa/check-status', [App\Http\Controllers\MpesaController::class, 'checkStatus'])->name('api.mpesa.check-status');
-Route::get('/mpesa', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.index');
+Route::post('/mpesa/stkpush', [MpesaController::class, 'stkPush'])->name('api.mpesa.stkpush');
+Route::post('/mpesa/check-status', [MpesaController::class, 'checkStatus'])->name('api.mpesa.check-status');
+Route::get('/mpesa', [MpesaController::class, 'index'])->name('api.mpesa.index');
 
 // M-Pesa callback URL (no auth required as it's called by Safaricom)
-Route::post('/mpesa/callback', [App\Http\Controllers\MpesaController::class, 'callback'])->name('api.mpesa.callback');
+Route::post('/mpesa/callback', [MpesaController::class, 'callback'])->name('api.mpesa.callback');
 
 // Test routes
 Route::get('/broadcast-test', [App\Http\Controllers\API\ChatController::class, 'testBroadcast']);

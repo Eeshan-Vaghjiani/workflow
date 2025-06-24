@@ -34,9 +34,10 @@
     30 => 'Termwind\\Laravel\\TermwindServiceProvider',
     31 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
     32 => 'App\\Providers\\AppServiceProvider',
-    33 => 'App\\Providers\\WorkOSServiceProvider',
-    34 => 'App\\Providers\\RouteServiceProvider',
-    35 => 'App\\Providers\\AppServiceProvider',
+    33 => 'App\\Providers\\BroadcastServiceProvider',
+    34 => 'App\\Providers\\WorkOSServiceProvider',
+    35 => 'App\\Providers\\RouteServiceProvider',
+    36 => 'App\\Providers\\AppServiceProvider',
   ),
   'eager' => 
   array (
@@ -58,9 +59,10 @@
     15 => 'Termwind\\Laravel\\TermwindServiceProvider',
     16 => 'Tighten\\Ziggy\\ZiggyServiceProvider',
     17 => 'App\\Providers\\AppServiceProvider',
-    18 => 'App\\Providers\\WorkOSServiceProvider',
-    19 => 'App\\Providers\\RouteServiceProvider',
-    20 => 'App\\Providers\\AppServiceProvider',
+    18 => 'App\\Providers\\BroadcastServiceProvider',
+    19 => 'App\\Providers\\WorkOSServiceProvider',
+    20 => 'App\\Providers\\RouteServiceProvider',
+    21 => 'App\\Providers\\AppServiceProvider',
   ),
   'deferred' => 
   array (

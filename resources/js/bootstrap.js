@@ -1,6 +1,6 @@
 import axios from 'axios';
-import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import Echo from 'laravel-echo';
 import { getCsrfToken, refreshCsrfToken, setupCsrfRefresh } from './Utils/csrf.js';
 
 // Set up Axios
@@ -28,25 +28,18 @@ window.refreshCsrfToken = refreshCsrfToken;
 setupCsrfRefresh();
 
 // Add a request interceptor to ensure CSRF token is always up-to-date
-axios.interceptors.request.use(config => {
-    // Get the latest token on each request
-    const token = getCsrfToken();
+window.axios.interceptors.request.use(config => {
+    // Add CSRF token to every request
+    const token = document.head.querySelector('meta[name="csrf-token"]');
     if (token) {
-        config.headers['X-CSRF-TOKEN'] = token;
+        config.headers['X-CSRF-TOKEN'] = token.content;
+        config.hasCsrfToken = true;
     }
 
-    // Always include credentials for cross-origin requests
-    config.withCredentials = true;
-
-    // Always ensure these headers are set for Laravel to recognize it as an XHR
-    config.headers['X-Requested-With'] = 'XMLHttpRequest';
-    config.headers['Accept'] = 'application/json';
-
-    // Log out HTTP requests for debugging
-    console.log(`🚀 Making ${config.method?.toUpperCase()} request to ${config.url}`, {
-        withCredentials: config.withCredentials,
-        hasCsrfToken: !!token
-    });
+    // Log request details in development
+    if (import.meta.env.DEV) {
+        console.log(`🚀 Making ${config.method?.toUpperCase()} request to ${config.url}`, config);
+    }
 
     return config;
 }, error => {
@@ -54,54 +47,18 @@ axios.interceptors.request.use(config => {
 });
 
 // Add a response interceptor to handle auth errors
-axios.interceptors.response.use(
-    response => response,
-    async error => {
-        // Only retry once to prevent infinite loops
-        const originalRequest = error.config;
-
-        if (error.response && error.response.status === 419 && !originalRequest._retry) {
-            console.error('CSRF token mismatch - attempting to refresh token', error.response);
-
-            originalRequest._retry = true;
-
-            // Try to refresh the CSRF token
-            const tokenRefreshed = await refreshCsrfToken();
-
-            if (tokenRefreshed) {
-                // Retry the original request with the new token
-                return axios(originalRequest);
-            }
+window.axios.interceptors.response.use(
+    response => {
+        // Log response in development
+        if (import.meta.env.DEV) {
+            console.log('Response received:', response);
         }
-
-        if (error.response && error.response.status === 401 && !originalRequest._retry) {
-            console.error('Authentication error - attempting to refresh session', error.response);
-
-            originalRequest._retry = true;
-
-            try {
-                // First try to refresh auth status
-                const authCheckResponse = await axios.get('/auth/status');
-                console.log('Auth status check:', authCheckResponse.data);
-
-                if (!authCheckResponse.data.authenticated) {
-                    // Then try to refresh the CSRF token
-                    const tokenRefreshed = await refreshCsrfToken();
-
-                    if (tokenRefreshed) {
-                        // Try refresh the session
-                        await axios.get('/auth/refresh-session');
-
-                        // Retry the original request with the new token
-                        return axios(originalRequest);
-                    }
-                } else {
-                    // If we are authenticated, just retry with the current session
-                    return axios(originalRequest);
-                }
-            } catch (refreshError) {
-                console.error('Failed to refresh authentication:', refreshError);
-            }
+        return response;
+    },
+    error => {
+        // Log error in development
+        if (import.meta.env.DEV) {
+            console.log(' Response error:', error);
         }
         return Promise.reject(error);
     }
@@ -126,109 +83,98 @@ console.log('Initializing Echo with:', {
 });
 
 try {
-    // Make sure cookies are sent with the request
-    Pusher.logToConsole = true; // Enable Pusher logging for debugging
-
-    // Create a new Pusher instance with debug logging
-    const pusherOptions = {
-        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
-        forceTLS: true,
-        enabledTransports: ['ws', 'wss'],
-        disableStats: false,
-        enableStats: true,
-        authEndpoint: '/broadcasting/auth',
-        auth: {
-            headers: {
-                'X-CSRF-TOKEN': getCsrfToken() || '',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        }
-    };
-
-    console.log('Pusher options:', pusherOptions);
-
-    window.Echo = new Echo({
+    // Configure Pusher
+    const pusherConfig = {
         broadcaster: 'pusher',
         key: import.meta.env.VITE_PUSHER_APP_KEY || '5a90cf232dedb766fb44',
-        ...pusherOptions
+        cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || 'mt1',
+        // Don't use custom WebSocket server for Pusher cloud
+        // wsHost: window.location.hostname,
+        // wsPort: 6001,
+        forceTLS: true,
+        enabledTransports: ['ws', 'wss'],
+        disableStats: true,
+        authEndpoint: '/broadcasting/auth',
+    };
+
+    console.log('Pusher options:', pusherConfig);
+
+    // Initialize Echo with Pusher
+    window.Echo = new Echo({
+        ...pusherConfig,
+        namespace: '',
     });
 
-    console.log('Echo initialized successfully');
-
-    // Test Echo connection
+    // Log connection status
     window.Echo.connector.pusher.connection.bind('connected', () => {
-        console.log('Successfully connected to Pusher');
-
-        // Test subscribing to the public channel
-        try {
-            const channel = window.Echo.channel('chat');
-            console.log('Successfully subscribed to chat channel');
-
-            // Listen for events on the channel
-            channel.listen('message.new', (data) => {
-                console.log('Received message.new event on chat channel:', data);
-            });
-
-            channel.listen('message.deleted', (data) => {
-                console.log('Received message.deleted event on chat channel:', data);
-            });
-
-            // Also listen for the raw event names
-            channel.listen('.NewDirectMessage', (data) => {
-                console.log('Received raw NewDirectMessage event:', data);
-            });
-
-            channel.listen('.MessageDeleted', (data) => {
-                console.log('Received raw MessageDeleted event:', data);
-            });
-        } catch (channelError) {
-            console.error('Error subscribing to chat channel:', channelError);
-        }
+        console.log('✅ Successfully connected to Pusher!', {
+            socketId: window.Echo.connector.pusher.connection.socket_id,
+            state: window.Echo.connector.pusher.connection.state
+        });
     });
 
-    window.Echo.connector.pusher.connection.bind('error', (err) => {
-        console.error('Pusher connection error:', err);
+    window.Echo.connector.pusher.connection.bind('connecting', () => {
+        console.log('🔄 Connecting to Pusher...', {
+            key: pusherConfig.key,
+            cluster: pusherConfig.cluster,
+            forceTLS: pusherConfig.forceTLS
+        });
     });
 
-    // Add more connection state logging
+    window.Echo.connector.pusher.connection.bind('disconnected', () => {
+        console.log('❌ Disconnected from Pusher');
+    });
+
+    window.Echo.connector.pusher.connection.bind('failed', (error) => {
+        console.error('❌ Failed to connect to Pusher:', error);
+    });
+
+    // Log connection state changes
     window.Echo.connector.pusher.connection.bind('state_change', (states) => {
         console.log('Pusher connection state changed from', states.previous, 'to', states.current);
     });
 
-    window.Echo.connector.pusher.connection.bind('disconnected', () => {
-        console.log('Disconnected from Pusher');
-    });
+    // Subscribe to the public chat channel
+    window.Echo.channel('chat')
+        .listen('.message.new', (data) => {
+            console.log('Received .message.new event:', data);
+            // Event will be handled by components
+        })
+        .listen('.message.deleted', (data) => {
+            console.log('Received .message.deleted event:', data);
+            // Event will be handled by components
+        })
+        .listen('.user.typing', (data) => {
+            console.log('Received .user.typing event:', data);
+            // Event will be handled by components
+        })
+        .listen('.user.status', (data) => {
+            console.log('Received .user.status event:', data);
+            // Event will be handled by components
+        })
+        .listen('.NewDirectMessage', (data) => {
+            console.log('Received .NewDirectMessage event:', data);
+            // Event will be handled by components
+        })
+        .listen('.NewGroupMessage', (data) => {
+            console.log('Received .NewGroupMessage event:', data);
+            // Event will be handled by components
+        })
+        .listen('.MessageDeleted', (data) => {
+            console.log('Received .MessageDeleted event:', data);
+            // Event will be handled by components
+        })
+        .listen('.UserTyping', (data) => {
+            console.log('Received .UserTyping event:', data);
+            // Event will be handled by components
+        })
+        .listen('.UserStatusUpdated', (data) => {
+            console.log('Received .UserStatusUpdated event:', data);
+            // Event will be handled by components
+        });
 
-    window.Echo.connector.pusher.connection.bind('connecting', () => {
-        console.log('Connecting to Pusher...');
-    });
-
-    window.Echo.connector.pusher.connection.bind('reconnecting', () => {
-        console.log('Reconnecting to Pusher...');
-    });
+    // Successfully initialized Echo
+    console.log('Echo initialized successfully');
 } catch (error) {
     console.error('Failed to initialize Echo:', error);
 }
-
-// Add axios request and response interceptors for debugging
-axios.interceptors.request.use(
-    config => {
-        console.log('Making request to:', config.url, config);
-        return config;
-    },
-    error => {
-        console.error('Request error:', error);
-        return Promise.reject(error);
-    }
-);
-
-axios.interceptors.response.use(
-    response => {
-        console.log('Response received:', response);
-        return response;
-    },
-    error => {
-        console.error('Response error:', error.response || error);
-        return Promise.reject(error);
-    }
-);

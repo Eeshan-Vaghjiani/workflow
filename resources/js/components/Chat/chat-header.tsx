@@ -22,19 +22,17 @@ export function ChatHeader({ user, onMenuClick }: ChatHeaderProps) {
                         <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     {user.status && (
-                        <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${
-                            user.status === "online" ? "bg-green-500" : 
+                        <span className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${user.status === "online" ? "bg-green-500" :
                             user.status === "away" ? "bg-yellow-500" : "bg-gray-400"
-                        }`} />
+                            }`} />
                     )}
                 </div>
                 <div>
                     <h2 className="font-semibold">{user.name}</h2>
                     <div className="flex items-center gap-1.5">
-                        <span className={`inline-block h-1.5 w-1.5 rounded-full ${
-                            user.status === "online" ? "bg-green-500" : 
+                        <span className={`inline-block h-1.5 w-1.5 rounded-full ${user.status === "online" ? "bg-green-500" :
                             user.status === "away" ? "bg-yellow-500" : "bg-gray-400"
-                        }`} />
+                            }`} />
                         <span className="text-xs text-muted-foreground capitalize">
                             {user.status || "offline"}
                         </span>
@@ -57,4 +55,4 @@ export function ChatHeader({ user, onMenuClick }: ChatHeaderProps) {
             </div>
         </div>
     )
-} 
+}

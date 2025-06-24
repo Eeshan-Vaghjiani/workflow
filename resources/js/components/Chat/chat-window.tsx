@@ -49,7 +49,7 @@ export function ChatWindow({
     const groupedMessages = messages.reduce<{ date: string; messages: Message[] }[]>((groups, message) => {
         // Extract date from timestamp - this assumes timestamp is from Date.toLocaleTimeString()
         const date = new Date().toDateString() // Default to today
-        
+
         // Find existing group or create new one
         const group = groups.find(g => g.date === date)
         if (group) {
@@ -84,12 +84,12 @@ export function ChatWindow({
                                     {group.date}
                                 </span>
                             </div>
-                            
+
                             {group.messages.map((message, messageIndex) => {
                                 // Check if this message is part of a sequence from same sender
                                 const prevMessage = messageIndex > 0 ? group.messages[messageIndex - 1] : null
                                 const isSequential = prevMessage && prevMessage.sender.id === message.sender.id
-                                
+
                                 return (
                                     <ChatMessage
                                         key={message.id}
@@ -101,13 +101,13 @@ export function ChatWindow({
                             })}
                         </div>
                     ))}
-                    
+
                     {messages.length === 0 && (
                         <div className="flex items-center justify-center h-40 text-muted-foreground">
                             No messages yet. Start the conversation!
                         </div>
                     )}
-                    
+
                     {isLoading && (
                         <div className="flex justify-center py-4">
                             <div className="animate-pulse flex space-x-2">
@@ -117,11 +117,11 @@ export function ChatWindow({
                             </div>
                         </div>
                     )}
-                    
+
                     <div ref={messagesEndRef} />
                 </div>
             </ScrollArea>
             <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
         </div>
     )
-} 
+}

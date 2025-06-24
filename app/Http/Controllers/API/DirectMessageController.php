@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Events\NewDirectMessage;
+use App\Events\MessageDeleted;
 
 class DirectMessageController extends Controller
 {
@@ -216,8 +217,17 @@ class DirectMessageController extends Controller
                 ],
             ];
 
+            // Detailed logging for message data
+            Log::info('Direct message prepared for broadcast', [
+                'message_id' => $message->id,
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $userId,
+                'data' => $messageData,
+                'timestamp' => $message->created_at,
+            ]);
+
             // Broadcast the message
-            broadcast(new NewDirectMessage($message, $messageData));
+            broadcast(new NewDirectMessage($message, $messageData))->toOthers();
 
             Log::info('Direct message sent', [
                 'sender_id' => $currentUser->id,
@@ -266,48 +276,70 @@ class DirectMessageController extends Controller
     /**
      * Delete a message.
      */
-    public function destroy($messageId)
+    public function destroy($id)
     {
         try {
-            $currentUser = auth()->user();
+            Log::info('Attempting to delete message', ['id' => $id]);
+
+            // Handle temporary IDs from frontend
+            if (is_string($id) && strpos($id, 'temp-') === 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Temporary message removed from UI only',
+                    'id' => $id
+                ]);
+            }
 
             // Find the message
-            $message = \App\Models\DirectMessage::findOrFail($messageId);
+            $message = DirectMessage::find($id);
 
-            // Check if the user is authorized to delete this message
-            if ($message->sender_id !== $currentUser->id) {
+            // Check if message exists
+            if (!$message) {
+                Log::warning('Message not found for deletion', ['id' => $id]);
                 return response()->json([
-                    'error' => 'Unauthorized to delete this message'
+                    'error' => 'Message not found',
+                ], 404);
+            }
+
+            // Check authorization
+            $currentUser = auth()->user();
+            if ($message->sender_id !== $currentUser->id && $message->receiver_id !== $currentUser->id) {
+                Log::warning('Unauthorized message deletion attempt', [
+                    'message_id' => $id,
+                    'user_id' => $currentUser->id
+                ]);
+                return response()->json([
+                    'error' => 'Unauthorized to delete this message',
                 ], 403);
             }
+
+            // Prepare data for broadcasting
+            $messageData = [
+                'id' => $message->id,
+                'sender_id' => $message->sender_id,
+                'receiver_id' => $message->receiver_id,
+                'deleted_by' => $currentUser->id,
+                'deleted_at' => now()
+            ];
 
             // Soft delete the message
             $message->delete();
 
-            // Broadcast message deletion to both sender and receiver
-            $messageData = [
-                'id' => $message->id,
-                'deleted_by' => $currentUser->id
-            ];
+            // Broadcast deletion event
+            broadcast(new MessageDeleted($message, $messageData));
 
-            // Create a custom event for message deletion
-            broadcast(new \App\Events\MessageDeleted($message, $messageData));
-
-            \Illuminate\Support\Facades\Log::info('Direct message deleted', [
-                'message_id' => $message->id,
-                'deleted_by' => $currentUser->id
-            ]);
+            Log::info('Message deleted successfully', ['id' => $id]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Message deleted successfully'
+                'message' => 'Message deleted successfully',
+                'id' => $id
             ]);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error deleting direct message', [
-                'error' => $e->getMessage(),
+            Log::error('Error deleting message: ' . $e->getMessage(), [
+                'id' => $id,
                 'trace' => $e->getTraceAsString()
             ]);
-
             return response()->json([
                 'error' => 'Failed to delete message',
                 'message' => $e->getMessage()

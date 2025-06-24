@@ -128,29 +128,55 @@ class GroupChatController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
-        $message = GroupChatMessage::create([
+        // Debug logging
+        \Log::info('Creating group message', [
             'group_id' => $group->id,
             'user_id' => auth()->id(),
             'message' => $validated['message'],
-            'is_system_message' => false,
         ]);
 
-        $message->load('user:id,name,avatar');
+        try {
+            $message = GroupChatMessage::create([
+                'group_id' => $group->id,
+                'user_id' => auth()->id(),
+                'message' => $validated['message'],
+                'is_system_message' => false,
+            ]);
 
-        // Broadcast event for real-time updates
-        event(new \App\Events\NewGroupMessage($group->id, [
-            'id' => $message->id,
-            'content' => $message->message,
-            'sender' => [
-                'id' => $message->user->id,
-                'name' => $message->user->name,
-                'avatar' => $message->user->avatar
-            ],
-            'timestamp' => $message->created_at->format('g:i A'),
-            'date' => $message->created_at->format('M j, Y'),
-            'is_system_message' => $message->is_system_message
-        ]));
+            \Log::info('Group message created successfully', ['message_id' => $message->id]);
 
-        return response()->json($message, 201);
+            $message->load('user:id,name,avatar');
+
+            // Format message data for broadcasting
+            $messageData = [
+                'id' => $message->id,
+                'content' => $message->message,
+                'message' => $message->message,
+                'sender_id' => auth()->id(),
+                'user_id' => auth()->id(),
+                'group_id' => $group->id,
+                'created_at' => $message->created_at,
+                'timestamp' => $message->created_at->format('g:i A'),
+                'date' => $message->created_at->format('M j, Y'),
+                'is_system_message' => $message->is_system_message,
+                'user' => [
+                    'id' => $message->user->id,
+                    'name' => $message->user->name,
+                    'avatar' => $message->user->avatar
+                ],
+            ];
+
+            // Broadcast event for real-time updates
+            event(new \App\Events\NewGroupMessage($message, $messageData));
+
+            return response()->json($messageData, 201);
+        } catch (\Exception $e) {
+            \Log::error('Error creating group message', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json(['error' => 'Failed to create message: ' . $e->getMessage()], 500);
+        }
     }
-} 
+}

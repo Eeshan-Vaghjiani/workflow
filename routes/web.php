@@ -18,6 +18,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
 use App\Http\Middleware\TwoFactorAuthenticationMiddleware;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\AssignmentController;
+use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\TwoFactorAuthController;
+use App\Http\Controllers\PusherTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -576,34 +583,19 @@ Route::get('/debug/search-users', function(\Illuminate\Http\Request $request) {
 });
 
 // Add a debug route for authentication status
-Route::get('/debug/auth-status', function (Request $request) {
-    $user = $request->user();
-    $sessionData = [];
-
-    if ($request->hasSession()) {
-        $sessionData = [
-            'has_session' => true,
-            'session_id' => $request->session()->getId(),
-            'session_token' => csrf_token()
-        ];
-    } else {
-        $sessionData = [
-            'has_session' => false
-        ];
-    }
-
+Route::get('/debug/auth-status', function () {
     return response()->json([
-        'authenticated' => !is_null($user),
-        'user' => $user,
-        'session' => $sessionData,
+        'authenticated' => Auth::check(),
+        'user' => Auth::check() ? Auth::user() : null,
+        'session' => Session::all(),
         'csrf' => [
             'token' => csrf_token(),
-            'token_meta' => '<meta name="csrf-token" content="'.csrf_token().'">'
         ],
         'cookie_settings' => [
+            'path' => config('session.path'),
+            'domain' => config('session.domain'),
             'secure' => config('session.secure'),
             'same_site' => config('session.same_site'),
-            'domain' => config('session.domain')
         ]
     ]);
 });
@@ -898,4 +890,101 @@ require __DIR__.'/auth.php';
 
 Route::get('/phpinfo', function () {
     phpinfo();
+});
+
+// Chat routes
+Route::middleware(['auth'])->group(function () {
+    // Direct messages
+    Route::get('/web/direct-messages/{userId}', [ChatController::class, 'getDirectMessages']);
+    Route::post('/web/direct-messages/{userId}', [ChatController::class, 'sendDirectMessage']);
+    Route::delete('/messages/{id}', [ChatController::class, 'deleteMessage']);
+
+    // Group messages
+    Route::get('/chat/groups/{groupId}', [ChatController::class, 'getGroupMessages']);
+    Route::post('/chat/groups/{groupId}/messages', [ChatController::class, 'sendGroupMessage']);
+    Route::delete('/chat/groups/messages/{id}', [ChatController::class, 'deleteGroupMessage']);
+
+    // Typing indicator
+    Route::post('/chat/typing', [ChatController::class, 'typing']);
+});
+
+// Debug routes
+Route::get('/debug/broadcasting', function () {
+    return view('debug.broadcasting');
+});
+Route::get('/debug/chat', function () {
+    return view('debug.chat');
+});
+Route::get('/debug/logs', function () {
+    return view('debug.logs');
+});
+Route::get('/debug/pusher-test', [App\Http\Controllers\PusherTestController::class, 'showTestPage']);
+Route::get('/debug/echo-debug', function () {
+    return view('debug.echo-debug');
+});
+Route::get('/debug/pusher-broadcast', [App\Http\Controllers\PusherTestController::class, 'testBroadcast']);
+Route::post('/debug/pusher-broadcast', [App\Http\Controllers\PusherTestController::class, 'testBroadcast']);
+Route::get('/debug/auth-status', function () {
+    return response()->json([
+        'authenticated' => Auth::check(),
+        'user' => Auth::check() ? Auth::user() : null,
+        'session' => Session::all(),
+        'csrf' => [
+            'token' => csrf_token(),
+        ],
+        'cookie_settings' => [
+            'path' => config('session.path'),
+            'domain' => config('session.domain'),
+            'secure' => config('session.secure'),
+            'same_site' => config('session.same_site'),
+        ]
+    ]);
+});
+
+// Test route to manually broadcast an event
+Route::get('/debug/broadcast-test', function() {
+    $data = [
+        'message' => 'Test message at ' . now(),
+        'user' => [
+            'id' => 1,
+            'name' => 'Test User'
+        ]
+    ];
+
+    event(new \App\Events\NewDirectMessage(
+        new \App\Models\DirectMessage([
+            'id' => 999,
+            'sender_id' => 1,
+            'receiver_id' => 1,
+            'message' => 'Test message'
+        ]),
+        $data
+    ));
+
+    return response()->json(['success' => true, 'message' => 'Test event broadcasted', 'time' => now()]);
+});
+
+// Debug routes
+Route::get('/debug/echo', [PusherTestController::class, 'echoDebug'])->name('debug.echo');
+Route::get('/debug/pusher', [PusherTestController::class, 'index'])->name('debug.pusher');
+Route::get('/debug/auth-status', [PusherTestController::class, 'authStatus'])->name('debug.auth-status');
+
+// Test message routes
+Route::get('/debug/send-test-message', [PusherTestController::class, 'sendTestMessage'])->name('debug.test-message');
+Route::get('/debug/send-test-group-message', [PusherTestController::class, 'sendTestGroupMessage'])->name('debug.test-group-message');
+Route::get('/debug/api-routes', function() {
+    return response()->json([
+        'direct_message_routes' => [
+            'get_conversations' => '/api/direct-messages',
+            'get_messages' => '/api/direct-messages/{userId}',
+            'send_message' => '/api/direct-messages/{userId}',
+            'web_send_message' => '/web/direct-messages/{userId}',
+        ],
+        'group_message_routes' => [
+            'get_groups' => '/api/chat/groups',
+            'get_messages' => '/api/chat/groups/{groupId}/messages',
+            'send_message' => '/api/chat/groups/{groupId}/messages',
+            'web_send_message' => '/web/groups/{groupId}/messages',
+        ]
+    ]);
 });

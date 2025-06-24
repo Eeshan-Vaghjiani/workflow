@@ -70,8 +70,8 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
             >
                 <Mic className="h-5 w-5" />
             </Button>
-            <Button 
-                type="submit" 
+            <Button
+                type="submit"
                 size="icon"
                 disabled={disabled || !message.trim()}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 flex-shrink-0"
@@ -80,4 +80,4 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
             </Button>
         </form>
     )
-} 
+}

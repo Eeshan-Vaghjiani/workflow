@@ -15,11 +15,11 @@ class NewGroupMessage implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The group ID.
+     * The group message instance.
      *
-     * @var int
+     * @var \App\Models\GroupChatMessage
      */
-    public $groupId;
+    public $message;
 
     /**
      * The message data.
@@ -30,10 +30,13 @@ class NewGroupMessage implements ShouldBroadcastNow
 
     /**
      * Create a new event instance.
+     *
+     * @param \App\Models\GroupChatMessage $message
+     * @param array $messageData
      */
-    public function __construct(int $groupId, array $messageData)
+    public function __construct(\App\Models\GroupChatMessage $message, array $messageData)
     {
-        $this->groupId = $groupId;
+        $this->message = $message;
         $this->messageData = $messageData;
     }
 
@@ -64,9 +67,12 @@ class NewGroupMessage implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        // Include the group_id in the message data for proper routing
+        // Make sure we include the group_id in the message data for proper routing
         $enhancedData = $this->messageData;
-        $enhancedData['group_id'] = $this->groupId;
+
+        if (!isset($enhancedData['group_id'])) {
+            $enhancedData['group_id'] = $this->message->group_id;
+        }
 
         // Add conversation_id for client-side filtering (using group_id prefixed with 'group_')
         $enhancedData['conversation_id'] = 'group_' . $this->groupId;

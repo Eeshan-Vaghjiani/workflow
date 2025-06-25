@@ -969,5 +969,22 @@ Route::get('/debug/echo', [PusherTestController::class, 'echoDebug'])->name('deb
 Route::get('/debug/pusher', [PusherTestController::class, 'index'])->name('debug.pusher');
 Route::get('/debug/auth-status', [PusherTestController::class, 'authStatus'])->name('debug.auth-status');
 
-// Test message route
+// Test message routes
 Route::get('/debug/send-test-message', [PusherTestController::class, 'sendTestMessage'])->name('debug.test-message');
+Route::get('/debug/send-test-group-message', [PusherTestController::class, 'sendTestGroupMessage'])->name('debug.test-group-message');
+Route::get('/debug/api-routes', function() {
+    return response()->json([
+        'direct_message_routes' => [
+            'get_conversations' => '/api/direct-messages',
+            'get_messages' => '/api/direct-messages/{userId}',
+            'send_message' => '/api/direct-messages/{userId}',
+            'web_send_message' => '/web/direct-messages/{userId}',
+        ],
+        'group_message_routes' => [
+            'get_groups' => '/api/chat/groups',
+            'get_messages' => '/api/chat/groups/{groupId}/messages',
+            'send_message' => '/api/chat/groups/{groupId}/messages',
+            'web_send_message' => '/web/groups/{groupId}/messages',
+        ]
+    ]);
+});

@@ -47,120 +47,29 @@ class ChatController extends Controller
     }
 
     /**
-     * Search for users by name.
+     * Search for users to start a conversation with
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function searchUsers(Request $request)
     {
-        try {
-            // First check authentication status
-            if (!auth()->check()) {
-                Log::error('API Chat search attempted without authentication');
-                return response()->json([
-                    'error' => 'Authentication required',
-                    'message' => 'You must be logged in to use this feature',
-                ], 401);
-            }
+        $query = $request->input('query');
 
-            Log::info('Search users request received', [
-                'request' => $request->all(),
-                'auth' => 'Authenticated user: ' . auth()->id(),
-                'user_id' => auth()->id(),
-                'headers' => array_keys($request->headers->all()),
-                'session_id' => $request->session()->getId()
-            ]);
-
-            // Check if we have a name parameter at all
-            if (!$request->has('name')) {
-                Log::warning('Search users request missing name parameter');
-                return response()->json([
-                    'error' => 'Missing name parameter',
-                    'debug_info' => [
-                        'request_params' => $request->all(),
-                        'name_param' => $request->name
-                    ]
-                ], 400);
-            }
-
-            // Use a more lenient validation
-            $term = trim($request->input('name'));
-
-            if (empty($term) || strlen($term) < 2) {
-                Log::warning('Search term too short', ['term' => $term]);
-                return response()->json([
-                    'error' => 'Search term must be at least 2 characters',
-                    'term' => $term,
-                    'term_length' => strlen($term)
-                ], 400);
-            }
-
-            $currentUserId = auth()->id();
-
-            Log::info('API Chat user search request', [
-                'term' => $term,
-                'authenticated_user' => $currentUserId,
-                'request_path' => $request->path(),
-                'request_url' => $request->url(),
-            ]);
-
-            // First do a simple count query to see how many users exist total
-            $totalUserCount = User::count();
-            $usersExceptCurrentCount = User::where('id', '!=', $currentUserId)->count();
-
-            Log::info('Database user counts', [
-                'total_users' => $totalUserCount,
-                'users_except_current' => $usersExceptCurrentCount
-            ]);
-
-            // Make search more lenient by checking multiple columns and using lowercase
-            $query = User::query();
-
-            if (auth()->check()) {
-                $query->where('id', '!=', $currentUserId);
-            }
-
-            $query->where(function($q) use ($term) {
-                $q->where('name', 'LIKE', "%{$term}%")
-                  ->orWhere('email', 'LIKE', "%{$term}%");
-            });
-
-            // Log the raw SQL query for debugging
-            $querySql = $query->toSql();
-            $queryBindings = $query->getBindings();
-
-            Log::info('User search query', [
-                'query' => $querySql,
-                'bindings' => $queryBindings
-            ]);
-
-            $users = $query->select('id', 'name', 'email', 'avatar')
-                ->take(10)
-                ->get();
-
-            // Log the search results for debugging
-            Log::info('API User search results', [
-                'term' => $term,
-                'count' => $users->count(),
-                'users' => $users->isEmpty() ? 'No users found' : $users->pluck('name', 'id')->toArray()
-            ]);
-
-            return response()->json($users);
-        } catch (\Exception $e) {
-            Log::error('Error in API chat user search', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-
-            return response()->json([
-                'error' => 'Failed to search for users',
-                'message' => $e->getMessage(),
-                'debug_info' => [
-                    'line' => $e->getLine(),
-                    'file' => basename($e->getFile())
-                ]
-            ], 500);
+        if (empty($query)) {
+            return response()->json([]);
         }
+
+        $users = \App\Models\User::where('id', '!=', auth()->id())
+            ->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('email', 'like', "%{$query}%");
+            })
+            ->select('id', 'name', 'email', 'avatar', 'status')
+            ->limit(10)
+            ->get();
+
+        return response()->json($users);
     }
 
     /**

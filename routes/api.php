@@ -9,7 +9,7 @@ use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\API\TaskController;
 use App\Http\Controllers\API\GroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
-use App\Http\Controllers\DirectMessageController;
+use App\Http\Controllers\API\DirectMessageController;
 use App\Http\Controllers\API\AITaskController;
 use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
 use App\Http\Controllers\API\ChatController;
@@ -152,11 +152,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{group}/typing', [GroupChatController::class, 'typing']);
 
     // Direct Messages
-    Route::get('/direct-messages', [\App\Http\Controllers\API\DirectMessageController::class, 'index']);
-    Route::get('/direct-messages/{userId}', [\App\Http\Controllers\API\DirectMessageController::class, 'messages']);
-    Route::post('/direct-messages/{userId}', [\App\Http\Controllers\API\DirectMessageController::class, 'store']);
-    Route::delete('/direct-messages/{messageId}', [\App\Http\Controllers\API\DirectMessageController::class, 'destroy']);
-    Route::post('/direct-messages/{userId}/read', [\App\Http\Controllers\API\DirectMessageController::class, 'markAsRead']);
+    Route::get('/direct-messages', [DirectMessageController::class, 'index']);
+    Route::get('/direct-messages/{userId}', [DirectMessageController::class, 'messages']);
+    Route::post('/direct-messages/{userId}', [DirectMessageController::class, 'store']);
+    Route::delete('/direct-messages/{messageId}', [DirectMessageController::class, 'destroy']);
+    Route::post('/direct-messages/{userId}/read', [DirectMessageController::class, 'markAsRead']);
 
     // AI Task Creation
     Route::post('groups/{group}/ai/tasks', [AITaskController::class, 'createFromPrompt']);
@@ -186,6 +186,20 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/chat/groups', [ChatController::class, 'getGroups']);
     Route::get('/chat/search-users', [ChatController::class, 'searchUsers']);
     Route::get('/direct-messages', [ChatController::class, 'getDirectMessages']);
+
+    // New chat API endpoints
+    Route::post('/groups', [GroupController::class, 'store']);
+    Route::get('/groups/{group}/messages', [GroupMessageController::class, 'index']);
+    Route::post('/groups/{group}/messages', [GroupMessageController::class, 'store']);
+    Route::delete('/groups/{group}/messages/{message}', [GroupMessageController::class, 'destroy']);
+    Route::post('/groups/{group}/read', [GroupMessageController::class, 'markAsRead']);
+
+    // Enhanced direct message endpoints
+    Route::get('/direct-messages', [DirectMessageController::class, 'index']);
+    Route::get('/direct-messages/{userId}', [DirectMessageController::class, 'messages']);
+    Route::post('/direct-messages/{userId}', [DirectMessageController::class, 'store']);
+    Route::delete('/direct-messages/{messageId}', [DirectMessageController::class, 'destroy']);
+    Route::post('/direct-messages/{userId}/read', [DirectMessageController::class, 'markAsRead']);
 });
 
 Route::middleware([

@@ -97,6 +97,10 @@ class NewDirectMessage implements ShouldBroadcastNow
             $enhancedData['receiver_id'] = $this->message->receiver_id;
         }
 
+        // Add a conversation_id for proper client-side filtering
+        $enhancedData['conversation_id'] = $this->message->sender_id . '_' . $this->message->receiver_id;
+        $enhancedData['direct_chat_id'] = max($this->message->sender_id, $this->message->receiver_id) . '_' . min($this->message->sender_id, $this->message->receiver_id);
+
         // Add a timestamp if not present
         if (!isset($enhancedData['created_at'])) {
             $enhancedData['created_at'] = $this->message->created_at;

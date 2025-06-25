@@ -73,4 +73,18 @@ class GroupPolicy
     {
         return $group->isLeader($user);
     }
+    public function viewChat(User $user, Group $group): bool
+    {
+        // The user can view the chat if they are a member of the group.
+        return $group->members()->where('user_id', $user->id)->exists();
+    }
+
+    /**
+     * Determine whether the user can send a message to the group.
+     */
+    public function sendMessage(User $user, Group $group): bool
+    {
+        // The logic is the same: the user must be a member to send a message.
+        return $group->members()->where('user_id', $user->id)->exists();
+    }
 }

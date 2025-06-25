@@ -14,15 +14,9 @@ use App\Http\Controllers\API\GroupController;
 use App\Http\Controllers\API\GroupMemberController;
 use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
-<<<<<<< HEAD
-use App\Http\Controllers\API\TaskController;
-use App\Http\Controllers\API\GroupChatController;
+use App\Http\Controllers\API\GroupChatController as APIGroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
-use App\Http\Controllers\API\DirectMessageController;
-use App\Http\Controllers\API\AITaskController;
-=======
->>>>>>> 3995b09a1c052b29d86b33b51cc9ad0d7e6cedd0
-use App\Http\Controllers\GroupChatController as GroupChatControllerGroup;
+use App\Http\Controllers\GroupChatController as GroupChatControllerWeb;
 use App\Http\Controllers\API\TaskAssignmentController;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\SearchController;
@@ -197,7 +191,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/chat/groups/{group}/messages', [GroupChatController::class, 'getMessagesAPI']);
     Route::post('/chat/groups/{group}/messages', [GroupChatController::class, 'storeAPI']);
     Route::get('/chat/search-users', [ChatController::class, 'searchUsers']);
-<<<<<<< HEAD
+
     Route::get('/direct-messages', [ChatController::class, 'getDirectMessages']);
 
     // New chat API endpoints
@@ -213,8 +207,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/direct-messages/{userId}', [DirectMessageController::class, 'store']);
     Route::delete('/direct-messages/{messageId}', [DirectMessageController::class, 'destroy']);
     Route::post('/direct-messages/{userId}/read', [DirectMessageController::class, 'markAsRead']);
-=======
->>>>>>> 3995b09a1c052b29d86b33b51cc9ad0d7e6cedd0
+
 });
 
 Route::middleware([
@@ -237,8 +230,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 // Group messages API
 Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/groups/{group}/messages', [GroupChatControllerGroup::class, 'getMessagesAPI']);
-    Route::post('/groups/{group}/messages', [GroupChatControllerGroup::class, 'storeAPI']);
+    Route::get('/groups/{group}/messages', [GroupChatControllerWeb::class, 'getMessagesAPI']);
+    Route::post('/groups/{group}/messages', [GroupChatControllerWeb::class, 'storeAPI']);
 });
 
 // Add a public endpoint for AI tasks (no auth required)
@@ -675,3 +668,17 @@ Route::post('/mpesa/callback', [MpesaController::class, 'callback'])->name('api.
 // Test routes
 Route::get('/broadcast-test', [App\Http\Controllers\API\ChatController::class, 'testBroadcast']);
 Route::post('/broadcast-test', [App\Http\Controllers\API\ChatController::class, 'testBroadcast']);
+
+// Contact form submission
+Route::post('/contact', function (Request $request) {
+    $validated = $request->validate([
+        'name' => 'required|string|max:100',
+        'email' => 'required|email|max:100',
+        'message' => 'required|string|max:2000',
+    ]);
+
+    // Here you would typically send an email or store in the database
+    // For now, we'll just return a success response
+
+    return response()->json(['success' => true, 'message' => 'Thank you for your message. We will get back to you soon.']);
+});

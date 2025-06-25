@@ -135,3 +135,44 @@ For comprehensive troubleshooting, see the [GOOGLE_CALENDAR_SETUP_GUIDE.md](GOOG
 - Changes to tasks in the application are reflected in Google Calendar
 
 For more information, see the [Google Calendar API documentation](https://developers.google.com/calendar/api/guides/overview).
+
+## Admin System
+
+The application includes a comprehensive admin dashboard for managing users, groups, and system settings.
+
+### Admin Access
+
+To access the admin dashboard, you need to have admin privileges. There are two ways to get admin access:
+
+1. **Create an admin user** using the artisan command:
+
+    ```bash
+    php artisan admin:create
+    ```
+
+    This will prompt you for email, name, and password.
+
+2. **Promote an existing user** to admin:
+    ```bash
+    php artisan admin:promote user@example.com
+    ```
+
+### Admin Routes
+
+The admin dashboard is accessible at `/admin` and includes the following sections:
+
+- `/admin` - Dashboard overview
+- `/admin/users` - User management
+- `/admin/groups` - Group management
+- `/admin/analytics` - Analytics dashboard
+- `/admin/settings` - System settings
+- `/admin/audit` - Audit logs
+- `/admin/profile` - Admin profile management
+
+### Admin Features
+
+- Modern UI with smooth animations powered by Framer Motion
+- Comprehensive user management
+- Analytics dashboard with visual metrics
+- Audit logging system
+- System settings and configuration

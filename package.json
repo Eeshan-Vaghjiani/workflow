@@ -46,6 +46,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
+        "framer-motion": "^12.19.1",
         "gantt-task-react": "^0.3.9",
         "laravel-echo": "^2.0.2",
         "lucide-react": "^0.475.0",

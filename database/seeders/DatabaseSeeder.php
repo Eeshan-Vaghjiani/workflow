@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             GroupChatSeeder::class,
             DirectMessageSeeder::class,
             GroupMessageSeeder::class,
+            AdminUserSeeder::class,
         ]);
     }
 }

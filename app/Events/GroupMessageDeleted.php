@@ -9,17 +9,18 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
-class NewGroupMessage implements ShouldBroadcastNow
+class GroupMessageDeleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The group message instance.
+     * The ID of the deleted message.
      *
-     * @var \App\Models\GroupChatMessage
+     * @var int|string
      */
-    public $message;
+    public $messageId;
 
     /**
      * The message data.
@@ -30,14 +31,18 @@ class NewGroupMessage implements ShouldBroadcastNow
 
     /**
      * Create a new event instance.
-     *
-     * @param \App\Models\GroupChatMessage $message
-     * @param array $messageData
      */
-    public function __construct(\App\Models\GroupChatMessage $message, array $messageData)
+    public function __construct($messageId, array $messageData)
     {
-        $this->message = $message;
+        $this->messageId = $messageId;
         $this->messageData = $messageData;
+
+        // Log for debugging
+        Log::debug('GroupMessageDeleted event created', [
+            'message_id' => $messageId,
+            'deleted_by' => $messageData['deleted_by'] ?? null,
+            'group_id' => $messageData['group_id'] ?? null
+        ]);
     }
 
     /**
@@ -47,6 +52,7 @@ class NewGroupMessage implements ShouldBroadcastNow
      */
     public function broadcastOn(): array
     {
+        // Use simple public channels for reliable delivery
         return [
             new Channel('chat'),
         ];
@@ -57,29 +63,16 @@ class NewGroupMessage implements ShouldBroadcastNow
      */
     public function broadcastAs(): string
     {
-        return 'message.new';
+        return 'group.message.deleted';
     }
 
     /**
      * Get the data to broadcast.
      *
-     * @return array
+     * @return array<string, mixed>
      */
     public function broadcastWith(): array
     {
-        // Make sure we include the group_id in the message data for proper routing
-        $enhancedData = $this->messageData;
-
-        if (!isset($enhancedData['group_id'])) {
-            $enhancedData['group_id'] = $this->message->group_id;
-        }
-
-        // Add conversation_id for client-side filtering (using group_id prefixed with 'group_')
-        $enhancedData['conversation_id'] = 'group_' . $this->groupId;
-
-        // Add message type for further distinction
-        $enhancedData['message_type'] = 'group';
-
-        return $enhancedData;
+        return $this->messageData;
     }
 }

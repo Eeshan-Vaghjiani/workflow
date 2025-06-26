@@ -64,6 +64,11 @@ class AuthenticatedSessionController extends Controller
                 ]);
             }
 
+            // Redirect admin users to the admin dashboard
+            if ($user->isAdmin()) {
+                return redirect()->intended(route('admin.dashboard'));
+            }
+
             // For Inertia requests or regular web requests, redirect to dashboard
             return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {

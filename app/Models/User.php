@@ -25,6 +25,7 @@ class User extends Authenticatable
         'last_login_at',
         'workos_id',
         'avatar',
+        'is_admin',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
@@ -136,5 +137,14 @@ class User extends Authenticatable
     protected function generateRecoveryCodeSegment(): string
     {
         return strtoupper(substr(bin2hex(random_bytes(3)), 0, 4));
+    }
+
+    /**
+     * Check if the user is an admin.
+     */
+    public function isAdmin(): bool
+    {
+        // Cast to boolean and handle both 1/0 and true/false
+        return $this->is_admin == true;
     }
 }

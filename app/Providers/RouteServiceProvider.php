@@ -28,8 +28,9 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
-        // Manually register the two-factor middleware
+        // Manually register middleware aliases
         app('router')->aliasMiddleware('two_factor', \App\Http\Middleware\TwoFactorAuthenticationMiddleware::class);
+        app('router')->aliasMiddleware('admin', \App\Http\Middleware\AdminMiddleware::class);
 
         $this->routes(function () {
             // API routes that need the /api prefix

@@ -1,73 +1,55 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState, useEffect } from "react";
 
-export type Appearance = 'light' | 'dark' | 'system';
+export type Theme = "light" | "dark" | "system";
 
-const prefersDark = () => {
-    if (typeof window === 'undefined') {
-        return false;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-};
-
-const setCookie = (name: string, value: string, days = 365) => {
-    if (typeof document === 'undefined') {
-        return;
-    }
-
-    const maxAge = days * 24 * 60 * 60;
-    document.cookie = `${name}=${value};path=/;max-age=${maxAge};SameSite=Lax`;
-};
-
-const applyTheme = (appearance: Appearance) => {
-    const isDark = appearance === 'dark' || (appearance === 'system' && prefersDark());
-
-    document.documentElement.classList.toggle('dark', isDark);
-};
-
-const mediaQuery = () => {
-    if (typeof window === 'undefined') {
-        return null;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: dark)');
-};
-
-const handleSystemThemeChange = () => {
-    const currentAppearance = localStorage.getItem('appearance') as Appearance;
-    applyTheme(currentAppearance || 'system');
-};
-
-export function initializeTheme() {
-    const savedAppearance = (localStorage.getItem('appearance') as Appearance) || 'system';
-
-    applyTheme(savedAppearance);
-
-    // Add the event listener for system theme changes...
-    mediaQuery()?.addEventListener('change', handleSystemThemeChange);
+function getSystemTheme(): "light" | "dark" {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function useAppearance() {
-    const [appearance, setAppearance] = useState<Appearance>('system');
+    // Get the theme from local storage or default to system
+    const [theme, setThemeState] = useState<Theme>(() => {
+        if (typeof window !== "undefined") {
+            const storedTheme = localStorage.getItem("theme") as Theme;
+            return storedTheme || "system";
+        }
+        return "system";
+    });
 
-    const updateAppearance = useCallback((mode: Appearance) => {
-        setAppearance(mode);
-
-        // Store in localStorage for client-side persistence...
-        localStorage.setItem('appearance', mode);
-
-        // Store in cookie for SSR...
-        setCookie('appearance', mode);
-
-        applyTheme(mode);
-    }, []);
-
+    // Update the theme when it changes
     useEffect(() => {
-        const savedAppearance = localStorage.getItem('appearance') as Appearance | null;
-        updateAppearance(savedAppearance || 'system');
+        const root = window.document.documentElement;
 
-        return () => mediaQuery()?.removeEventListener('change', handleSystemThemeChange);
-    }, [updateAppearance]);
+        // Remove previous classes
+        root.classList.remove("light", "dark");
 
-    return { appearance, updateAppearance } as const;
+        // Apply new theme
+        const effectiveTheme = theme === "system" ? getSystemTheme() : theme;
+        root.classList.add(effectiveTheme);
+
+        // Store the theme in localStorage
+        localStorage.setItem("theme", theme);
+    }, [theme]);
+
+    // Update theme when system preference changes
+    useEffect(() => {
+        if (theme !== "system") return;
+
+        const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+        const handleChange = () => {
+            const root = window.document.documentElement;
+            root.classList.remove("light", "dark");
+            root.classList.add(getSystemTheme());
+        };
+
+        mediaQuery.addEventListener("change", handleChange);
+        return () => mediaQuery.removeEventListener("change", handleChange);
+    }, [theme]);
+
+    // Wrapper to set the theme and update the DOM
+    const setTheme = (newTheme: Theme) => {
+        setThemeState(newTheme);
+    };
+
+    return { theme, setTheme };
 }

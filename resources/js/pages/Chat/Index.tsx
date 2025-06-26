@@ -932,9 +932,14 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
             )
             : chats;
 
-    const formatTime = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const getInitials = (name: string): string => {
+        if (!name) return '?';
+        return name
+            .split(' ')
+            .map(part => part[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
     };
 
     // Add deleteMessage function
@@ -1008,25 +1013,6 @@ export default function UnifiedChat({ auth, initialGroups = [] }: Props) {
                 variant: 'destructive',
             });
         }
-    };
-
-    // Add getInitials function
-    const getInitials = (name: string): string => {
-        if (!name) return '?';
-        return name
-            .split(' ')
-            .map(part => part[0])
-            .join('')
-            .toUpperCase()
-            .substring(0, 2);
-    };
-
-    // Format time helper function
-    const formatTime = (timestamp: string | undefined): string => {
-        if (!timestamp) return '';
-
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
     // Add modern UI styling to the chat component

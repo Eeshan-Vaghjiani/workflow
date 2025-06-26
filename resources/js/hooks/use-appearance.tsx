@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 export type Theme = "light" | "dark" | "system";
+export type Appearance = Theme;
 
 function getSystemTheme(): "light" | "dark" {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";

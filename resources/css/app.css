@@ -483,3 +483,108 @@
 .dark .gantt-container .bar.project {
     background-color: hsl(246, 83%, 45%);
 }
+
+/* Enhanced animations for the UI transformation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes magnetic {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1.02); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-magnetic {
+  animation: magnetic 0.3s ease-out;
+}
+
+/* Glass morphism utility classes */
+.glass-morphism-light {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.glass-morphism-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Theme transition utility */
+html:root {
+  --theme-transition: none;
+}
+
+html.theme-transition * {
+  transition: var(--theme-transition) !important;
+}
+
+/* Magnetic interaction effects */
+.magnetic-element {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.magnetic-element:hover {
+  transform: scale(1.02) translateZ(0);
+}
+
+/* Cursor interactions */
+.cursor-hover-area * {
+  cursor: none;
+}
+
+/* Enhanced focus styles */
+.focus-glow:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 136, 122, 0.2), 0 0 10px 2px rgba(0, 136, 122, 0.1);
+  outline: none;
+}
+
+.dark .focus-glow:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 201, 167, 0.4), 0 0 15px 2px rgba(0, 201, 167, 0.2);
+  outline: none;
+}
+
+/* Enhanced scrollbar for the futuristic UI */
+.futuristic-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.futuristic-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.futuristic-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 136, 122, 0.3);
+  border-radius: 10px;
+}
+
+.dark .futuristic-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 201, 167, 0.3);
+}
+
+.futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 136, 122, 0.5);
+}
+
+.dark .futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 201, 167, 0.5);
+}

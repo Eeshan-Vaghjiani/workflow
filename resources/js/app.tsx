@@ -1,9 +1,10 @@
+import './bootstrap';
 import '../css/app.css';
-import './bootstrap.js';
 
+import { createRoot } from 'react-dom/client';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { createRoot } from 'react-dom/client';
+import routeMappings from './routes';
 
 // Add CSRF import and setup
 import axios from 'axios';
@@ -19,52 +20,42 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: async (name) => {
-        console.log('Resolving page:', name);
+        console.log("Resolving page:", name);
 
-        // Get all pages
+        // First check our custom route mappings
+        const customRoute = routeMappings[name];
+        if (customRoute) {
+            console.log("Using custom route mapping:", customRoute);
+            return resolvePageComponent(customRoute, import.meta.glob('./pages/**/*.tsx'));
+        }
+
         const pages = import.meta.glob('./pages/**/*.tsx');
         console.log('Available pages:', Object.keys(pages));
 
         // Try multiple path variations
-        const pathVariations = [
-            `./pages/${name}.tsx`,                           // Exact match (e.g., Dashboard.tsx)
-            `./pages/${name.toLowerCase()}.tsx`,             // All lowercase (e.g., dashboard.tsx)
-            `./pages/${name.charAt(0).toUpperCase() + name.slice(1)}.tsx`, // Capitalized (e.g., Dashboard.tsx from dashboard)
-        ];
+        const page = await resolvePageComponent(
+            `./pages/${name}.tsx`,
+            import.meta.glob('./pages/**/*.tsx')
+        ).catch(() => {
+            // Try without .tsx extension
+            return resolvePageComponent(
+                `./pages/${name}`,
+                import.meta.glob('./pages/**/*.tsx')
+            ).catch(() => {
+                // Try with /Index.tsx
+                return resolvePageComponent(
+                    `./pages/${name}/Index.tsx`,
+                    import.meta.glob('./pages/**/*.tsx')
+                );
+            });
+        });
 
-        // Try to find a matching page
-        let resolvedPath = null;
-        for (const path of pathVariations) {
-            if (pages[path]) {
-                console.log('Found matching path:', path);
-                resolvedPath = path;
-                break;
-            }
-        }
-
-        // If no direct match found, try to find a case-insensitive match
-        if (!resolvedPath) {
-            const nameLower = name.toLowerCase();
-            const possibleMatch = Object.keys(pages).find(
-                path => path.toLowerCase().includes(`/pages/${nameLower}.tsx`)
-            );
-
-            if (possibleMatch) {
-                console.log('Found case-insensitive match:', possibleMatch);
-                resolvedPath = possibleMatch;
-            }
-        }
-
-        if (!resolvedPath) {
-            console.error(`Could not find page: ${name}`);
-            throw new Error(`Page not found: ${name}`);
-        }
-
-        console.log('Resolving with path:', resolvedPath);
-        return resolvePageComponent(resolvedPath, pages);
+        console.log("Resolving with path:", `./pages/${name}.tsx`);
+        return page;
     },
     setup({ el, App, props }) {
         const root = createRoot(el);
+
         root.render(<App {...props} />);
     },
     progress: {

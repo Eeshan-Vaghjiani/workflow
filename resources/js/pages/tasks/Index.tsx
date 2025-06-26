@@ -114,7 +114,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Index({ tasks, assignments, userGroups, filters }: Props) {
+export default function Index({ tasks: tasksProp, assignments, userGroups, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [assignmentId, setAssignmentId] = useState(filters.assignment_id || 'all');
     const [groupId, setGroupId] = useState(filters.group_id || 'all');
@@ -124,6 +124,9 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
     const [direction, setDirection] = useState(filters.direction || 'asc');
     const [viewAll, setViewAll] = useState(filters.view_all === 'true');
     const [activeTab, setActiveTab] = useState('uncompleted');
+
+    // Ensure tasks is always an array
+    const tasks = Array.isArray(tasksProp) ? tasksProp : [];
 
     // Function to complete a task
     const completeTask = async (taskId: number) => {

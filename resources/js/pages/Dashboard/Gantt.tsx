@@ -2,7 +2,9 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { motion } from 'framer-motion';
 import { Calendar, Clock, Calendar as CalendarIcon, Plus, Edit, ListTodo, PlusSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
@@ -19,6 +21,31 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+
+// Animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            when: "beforeChildren"
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 15
+        }
+    }
+};
 
 // Import ViewMode as a value
 import { ViewMode } from 'gantt-task-react';
@@ -393,32 +420,50 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Gantt Chart" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 w-[calc(100vw-280px)] [.sidebar-collapsed_&]:w-[calc(100vw-80px)]">
-                <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700">
-                    <div className="flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                            <h1 className="text-2xl font-bold dark:text-white">Gantt Chart View</h1>
-                            <div className="flex gap-2">
-                                <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:space-x-2 ml-auto">
+
+            <motion.div
+                className="flex h-full flex-1 flex-col gap-4 p-4"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div className="flex flex-wrap justify-between items-center mb-4" variants={itemVariants}>
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-5 w-5 text-primary-500 dark:text-neon-green" />
+                        <h1 className="text-2xl font-bold">Gantt Chart</h1>
+                    </div>
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                    <GlassContainer className="p-4">
+                        <div className="flex flex-col flex-1">
+                            <div className="flex flex-wrap gap-2 items-center justify-between mb-4">
+                                {error && (
+                                    <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-2 rounded-md text-sm w-full mb-2">
+                                        {error}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-wrap items-center gap-2">
                                     {/* Add task button */}
-                                    <Button
+                                    <EnhancedButton
                                         variant="outline"
                                         size="sm"
                                         onClick={() => setIsAddTaskModalOpen(true)}
-                                        className="flex items-center gap-1"
+                                        icon={<Plus className="h-4 w-4" />}
                                     >
-                                        <Plus className="h-4 w-4" /> Add Task
-                                    </Button>
+                                        Add Task
+                                    </EnhancedButton>
 
                                     {/* Add assignment button */}
-                                    <Button
+                                    <EnhancedButton
                                         variant="outline"
                                         size="sm"
                                         onClick={handleCreateAssignment}
-                                        className="flex items-center gap-1"
+                                        icon={<PlusSquare className="h-4 w-4" />}
                                     >
-                                        <PlusSquare className="h-4 w-4" /> New Assignment
-                                    </Button>
+                                        New Assignment
+                                    </EnhancedButton>
 
                                     {/* Auto distribute tasks button - only show if assignments exist */}
                                     {assignments.length > 0 && (
@@ -440,33 +485,28 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                                     </option>
                                                 ))}
                                             </select>
-                                            <Button
+                                            <EnhancedButton
                                                 variant="default"
                                                 size="sm"
                                                 onClick={handleAutoDistributeTasks}
                                                 disabled={!assignmentId || isAssigningTasks}
-                                                className="flex items-center gap-1"
-                                            >
-                                                {isAssigningTasks ? (
-                                                    <>
-                                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                        </svg>
-                                                        Assigning...
-                                                    </>
+                                                icon={isAssigningTasks ? (
+                                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
                                                 ) : (
-                                                    <>
-                                                        <ListTodo className="h-4 w-4" /> Auto Assign
-                                                    </>
+                                                    <ListTodo className="h-4 w-4" />
                                                 )}
-                                            </Button>
+                                            >
+                                                {isAssigningTasks ? 'Assigning...' : 'Auto Assign'}
+                                            </EnhancedButton>
                                         </div>
                                     )}
 
                                     {/* View mode buttons */}
                                     {viewModeOptions.map(({ mode, label, icon: Icon }) => (
-                                        <Button
+                                        <EnhancedButton
                                             key={mode}
                                             variant={viewMode === mode ? "default" : "outline"}
                                             size="sm"
@@ -475,10 +515,10 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                                 "gap-2",
                                                 viewMode === mode && "bg-primary text-primary-foreground"
                                             )}
+                                            icon={<Icon className="w-4 h-4" />}
                                         >
-                                            <Icon className="w-4 h-4" />
                                             {label}
-                                        </Button>
+                                        </EnhancedButton>
                                     ))}
                                 </div>
                             </div>
@@ -489,7 +529,12 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                 {ganttTasks.length > 0 ? (
                                     <Suspense fallback={
                                         <div className="flex items-center justify-center h-64">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                            <motion.div
+                                                className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 dark:border-neon-green"
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ duration: 0.3 }}
+                                            />
                                         </div>
                                     }>
                                         <GanttComponent
@@ -506,55 +551,62 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
                                             arrowColor="currentColor"
                                         />
                                         {selectedTask && (
-                                            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-neutral-800 p-4 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 z-50">
-                                                <h3 className="text-lg font-bold mb-2 dark:text-white">{selectedTask.name}</h3>
-                                                <div className="space-y-2 dark:text-gray-300">
-                                                    <p><span className="font-medium">Assigned to:</span> {selectedTask.assignedTo}</p>
-                                                    <p><span className="font-medium">Group:</span> {selectedTask.groupName}</p>
-                                                    {selectedTask.assignmentTitle && (
-                                                        <p><span className="font-medium">Assignment:</span> {selectedTask.assignmentTitle}</p>
-                                                    )}
-                                                    {selectedTask.priority && (
-                                                        <p><span className="font-medium">Priority:</span> {selectedTask.priority}</p>
-                                                    )}
-                                                    {selectedTask.effort_hours && (
-                                                        <p><span className="font-medium">Effort:</span> {selectedTask.effort_hours} hours</p>
-                                                    )}
-                                                    {selectedTask.importance && (
-                                                        <p><span className="font-medium">Importance:</span> {selectedTask.importance}/5</p>
-                                                    )}
-                                                    <p><span className="font-medium">Progress:</span> {selectedTask.progress}%</p>
-                                                    <p><span className="font-medium">Duration:</span> {new Date(selectedTask.start).toLocaleDateString()} - {new Date(selectedTask.end).toLocaleDateString()}</p>
-                                                </div>
-                                                <div className="flex justify-between mt-4">
-                                                    <Button
-                                                        onClick={() => setSelectedTask(null)}
-                                                        variant="outline"
-                                                    >
-                                                        Close
-                                                    </Button>
-
-                                                    {selectedTask.type !== 'project' && (
-                                                        <Button
-                                                            onClick={() => openEditTaskModal(selectedTask)}
-                                                            variant="default"
+                                            <motion.div
+                                                className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
+                                            >
+                                                <GlassContainer className="p-4 max-w-md">
+                                                    <h3 className="text-lg font-bold mb-2">{selectedTask.name}</h3>
+                                                    <div className="space-y-2">
+                                                        <p><span className="font-medium">Assigned to:</span> {selectedTask.assignedTo}</p>
+                                                        <p><span className="font-medium">Group:</span> {selectedTask.groupName}</p>
+                                                        {selectedTask.assignmentTitle && (
+                                                            <p><span className="font-medium">Assignment:</span> {selectedTask.assignmentTitle}</p>
+                                                        )}
+                                                        {selectedTask.priority && (
+                                                            <p><span className="font-medium">Priority:</span> {selectedTask.priority}</p>
+                                                        )}
+                                                        {selectedTask.effort_hours && (
+                                                            <p><span className="font-medium">Effort:</span> {selectedTask.effort_hours} hours</p>
+                                                        )}
+                                                        {selectedTask.importance && (
+                                                            <p><span className="font-medium">Importance:</span> {selectedTask.importance}/5</p>
+                                                        )}
+                                                        <p><span className="font-medium">Progress:</span> {selectedTask.progress}%</p>
+                                                        <p><span className="font-medium">Duration:</span> {new Date(selectedTask.start).toLocaleDateString()} - {new Date(selectedTask.end).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="flex justify-between mt-4">
+                                                        <EnhancedButton
+                                                            onClick={() => setSelectedTask(null)}
+                                                            variant="outline"
                                                         >
-                                                            <Edit className="w-4 h-4 mr-2" />
-                                                            Edit
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </div>
+                                                            Close
+                                                        </EnhancedButton>
+
+                                                        {selectedTask.type !== 'project' && (
+                                                            <EnhancedButton
+                                                                onClick={() => openEditTaskModal(selectedTask)}
+                                                                variant="default"
+                                                                icon={<Edit className="w-4 h-4" />}
+                                                            >
+                                                                Edit
+                                                            </EnhancedButton>
+                                                        )}
+                                                    </div>
+                                                </GlassContainer>
+                                            </motion.div>
                                         )}
                                     </Suspense>
                                 ) : (
-                                    <p className="text-center py-10 dark:text-white">No tasks available to display in Gantt chart.</p>
+                                    <p className="text-center py-10">No tasks available to display in Gantt chart.</p>
                                 )}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    </GlassContainer>
+                </motion.div>
+            </motion.div>
 
             {/* Add Task Modal */}
             <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, ActivitySquare, Users, AlertCircle, AlertTriangle, RefreshCw, LogIn } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { motion, AnimatePresence } from 'framer-motion';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 interface TaskAssignmentPanelProps {
     groupId: number;
@@ -59,7 +61,6 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
     const [error, setError] = useState<string | null>(null);
     const [errorDetails, setErrorDetails] = useState<Array<{ task_id?: number; message: string }> | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]);
-    // groupMembers is populated from the API response and used in the backend for task distribution
     const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
     const [workloadDistribution, setWorkloadDistribution] = useState<WorkloadDistribution[]>([]);
     const [hasUnassignedTasks, setHasUnassignedTasks] = useState(false);
@@ -241,333 +242,227 @@ export default function TaskAssignmentPanel({ groupId, assignmentId, onAssignmen
         }
     };
 
-    const getPriorityColor = (priority: string | null | undefined) => {
-        if (!priority) {
-            return 'bg-gray-500 hover:bg-gray-600'; // Default for null/undefined values
-        }
-
-        switch (priority.toLowerCase()) {
-            case 'high': return 'bg-red-500 hover:bg-red-600';
-            case 'medium': return 'bg-yellow-500 hover:bg-yellow-600';
-            case 'low': return 'bg-blue-500 hover:bg-blue-600';
-            default: return 'bg-gray-500 hover:bg-gray-600';
-        }
-    };
-
-    const getStatusColor = (status: string | null | undefined) => {
-        if (!status) {
-            return 'bg-gray-500 text-white'; // Default for null/undefined values
-        }
-
-        switch (status.toLowerCase()) {
-            case 'completed': return 'bg-green-500 text-white';
-            case 'in_progress': return 'bg-blue-500 text-white';
-            case 'pending': return 'bg-yellow-500 text-white';
-            default: return 'bg-gray-500 text-white';
-        }
-    };
-
+    // Render loading state
     if (loading) {
         return (
-            <Card className="w-full">
-                <CardHeader>
-                    <Skeleton className="h-8 w-1/3 mb-2" />
-                    <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent>
+            <motion.div
+                className="space-y-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+            >
+                <GlassContainer className="p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <Skeleton className="h-8 w-64" />
+                            <Skeleton className="h-4 w-40 mt-2" />
+                        </div>
+                        <Skeleton className="h-10 w-36" />
+                    </div>
                     <div className="space-y-4">
-                        {[...Array(3)].map((_, index) => (
-                            <div key={index} className="space-y-2">
-                                <Skeleton className="h-6 w-1/4" />
-                                <Skeleton className="h-4 w-full" />
-                                <div className="flex space-x-2">
-                                    <Skeleton className="h-6 w-20" />
-                                    <Skeleton className="h-6 w-24" />
-                                </div>
-                            </div>
+                        {Array(3).fill(0).map((_, i) => (
+                            <Skeleton key={i} className="h-20 w-full" />
                         ))}
                     </div>
-                </CardContent>
-                <CardFooter>
-                    <Skeleton className="h-10 w-40" />
-                </CardFooter>
-            </Card>
+                </GlassContainer>
+            </motion.div>
         );
     }
 
-    // Show auth error with option to refresh
+    // Render auth error
     if (authError) {
         return (
-            <Card className="w-full">
-                <CardHeader>
-                    <CardTitle className="text-xl flex items-center">
-                        <AlertCircle className="mr-2 h-5 w-5 text-red-500" />
-                        Authentication Error
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Session Expired</AlertTitle>
-                        <AlertDescription>
-                            Your session has expired or you are not logged in. Please refresh the page or log in again.
-                        </AlertDescription>
-                    </Alert>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                    <Button onClick={fetchAssignmentStats}>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Try Again
-                    </Button>
-                    <Button variant="outline" onClick={() => window.location.href = '/login'}>
-                        <LogIn className="h-4 w-4 mr-2" />
-                        Log In
-                    </Button>
-                </CardFooter>
-            </Card>
+            <motion.div
+                className="space-y-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            >
+                <GlassContainer className="p-6">
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="mb-6"
+                        >
+                            <LogIn className="h-16 w-16 text-red-500 mx-auto" />
+                        </motion.div>
+                        <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
+                        <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
+                            Your session may have expired. Please log in again to view and manage task assignments.
+                        </p>
+                        <EnhancedButton
+                            onClick={() => window.location.href = '/login'}
+                            icon={<LogIn className="h-4 w-4 mr-2" />}
+                            iconPosition="left"
+                        >
+                            Log In
+                        </EnhancedButton>
+                    </div>
+                </GlassContainer>
+            </motion.div>
         );
     }
 
+    // Render main content
     return (
-        <Card className="w-full">
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle className="text-xl flex items-center">
-                            <Users className="mr-2 h-5 w-5" />
-                            Task Assignment
-                        </CardTitle>
-                        <CardDescription>
-                            Manage and visualize task distribution among team members
-                        </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={fetchAssignmentStats}
-                            className="flex items-center gap-2"
-                            disabled={loading}
-                        >
-                            <RefreshCw className="h-4 w-4" />
-                            Refresh
-                        </Button>
-                        <Button
-                            onClick={handleAutoDistributeTasks}
-                            disabled={distributing || tasks.length === 0}
-                            className="flex items-center gap-2"
-                        >
-                            {distributing ? (
-                                <>
-                                    <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                                    Assigning...
-                                </>
-                            ) : (
-                                <>
-                                    <ActivitySquare className="h-4 w-4" />
-                                    Auto-Assign Tasks
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent>
+        <motion.div
+            className="space-y-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            {/* Error Alert */}
+            <AnimatePresence>
                 {error && (
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>
-                            <div>{error}</div>
-                            {errorDetails && errorDetails.length > 0 && (
-                                <div className="mt-2">
-                                    <details>
-                                        <summary className="cursor-pointer font-medium">View error details</summary>
-                                        <ul className="mt-2 list-disc pl-5 text-sm">
-                                            {errorDetails.map((detail, index) => (
-                                                <li key={index}>Task ID {detail.task_id}: {detail.message}</li>
-                                            ))}
-                                        </ul>
-                                    </details>
-                                </div>
-                            )}
-                        </AlertDescription>
-                    </Alert>
-                )}
+                    <motion.div
+                        variants={itemVariants}
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    >
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Error</AlertTitle>
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
 
-                {invalidAssignmentsFixed > 0 && (
-                    <Alert className="mb-4 bg-blue-50 border-blue-200 text-blue-800">
-                        <AlertTriangle className="h-4 w-4 text-blue-800" />
-                        <AlertTitle>Assignment Issues Fixed</AlertTitle>
-                        <AlertDescription>
-                            {invalidAssignmentsFixed} task{invalidAssignmentsFixed !== 1 ? 's' : ''} had invalid user assignments that have been automatically fixed.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {hasUnassignedTasks && (
-                    <Alert className="mb-4 bg-yellow-50 border-yellow-200 text-yellow-800">
-                        <AlertCircle className="h-4 w-4 text-yellow-800" />
-                        <AlertTitle>Unassigned Tasks</AlertTitle>
-                        <AlertDescription>
-                            Some tasks are not assigned to any team member. Use the Auto-Assign button to distribute tasks evenly.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                {tasks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <ActivitySquare className="h-12 w-12 text-gray-400 mb-4" />
-                        <h3 className="text-lg font-medium">No Tasks Found</h3>
-                        <p className="text-gray-500 max-w-md mt-2">
-                            There are no tasks for this assignment yet. Create some tasks first to see them here.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        <div className="mt-6">
-                            <h3 className="font-medium text-lg mb-3 flex items-center">
-                                <BarChart className="mr-2 h-5 w-5" /> Task Distribution
-                            </h3>
-                            <div className="overflow-auto rounded-lg border">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Task
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Assigned To
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Effort
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Importance
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Priority
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Created By
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {tasks.map((task) => (
-                                            <tr key={task.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    {task.title}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    {task.assigned_user ? (
-                                                        <div className="flex items-center">
-                                                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
-                                                                {task.assigned_user.name.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <span className="ml-2">{task.assigned_user.name}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-red-500">Unassigned</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    {task.effort_hours} hrs
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    {task.importance}/5
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <Badge className={getPriorityColor(task.priority)}>
-                                                        {task.priority ?
-                                                            (task.priority.charAt(0).toUpperCase() + task.priority.slice(1)) :
-                                                            'Unknown'}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <Badge className={getStatusColor(task.status)}>
-                                                        {task.status ?
-                                                            (task.status.replace('_', ' ').charAt(0).toUpperCase() + task.status.replace('_', ' ').slice(1)) :
-                                                            'Pending'}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    {task.creator ? (
-                                                        <div className="flex items-center">
-                                                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
-                                                                {task.creator.name.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <span className="ml-2">{task.creator.name}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-gray-500">System</span>
-                                                    )}
-                                                </td>
-                                            </tr>
+                        {errorDetails && errorDetails.length > 0 && (
+                            <div className="mt-2 bg-red-50 dark:bg-red-900/20 p-3 rounded-md text-sm">
+                                <details>
+                                    <summary className="font-medium cursor-pointer">View error details</summary>
+                                    <ul className="mt-2 list-disc pl-5 space-y-1">
+                                        {errorDetails.map((detail, i) => (
+                                            <li key={i}>
+                                                {detail.task_id && <span className="font-mono">Task #{detail.task_id}: </span>}
+                                                {detail.message}
+                                            </li>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </ul>
+                                </details>
                             </div>
-                        </div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                        <div className="mt-6">
-                            <h3 className="font-medium text-lg mb-3 flex items-center">
-                                <Users className="mr-2 h-5 w-5" /> Member Workload
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {workloadDistribution && workloadDistribution.map((member) => (
-                                    <div key={member.id} className="border rounded-lg p-4">
+            {/* Fixed Invalid Assignments Notice */}
+            <AnimatePresence>
+                {invalidAssignmentsFixed > 0 && (
+                    <motion.div
+                        variants={itemVariants}
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    >
+                        <Alert>
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Notice</AlertTitle>
+                            <AlertDescription>
+                                {invalidAssignmentsFixed} task{invalidAssignmentsFixed > 1 ? 's were' : ' was'} assigned to users who are no longer in the group.
+                                These assignments have been automatically cleared.
+                            </AlertDescription>
+                        </Alert>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Task Distribution Overview */}
+            <motion.div variants={itemVariants}>
+                <GlassContainer className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 className="text-xl font-bold">Task Distribution</h2>
+                            <p className="text-gray-500 dark:text-gray-400">
+                                {tasks.length} task{tasks.length !== 1 ? 's' : ''} across {groupMembers.length} group member{groupMembers.length !== 1 ? 's' : ''}
+                            </p>
+                        </div>
+                        <EnhancedButton
+                            onClick={handleAutoDistributeTasks}
+                            disabled={distributing || tasks.length === 0 || groupMembers.length === 0}
+                            className="flex items-center gap-2"
+                            icon={<RefreshCw className={`h-4 w-4 ${distributing ? 'animate-spin' : ''}`} />}
+                            iconPosition="left"
+                        >
+                            {distributing ? 'Distributing...' : 'Auto-Distribute Tasks'}
+                        </EnhancedButton>
+                    </div>
+
+                    {/* Workload Distribution */}
+                    {workloadDistribution.length > 0 ? (
+                        <div className="space-y-6">
+                            <AnimatePresence>
+                                {workloadDistribution.map((member) => (
+                                    <motion.div
+                                        key={member.id}
+                                        variants={itemVariants}
+                                        className="bg-white/10 dark:bg-gray-800/20 backdrop-blur-sm rounded-lg p-4 border border-white/10 dark:border-gray-700/50"
+                                    >
                                         <div className="flex justify-between items-center mb-2">
-                                            <div className="flex items-center">
-                                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
-                                                    {member && member.name ? member.name.charAt(0).toUpperCase() : '?'}
+                                            <div>
+                                                <h3 className="font-medium">{member.name}</h3>
+                                                <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                                    <span className="flex items-center gap-1">
+                                                        <ActivitySquare className="h-3.5 w-3.5" />
+                                                        {member.taskCount} task{member.taskCount !== 1 ? 's' : ''}
+                                                    </span>
+                                                    <span className="flex items-center gap-1">
+                                                        <BarChart className="h-3.5 w-3.5" />
+                                                        {member.totalEffort} hours
+                                                    </span>
                                                 </div>
-                                                <h3 className="font-medium ml-2">{member && member.name ? member.name : 'Unknown'}</h3>
                                             </div>
-                                            <Badge variant="outline">
-                                                {member && member.taskCount !== undefined ? member.taskCount : 0} task{(!member || member.taskCount !== 1) ? 's' : ''}
+                                            <Badge className={`${member.percentage > 40 ? 'bg-green-500' : member.percentage > 20 ? 'bg-yellow-500' : 'bg-red-500'}`}>
+                                                {member.percentage.toFixed(1)}% workload
                                             </Badge>
                                         </div>
-                                        <div className="space-y-1">
-                                            <div className="flex justify-between text-sm text-gray-500">
-                                                <span>Workload</span>
-                                                <span>{member && member.percentage !== undefined ? member.percentage : 0}%</span>
-                                            </div>
-                                            <Progress value={member && member.percentage !== undefined ? member.percentage : 0} className="h-2" />
-                                        </div>
-                                        <div className="mt-3">
-                                            <div className="text-sm text-gray-500 mb-1">Task Details:</div>
-                                            <div className="text-sm">
-                                                <span className="font-medium">Total Effort:</span> {member && member.totalEffort !== undefined ? member.totalEffort : 0} hours
-                                            </div>
-                                            <div className="text-sm">
-                                                <span className="font-medium">Importance Score:</span> {member && member.totalImportance !== undefined ? member.totalImportance : 0}
-                                            </div>
-                                        </div>
-                                        {member && member.tasks && member.tasks.length > 0 && (
-                                            <div className="mt-3">
-                                                <div className="text-sm text-gray-500 mb-1">Assigned Tasks:</div>
-                                                <ul className="text-sm space-y-1">
-                                                    {member.tasks.map((task, index) => (
-                                                        <li key={task && task.id ? task.id : index} className="flex items-center justify-between">
-                                                            <span className="truncate">{task && task.title ? task.title : 'Untitled task'}</span>
-                                                            <span className="text-gray-500 ml-2">
-                                                                {task && task.effort !== undefined ? task.effort : 0}h • {task && task.importance !== undefined ? task.importance : 0}/5
-                                                            </span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                        <Progress value={member.percentage} className="h-2 mt-2" />
+
+                                        {/* Task List */}
+                                        {member.tasks.length > 0 && (
+                                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                                {member.tasks.map((task) => (
+                                                    <div key={task.id} className="flex justify-between items-center p-2 bg-white/5 dark:bg-gray-900/20 rounded">
+                                                        <span className="truncate">{task.title}</span>
+                                                        <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1 whitespace-nowrap">
+                                                            <ActivitySquare className="h-3 w-3" /> {task.effort}h
+                                                        </span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 ))}
-                            </div>
+                            </AnimatePresence>
                         </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                    ) : (
+                        <div className="text-center py-12">
+                            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                            <h3 className="text-lg font-medium mb-2">No task distribution data</h3>
+                            <p className="text-gray-500 dark:text-gray-400 mb-6">
+                                {hasUnassignedTasks
+                                    ? "There are unassigned tasks. Click 'Auto-Distribute Tasks' to assign them."
+                                    : tasks.length === 0
+                                        ? "No tasks have been created for this assignment yet."
+                                        : "Tasks exist but no workload data is available."}
+                            </p>
+                            {hasUnassignedTasks && (
+                                <EnhancedButton
+                                    onClick={handleAutoDistributeTasks}
+                                    disabled={distributing}
+                                    icon={<RefreshCw className={`h-4 w-4 ${distributing ? 'animate-spin' : ''}`} />}
+                                    iconPosition="left"
+                                >
+                                    {distributing ? 'Distributing...' : 'Auto-Distribute Tasks'}
+                                </EnhancedButton>
+                            )}
+                        </div>
+                    )}
+                </GlassContainer>
+            </motion.div>
+        </motion.div>
     );
 }

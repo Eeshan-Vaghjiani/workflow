@@ -8,10 +8,37 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { EventClickArg, EventApi, EventDropArg } from '@fullcalendar/core';
 import { EventResizeDoneArg } from '@fullcalendar/interaction';
 import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { CalendarIcon, RefreshCw, Settings, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '@/components/ui/use-toast';
+
+// Animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            when: "beforeChildren"
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 15
+        }
+    }
+};
 
 interface Event {
     id: string;
@@ -247,191 +274,192 @@ export default function Calendar({ events }: Props) {
                         (error.response.data?.errors ?
                             Object.values(error.response.data.errors).flat().join(", ") :
                             error.response.data.message || "Please check your input");
-                } else if (error.response.data && error.response.data.message) {
-                    errorMessage = error.response.data.message;
                 }
-            } else if (error.message) {
-                errorMessage = error.message;
             }
 
             toast({
-                title: "Update Failed",
+                title: "Error",
                 description: errorMessage,
-                variant: "destructive"
+                variant: "destructive",
             });
         }
     };
 
-    // Helper function to safely format dates
+    // Format date for display
     const formatDate = (date: Date | null) => {
-        return date?.toLocaleDateString() ?? '';
+        if (!date) return 'N/A';
+        return new Intl.DateTimeFormat('default', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+        }).format(date);
     };
 
     // Sync with Google Calendar
     const syncWithGoogle = async () => {
-        setSyncing(true);
-
         try {
-            // Get CSRF token
-            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-            if (!token) {
-                console.error('CSRF token not found');
-                toast({
-                    title: "Authentication Error",
-                    description: "Please refresh the page and try again.",
-                    variant: "destructive"
-                });
-                return;
-            }
-
-            // Use the web route instead of API route
+            setSyncing(true);
             const response = await axios.post('/calendar/sync', {}, {
                 headers: {
-                    'X-CSRF-TOKEN': token,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                withCredentials: true
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                }
             });
 
             if (response.data.success) {
                 toast({
-                    title: "Calendar Synced",
-                    description: "Your tasks have been synchronized with Google Calendar.",
+                    title: "Sync Successful",
+                    description: "Calendar synchronized with Google Calendar",
+                    variant: "default",
                 });
+
+                // Update local events with the new data if provided
+                if (response.data.events) {
+                    // Format the events properly for the calendar
+                    const formattedEvents = response.data.events.map(formatTaskForCalendar);
+                    setLocalEvents(formattedEvents);
+                }
             } else {
-                throw new Error(response.data.message || 'Failed to sync with Google Calendar');
+                throw new Error(response.data.message || "Sync failed");
             }
         } catch (error: any) {
-            console.error('Error syncing with Google Calendar:', error);
-
-            // Check for specific error codes
-            let errorMessage = "Failed to sync with Google Calendar. Please check your connection.";
-
-            if (error.response) {
-                if (error.response.status === 401) {
-                    errorMessage = "You need to be logged in to sync calendars. Please refresh the page.";
-                } else if (error.response.status === 403) {
-                    errorMessage = "You don't have permission to sync this calendar.";
-                } else if (error.response.data && error.response.data.message) {
-                    errorMessage = error.response.data.message;
-                }
-
-                if (error.response.data && error.response.data.error_code) {
-                    const errorCode = error.response.data.error_code;
-                    if (errorCode === 'calendar_not_connected') {
-                        errorMessage = "Google Calendar is not connected. Please visit Settings to connect your account.";
-                    } else if (errorCode === 'token_revoked' || errorCode === 'invalid_token') {
-                        errorMessage = "Your Google Calendar connection needs to be renewed. Please visit Settings.";
-                    }
-                }
-            } else if (error.message) {
-                errorMessage = error.message;
-            }
-
+            console.error('Error during sync:', error);
             toast({
                 title: "Sync Failed",
-                description: errorMessage,
-                variant: "destructive"
+                description: error.response?.data?.message || error.message || "Failed to sync with Google Calendar",
+                variant: "destructive",
             });
         } finally {
             setSyncing(false);
         }
     };
 
-
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Calendar" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="bg-white dark:bg-neutral-800 p-6 rounded-xl border border-neutral-200 dark:border-neutral-700">
-                    <div className="flex justify-between items-center mb-6">
+            <Head title="Calendar View" />
+            <motion.div
+                className="flex flex-col gap-4 p-4"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div className="flex flex-wrap justify-between items-center" variants={itemVariants}>
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="h-5 w-5 text-primary-500 dark:text-neon-green" />
                         <h1 className="text-2xl font-bold">Calendar View</h1>
-
-                        <div className="flex space-x-2">
-                            <Button onClick={syncWithGoogle} disabled={syncing}>
-                                {syncing ? (
-                                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                )}
-                                Sync with Google
-                            </Button>
-                            <Button variant="outline" asChild>
-                                <Link href={route('calendar.settings')}>
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    Settings
-                                </Link>
-                            </Button>
-                        </div>
                     </div>
-
-                    <div className="mb-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center mr-4">
-                            <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                            <span>Past Due</span>
-                        </div>
-                        <div className="flex items-center mr-4">
-                            <div className="w-3 h-3 rounded-full bg-amber-500 mr-2"></div>
-                            <span>High Priority</span>
-                        </div>
-                        <div className="flex items-center mr-4">
-                            <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                            <span>Normal Priority</span>
-                        </div>
-                        <div className="text-xs ml-2">(Drag events to change dates)</div>
+                    <div className="flex gap-2 mt-2 sm:mt-0">
+                        <EnhancedButton
+                            onClick={syncWithGoogle}
+                            disabled={syncing}
+                            variant="outline"
+                            className="gap-1"
+                            icon={<RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />}
+                        >
+                            Sync Calendar
+                        </EnhancedButton>
+                        <Link href="/calendar/settings">
+                            <EnhancedButton variant="outline" className="gap-1" icon={<Settings className="h-4 w-4" />}>
+                                Settings
+                            </EnhancedButton>
+                        </Link>
                     </div>
+                </motion.div>
 
-                    <div className="relative">
-                        <FullCalendar
-                            ref={calendarRef}
-                            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                            initialView="dayGridMonth"
-                            headerToolbar={{
-                                left: 'prev,next today',
-                                center: 'title',
-                                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                            }}
-                            events={processedEvents}
-                            eventClick={handleEventClick}
-                            eventMouseEnter={handleEventMouseEnter}
-                            eventMouseLeave={handleEventMouseLeave}
-                            height="auto"
-                            editable={true}
-                            eventDrop={handleEventChange}
-                            eventResize={handleEventChange}
-                            longPressDelay={0}
-                        />
+                <motion.div variants={itemVariants}>
+                    <GlassContainer className="p-4">
+                        <div className="mb-4">
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Drag and drop events to reschedule. Click an event for details.
+                            </p>
+                        </div>
+                        <div className="calendar-container">
+                            <FullCalendar
+                                ref={calendarRef}
+                                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                initialView="dayGridMonth"
+                                headerToolbar={{
+                                    left: 'prev,next today',
+                                    center: 'title',
+                                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                                }}
+                                events={processedEvents}
+                                editable={true}
+                                selectable={true}
+                                selectMirror={true}
+                                dayMaxEvents={true}
+                                eventClick={handleEventClick}
+                                eventMouseEnter={handleEventMouseEnter}
+                                eventMouseLeave={handleEventMouseLeave}
+                                eventDrop={handleEventChange}
+                                eventResize={handleEventChange}
+                                themeSystem="standard"
+                                height="auto"
+                            />
+                        </div>
+                    </GlassContainer>
+                </motion.div>
 
-                        {eventInfo && (
-                            <div className="absolute z-10 bg-white dark:bg-neutral-800 shadow-lg rounded-md p-4 border border-neutral-200 dark:border-neutral-700">
+                {eventInfo && (
+                    <motion.div
+                        variants={itemVariants}
+                        className="fixed bottom-4 right-4 z-10"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <GlassContainer className="p-4 max-w-md">
+                            <div className="flex justify-between items-center mb-2">
                                 <h3 className="font-bold text-lg">{eventInfo.title}</h3>
-                                <div className="mt-2 space-y-1">
-                                    {eventInfo.extendedProps.assignment && (
-                                        <p><span className="font-medium">Assignment:</span> {eventInfo.extendedProps.assignment}</p>
-                                    )}
-                                    <p><span className="font-medium">Group:</span> {eventInfo.extendedProps.group}</p>
-                                    <p><span className="font-medium">Priority:</span> {eventInfo.extendedProps.priority}</p>
-                                    {eventInfo.extendedProps.status && (
-                                        <p><span className="font-medium">Status:</span> {eventInfo.extendedProps.status}</p>
-                                    )}
-                                    <p><span className="font-medium">Date:</span> {formatDate(eventInfo.start)} - {formatDate(eventInfo.end)}</p>
-
-                                    {eventInfo.extendedProps.isPastDue && (
-                                        <div className="mt-2 flex items-center text-red-500">
-                                            <AlertTriangle className="h-4 w-4 mr-1" />
-                                            <span>Past due</span>
-                                        </div>
-                                    )}
-                                </div>
+                                <EnhancedButton
+                                    onClick={() => setEventInfo(null)}
+                                    variant="ghost"
+                                    size="sm"
+                                >
+                                    Close
+                                </EnhancedButton>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+                            <div className="space-y-2">
+                                <div className="text-sm">
+                                    <span className="font-semibold">Start:</span> {formatDate(eventInfo.start)}
+                                </div>
+                                <div className="text-sm">
+                                    <span className="font-semibold">End:</span> {formatDate(eventInfo.end)}
+                                </div>
+                                {eventInfo.extendedProps.group && (
+                                    <div className="text-sm">
+                                        <span className="font-semibold">Group:</span> {eventInfo.extendedProps.group}
+                                    </div>
+                                )}
+                                {eventInfo.extendedProps.assignment && (
+                                    <div className="text-sm">
+                                        <span className="font-semibold">Assignment:</span> {eventInfo.extendedProps.assignment}
+                                    </div>
+                                )}
+                                {eventInfo.extendedProps.priority && (
+                                    <div className="text-sm">
+                                        <span className="font-semibold">Priority:</span> {eventInfo.extendedProps.priority}
+                                    </div>
+                                )}
+                                {eventInfo.extendedProps.status && (
+                                    <div className="text-sm">
+                                        <span className="font-semibold">Status:</span> {eventInfo.extendedProps.status}
+                                    </div>
+                                )}
+                                {eventInfo.extendedProps.isPastDue && (
+                                    <div className="flex items-center gap-1 text-red-500 dark:text-red-400 text-sm font-semibold mt-2">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span>Past Due</span>
+                                    </div>
+                                )}
+                            </div>
+                        </GlassContainer>
+                    </motion.div>
+                )}
+            </motion.div>
         </AppLayout>
     );
 }

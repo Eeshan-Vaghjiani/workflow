@@ -1,15 +1,14 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Calendar, GitBranch } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, GitBranch, Clock, Bell, Users, BookOpen } from 'lucide-react';
+import { Card3D } from '@/components/ui/card-3d';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PageProps } from "@/types"
-import { ChatList } from "@/components/Chat/chat-list"
-import { ChatWindow } from "@/components/Chat/chat-window"
 import { useState, useEffect, useMemo } from "react"
-import { ErrorBoundary } from 'react-error-boundary'
-import { toast } from "@/components/ui/use-toast"
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 interface Group {
     id: number;
@@ -62,26 +61,36 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
     return (
-        <div className="p-4 text-red-500">
+        <GlassContainer className="p-4 text-red-500">
             <h2 className="text-lg font-semibold">Something went wrong:</h2>
             <pre className="mt-2 text-sm">{error.message}</pre>
-            <button
+            <EnhancedButton
                 onClick={resetErrorBoundary}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="mt-4"
+                variant="danger"
             >
                 Try again
-            </button>
-        </div>
+            </EnhancedButton>
+        </GlassContainer>
     )
 }
 
 function LoadingState() {
     return (
         <div className="flex items-center justify-center h-screen">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading dashboard...</p>
-            </div>
+            <motion.div
+                className="text-center"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                    type: "spring",
+                    stiffness: 260,
+                    damping: 20
+                }}
+            >
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 dark:border-neon-green mx-auto"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+            </motion.div>
         </div>
     );
 }
@@ -89,9 +98,7 @@ function LoadingState() {
 export default function Dashboard(props: Props) {
     // Initialize state with safe default values
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedChatId, setSelectedChatId] = useState<number>();
     const [error, setError] = useState<Error | null>(null);
-    const [messages, setMessages] = useState<{ id: number; content: string; sender: { id: number; name: string; avatar: string }; timestamp: string; isSystemMessage: boolean }[]>([]);
 
     // Safely destructure props with defaults
     const {
@@ -131,14 +138,6 @@ export default function Dashboard(props: Props) {
         }
     }, [tasks]);
 
-    // Memoize the current user object
-    const currentUser = useMemo(() => ({
-        id: auth?.user?.id || 0,
-        name: auth?.user?.name || 'Unknown User',
-        avatar: auth?.user?.avatar,
-        status: "online" as const
-    }), [auth]);
-
     // Handle component initialization
     useEffect(() => {
         try {
@@ -152,17 +151,6 @@ export default function Dashboard(props: Props) {
             if (channel) {
                 channel.listen('NewGroupMessage', (event) => {
                     console.log('Received message event:', event);
-
-                    // If we have the chat open, add new message
-                    if (selectedChatId === event.groupId) {
-                        setMessages(prev => [...prev, {
-                            id: event.message.id,
-                            content: event.message.content,
-                            sender: event.message.sender,
-                            timestamp: event.message.timestamp,
-                            isSystemMessage: event.message.is_system_message
-                        }]);
-                    }
 
                     // Update unread count for the group
                     setGroups(prev => prev.map(group => {
@@ -196,350 +184,246 @@ export default function Dashboard(props: Props) {
             setError(e instanceof Error ? e : new Error('An unknown error occurred'));
             setIsLoading(false);
         }
-    }, [auth, selectedChatId]);
+    }, [auth]);
 
-    // Handle message sending
-    const handleSendMessage = async (content: string) => {
-        setIsLoading(true);
-        try {
-            // TODO: Implement message sending
-            console.log("Sending message:", content);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-        } catch (e) {
-            console.error('Error sending message:', e);
-            setError(e instanceof Error ? e : new Error('Failed to send message'));
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    // Show loading state
     if (isLoading) {
         return <LoadingState />;
     }
 
-    // Show error state
     if (error) {
         return (
-            <div className="p-4 text-red-500">
-                <h2 className="text-lg font-semibold">Error loading dashboard:</h2>
-                <pre className="mt-2 text-sm">{error.message}</pre>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                    Reload Page
-                </button>
-            </div>
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Dashboard" />
+                <ErrorFallback error={error} resetErrorBoundary={() => setError(null)} />
+            </AppLayout>
         );
     }
 
     return (
-        <ErrorBoundary
-            FallbackComponent={ErrorFallback}
-            onReset={() => window.location.reload()}
-        >
-            <AppLayout breadcrumbs={breadcrumbs}>
-                <Head title="Dashboard" />
-                <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                    {/* View Toggles */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                        <Link href="/dashboard/calendar">
-                            <Card className="hover:border-blue-500 transition-colors">
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Calendar View</CardTitle>
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-sm">
-                                        Manage your tasks on a calendar
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                        <Link href="/dashboard/gantt">
-                            <Card className="hover:border-blue-500 transition-colors">
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">Gantt View</CardTitle>
-                                    <GitBranch className="h-4 w-4 text-muted-foreground" />
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-sm">
-                                        Track project progress and timelines
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                        <Link href="/mpesa">
-                            <Card className="hover:border-blue-500 transition-colors">
-                                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                                    <CardTitle className="text-sm font-medium">M-Pesa Payment</CardTitle>
-                                    <svg className="h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M12 6V18M18 12H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-sm">
-                                        Make payment with M-Pesa
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    </div>
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Dashboard" />
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {/* Groups Section */}
-                        <Card className="col-span-1">
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <CardTitle>Your Groups</CardTitle>
-                                    <Link href="/groups">
-                                        <Button variant="ghost" size="sm">View All</Button>
-                                    </Link>
-                                </div>
-                                <CardDescription>Groups you are a member of</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {!Array.isArray(groups) || groups.length === 0 ? (
-                                    <p className="text-center text-muted-foreground py-4">No groups yet</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {groups.map(group => (
-                                            <div key={group.id} className="flex justify-between items-center p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md">
-                                                <div>
-                                                    <Link href={route('groups.show', group.id)} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                        {group.name}
-                                                    </Link>
-                                                    <p className="text-xs text-gray-500">{group.members_count} members</p>
-                                                </div>
-                                                <div className="text-sm text-gray-500">{group.assignments_count} assignments</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                            <CardFooter>
-                                <Link href={route('groups.create')} className="w-full">
-                                    <Button className="w-full">Create New Group</Button>
-                                </Link>
-                            </CardFooter>
-                        </Card>
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+                {/* Welcome Card */}
+                <motion.div variants={itemVariants} className="col-span-full">
+                    <Card3D className="p-6 bg-gradient-to-br from-primary-50 to-white dark:from-gray-800 dark:to-gray-900">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Welcome back, {auth.user.name}!
+                                </h1>
+                                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                                    Here's what's happening in your workspace today
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
+                                <EnhancedButton
+                                    size="sm"
+                                    variant="outline"
+                                    icon={<Calendar className="w-4 h-4" />}
+                                    iconPosition="left"
+                                >
+                                    <Link href="/calendar">Calendar</Link>
+                                </EnhancedButton>
+                                <EnhancedButton
+                                    size="sm"
+                                    variant="primary"
+                                    icon={<GitBranch className="w-4 h-4" />}
+                                    iconPosition="left"
+                                >
+                                    <Link href="/tasks" className="text-white">Tasks</Link>
+                                </EnhancedButton>
+                            </div>
+                        </div>
+                    </Card3D>
+                </motion.div>
 
-                        {/* Assignments Section */}
-                        <Card className="col-span-1">
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <CardTitle>Recent Assignments</CardTitle>
-                                    <Link href="/assignments">
-                                        <Button variant="ghost" size="sm">View All</Button>
-                                    </Link>
-                                </div>
-                                <CardDescription>Your latest assignments</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {!Array.isArray(assignments) || assignments.length === 0 ? (
-                                    <p className="text-center text-muted-foreground py-4">No assignments yet</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {assignments.map(assignment => (
-                                            <div key={assignment.id} className="p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md">
-                                                <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                    {assignment.title}
-                                                </Link>
-                                                <div className="flex justify-between text-xs mt-1">
-                                                    <span className="text-gray-500">
-                                                        Group: <Link href={route('groups.show', assignment.group.id)} className="text-blue-500 hover:text-blue-700">{assignment.group.name}</Link>
-                                                    </span>
-                                                    <span className="text-gray-500">Due: {new Date(assignment.due_date).toLocaleDateString()}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </CardContent>
-                            <CardFooter>
-                                <Link href={route('groups.index')} className="w-full">
-                                    <Button className="w-full">Create New Assignment</Button>
-                                </Link>
-                            </CardFooter>
-                        </Card>
-
-                        {/* Upcoming Tasks Section */}
-                        <Card className="col-span-1">
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <CardTitle>Upcoming Tasks</CardTitle>
-                                    <Link href="/tasks">
-                                        <Button variant="ghost" size="sm">View All</Button>
-                                    </Link>
-                                </div>
-                                <CardDescription>Tasks due in the next 3 days</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {upcomingTasks.length === 0 ? (
-                                    <p className="text-center text-muted-foreground py-4">No upcoming tasks</p>
-                                ) : (
-                                    <div className="space-y-2">
-                                        {upcomingTasks.map(task => {
-                                            const assignment = assignments.find(a => a.id === task.assignment.id) as Assignment | undefined;
-                                            const groupId = assignment?.group.id;
-                                            return (
-                                                <div key={task.id} className="p-2 hover:bg-gray-50 dark:hover:bg-neutral-800 rounded-md">
-                                                    <div className="flex justify-between">
-                                                        <Link href={groupId
-                                                            ? route('group-tasks.show', { group: groupId, assignment: task.assignment.id, task: task.id })
-                                                            : `/tasks/${task.id}`} className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                            {task.title}
-                                                        </Link>
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs ${task.status === 'completed'
-                                                            ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-300'
-                                                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/20 dark:text-yellow-300'
-                                                            }`}>
-                                                            {task.status === 'completed' ? 'Completed' : 'Pending'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between text-xs mt-1">
-                                                        <span className="text-gray-500">Assignment: {task.assignment.title}</span>
-                                                        <span className="text-gray-500">Due: {new Date(task.end_date).toLocaleDateString()}</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
-                <div className="flex h-[500px] mt-6 border rounded-xl overflow-hidden">
-                    <div className="w-1/4 border-r">
-                        <div className="flex items-center justify-between p-3 border-b">
-                            <h3 className="font-semibold text-lg">Chat</h3>
-                            <Link href="/chat" className="text-blue-600 hover:text-blue-800 text-sm">
-                                View All
+                {/* Stats Cards */}
+                <motion.div variants={itemVariants}>
+                    <Card3D className="p-6">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Groups</h2>
+                            <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-full">
+                                <Users className="w-5 h-5 text-primary dark:text-primary-300" />
+                            </div>
+                        </div>
+                        <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{groups.length}</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Active groups</p>
+                        <div className="mt-4">
+                            <Link href="/groups" className="text-primary dark:text-primary-300 text-sm font-medium hover:underline">
+                                View all groups →
                             </Link>
                         </div>
-                        <ChatList
-                            chats={groups.map(group => ({
-                                id: group.id,
-                                name: group.name,
-                                avatar: group.avatar,
-                                lastMessage: group.lastMessage,
-                                unreadCount: group.unreadCount || 0
-                            }))}
-                            selectedChatId={selectedChatId}
-                            onChatSelect={async (chatId) => {
-                                setIsLoading(true);
-                                setSelectedChatId(chatId);
+                    </Card3D>
+                </motion.div>
 
-                                try {
-                                    // Fetch messages from the API
-                                    const response = await fetch(`/api/web/groups/${chatId}/messages`);
-                                    if (!response.ok) throw new Error('Failed to load messages');
-
-                                    const data = await response.json();
-                                    // Convert messages to the format expected by ChatWindow
-                                    const formattedMessages = data.map(msg => ({
-                                        id: msg.id,
-                                        content: msg.message,
-                                        sender: {
-                                            id: msg.user.id,
-                                            name: msg.user.name,
-                                            avatar: msg.user.avatar
-                                        },
-                                        timestamp: new Date(msg.created_at).toLocaleTimeString(),
-                                        isSystemMessage: msg.is_system_message
-                                    }));
-
-                                    setMessages(formattedMessages);
-
-                                    // Reset unread count for this group
-                                    setGroups(prev => prev.map(g => {
-                                        if (g.id === chatId) {
-                                            return { ...g, unreadCount: 0 };
-                                        }
-                                        return g;
-                                    }));
-                                } catch (e) {
-                                    console.error('Error loading messages:', e);
-                                    toast({
-                                        title: "Error",
-                                        description: "Failed to load messages. Please try again.",
-                                        variant: "destructive"
-                                    });
-                                } finally {
-                                    setIsLoading(false);
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className="flex-1">
-                        {selectedChatId ? (
-                            <ChatWindow
-                                user={{
-                                    id: selectedChatId,
-                                    name: groups.find(g => g.id === selectedChatId)?.name || 'Chat',
-                                    status: "online"
-                                }}
-                                messages={messages}
-                                currentUserId={auth.user.id}
-                                onSendMessage={async (content) => {
-                                    if (!selectedChatId) return;
-
-                                    try {
-                                        setIsLoading(true);
-                                        const response = await fetch(`/api/web/groups/${selectedChatId}/messages`, {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                                            },
-                                            body: JSON.stringify({ message: content })
-                                        });
-
-                                        if (!response.ok) throw new Error('Failed to send message');
-
-                                        const newMessage = await response.json();
-
-                                        // Add the new message to the messages array
-                                        setMessages(prev => [...prev, {
-                                            id: newMessage.id,
-                                            content: newMessage.message,
-                                            sender: {
-                                                id: newMessage.user.id,
-                                                name: newMessage.user.name,
-                                                avatar: newMessage.user.avatar
-                                            },
-                                            timestamp: new Date(newMessage.created_at).toLocaleTimeString(),
-                                            isSystemMessage: newMessage.is_system_message
-                                        }]);
-
-                                    } catch (e) {
-                                        console.error('Error sending message:', e);
-                                        toast({
-                                            title: "Error",
-                                            description: "Failed to send message. Please try again.",
-                                            variant: "destructive"
-                                        });
-                                    } finally {
-                                        setIsLoading(false);
-                                    }
-                                }}
-                                isLoading={isLoading}
-                            />
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-muted-foreground">
-                                <div className="text-center">
-                                    <h3 className="text-lg font-medium mb-2">Select a conversation</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Choose a group chat from the list to start messaging
-                                    </p>
-                                </div>
+                <motion.div variants={itemVariants}>
+                    <Card3D className="p-6">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Assignments</h2>
+                            <div className="bg-ctaBright/10 dark:bg-ctaBright/20 p-2 rounded-full">
+                                <BookOpen className="w-5 h-5 text-ctaBright dark:text-ctaBright" />
                             </div>
-                        )}
-                    </div>
-                </div>
-            </AppLayout>
-        </ErrorBoundary>
+                        </div>
+                        <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{assignments.length}</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Active assignments</p>
+                        <div className="mt-4">
+                            <Link href="/assignments" className="text-ctaBright dark:text-ctaBright text-sm font-medium hover:underline">
+                                View all assignments →
+                            </Link>
+                        </div>
+                    </Card3D>
+                </motion.div>
+
+                <motion.div variants={itemVariants}>
+                    <Card3D className="p-6">
+                        <div className="flex justify-between items-center">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h2>
+                            <div className="bg-accent/20 dark:bg-accent/30 p-2 rounded-full">
+                                <Bell className="w-5 h-5 text-accent-coral dark:text-accent-coral" />
+                            </div>
+                        </div>
+                        <p className="text-3xl font-bold mt-2 text-gray-900 dark:text-white">{unreadNotificationsCount}</p>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Unread notifications</p>
+                        <div className="mt-4">
+                            <Link href="/notifications" className="text-accent-coral dark:text-accent-coral text-sm font-medium hover:underline">
+                                View all notifications →
+                            </Link>
+                        </div>
+                    </Card3D>
+                </motion.div>
+
+                {/* Upcoming Tasks */}
+                <motion.div variants={itemVariants} className="col-span-full md:col-span-2">
+                    <Card3D className="p-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Upcoming Tasks</h2>
+                            <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-full">
+                                <Clock className="w-5 h-5 text-primary dark:text-primary-300" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <AnimatePresence>
+                                {upcomingTasks.length > 0 ? (
+                                    upcomingTasks.map((task, index) => (
+                                        <motion.div
+                                            key={task.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ delay: index * 0.1 }}
+                                        >
+                                            <GlassContainer
+                                                className="p-3"
+                                                hoverEffect={true}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-900 dark:text-white">{task.title}</h3>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                            {task.assignment?.title || 'No assignment'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                        Due: {new Date(task.end_date).toLocaleDateString()}
+                                                    </div>
+                                                </div>
+                                            </GlassContainer>
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                    >
+                                        <GlassContainer className="p-4 text-center">
+                                            <p className="text-gray-500 dark:text-gray-400">No upcoming tasks</p>
+                                        </GlassContainer>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className="mt-4">
+                            <Link href="/tasks" className="text-primary dark:text-primary-300 text-sm font-medium hover:underline">
+                                View all tasks →
+                            </Link>
+                        </div>
+                    </Card3D>
+                </motion.div>
+
+                {/* Recent Groups */}
+                <motion.div variants={itemVariants} className="col-span-full md:col-span-1">
+                    <Card3D className="p-6 h-full">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Groups</h2>
+                            <div className="bg-ctaBright/10 dark:bg-ctaBright/20 p-2 rounded-full">
+                                <Users className="w-5 h-5 text-ctaBright dark:text-ctaBright" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <AnimatePresence>
+                                {groups.length > 0 ? (
+                                    groups.slice(0, 5).map((group, index) => (
+                                        <motion.div
+                                            key={group.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ delay: index * 0.1 }}
+                                        >
+                                            <GlassContainer
+                                                className="p-3"
+                                                hoverEffect={true}
+                                            >
+                                                <Link href={`/groups/${group.id}`} className="flex justify-between items-center">
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-900 dark:text-white">{group.name}</h3>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                                                            {group.members_count} members
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                                                        {group.assignments_count} assignments
+                                                    </div>
+                                                </Link>
+                                            </GlassContainer>
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                    >
+                                        <GlassContainer className="p-4 text-center">
+                                            <p className="text-gray-500 dark:text-gray-400">No groups</p>
+                                        </GlassContainer>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+
+                        <div className="mt-4">
+                            <EnhancedButton
+                                size="sm"
+                                variant="outline"
+                                className="w-full"
+                            >
+                                <Link href="/groups/create">Create new group</Link>
+                            </EnhancedButton>
+                        </div>
+                    </Card3D>
+                </motion.div>
+            </motion.div>
+        </AppLayout>
     );
 }

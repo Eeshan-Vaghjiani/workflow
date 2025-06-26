@@ -1028,20 +1028,9 @@ Route::middleware('web')->group(function () {
         ->prefix('admin')
         ->name('admin.')
         ->group(function () {
-            Route::get('/', function () {
-                return Inertia::render('admin/Dashboard');
-            })->name('dashboard');
-
-            Route::get('/users', function () {
-                return Inertia::render('admin/users/Index');
-            })->name('users.index');
-
-            Route::get('/analytics', function () {
-                return Inertia::render('admin/analytics/Index');
-            })->name('analytics.index');
-
-            Route::get('/audit', function () {
-                return Inertia::render('admin/audit/Index');
-            })->name('audit.index');
+            Route::get('/', [App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/users', [App\Http\Controllers\AdminDashboardController::class, 'users'])->name('users.index');
+            Route::get('/analytics', [App\Http\Controllers\AdminDashboardController::class, 'analytics'])->name('analytics.index');
+            Route::get('/audit', [App\Http\Controllers\AdminDashboardController::class, 'audit'])->name('audit.index');
         });
 });

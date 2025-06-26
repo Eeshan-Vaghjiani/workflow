@@ -62,7 +62,7 @@ class DashboardController extends Controller
         // Get unread notifications count
         $unreadNotificationsCount = $user->notifications()->where('read', false)->count();
 
-        return Inertia::render('Dashboard', [
+        return Inertia::render('dashboard', [
             'groups' => $groups,
             'assignments' => $assignments,
             'tasks' => $tasks,
@@ -244,7 +244,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        return Inertia::render('Dashboard/Gantt', [
+        return Inertia::render('dashboard/Gantt', [
             'tasks' => $ganttTasks,
             'assignments' => $assignments,
             'groupMembers' => $groupMembers,

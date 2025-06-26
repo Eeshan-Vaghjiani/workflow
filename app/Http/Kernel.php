@@ -38,7 +38,8 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\SkipCsrfForWorkOS::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            // \App\Http\Middleware\HandleInertiaRequests::class, // Added in bootstrap/app.php
+            \App\Http\Middleware\HandleInertiaRequests::class,
+            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ],
 
         'api' => [
@@ -73,6 +74,7 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'two_factor' => \App\Http\Middleware\TwoFactorAuthenticationMiddleware::class,
+        'admin' => \App\Http\Middleware\AdminMiddleware::class,
         // Add your custom middleware aliases here, e.g.:
         // 'role' => \App\Http\Middleware\RoleMiddleware::class,
     ];

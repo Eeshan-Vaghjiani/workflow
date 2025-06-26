@@ -42,7 +42,7 @@ Route::get('/csrf-refresh', function() {
 });
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return Inertia::render('home');
 })->name('home');
 
 // Make sure this is outside the auth middleware group, before it
@@ -844,7 +844,23 @@ Route::get('/workos-callback', function (\Illuminate\Http\Request $request) {
         // Store access token in session
         session(['workos_access_token' => $authResponse->accessToken]);
 
-        // Redirect to dashboard
+                        // Redirect based on user role
+        $isAdmin = (bool)$user->is_admin;
+
+        \Illuminate\Support\Facades\Log::info('WorkOS login - checking admin status', [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'is_admin_raw' => $user->is_admin,
+            'is_admin_cast' => $isAdmin,
+        ]);
+
+        if ($isAdmin) {
+            \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to admin dashboard');
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Redirect to regular dashboard
+        \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to regular dashboard');
         return redirect()->route('dashboard');
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('WorkOS authentication error', [
@@ -987,4 +1003,48 @@ Route::get('/debug/api-routes', function() {
             'web_send_message' => '/web/groups/{groupId}/messages',
         ]
     ]);
+});
+
+// Debug route to check admin status
+Route::get('/debug/admin-check', function() {
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['error' => 'Not logged in'], 401);
+    }
+
+    return response()->json([
+        'user_id' => $user->id,
+        'name' => $user->name,
+        'email' => $user->email,
+        'is_admin_raw' => $user->is_admin,
+        'is_admin_method' => $user->isAdmin(),
+        'admin_route' => route('admin.dashboard'),
+    ]);
+});
+
+// Admin Routes
+Route::middleware('web')->group(function () {
+    Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_factor', 'admin'])
+        ->prefix('admin')
+        ->name('admin.')
+        ->group(function () {
+            Route::get('/', [App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/users', [App\Http\Controllers\AdminDashboardController::class, 'users'])->name('users.index');
+            Route::delete('/users/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteUser'])->name('users.delete');
+            Route::get('/analytics', [App\Http\Controllers\AdminDashboardController::class, 'analytics'])->name('analytics.index');
+            Route::get('/audit', [App\Http\Controllers\AdminDashboardController::class, 'audit'])->name('audit.index');
+            Route::get('/groups', [App\Http\Controllers\AdminDashboardController::class, 'groups'])->name('groups.index');
+            Route::delete('/groups/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteGroup'])->name('groups.delete');
+            Route::get('/notifications', [App\Http\Controllers\AdminDashboardController::class, 'notifications'])->name('notifications.index');
+            Route::post('/notifications/{id}/mark-as-read', [App\Http\Controllers\AdminDashboardController::class, 'markNotificationAsRead'])->name('notifications.mark-as-read');
+            Route::post('/notifications/mark-all-as-read', [App\Http\Controllers\AdminDashboardController::class, 'markAllNotificationsAsRead'])->name('notifications.mark-all-as-read');
+            Route::delete('/notifications/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteNotification'])->name('notifications.delete');
+            Route::get('/profile', [App\Http\Controllers\AdminDashboardController::class, 'profile'])->name('profile.index');
+            Route::put('/profile', [App\Http\Controllers\AdminDashboardController::class, 'updateProfile'])->name('profile.update');
+            Route::get('/settings', [App\Http\Controllers\AdminDashboardController::class, 'settings'])->name('settings.index');
+            Route::get('/settings/appearance', function () {
+                return Inertia::render('admin/settings/appearance');
+            })->name('settings.appearance');
+            Route::get('/security', [App\Http\Controllers\AdminDashboardController::class, 'security'])->name('security.index');
+        });
 });

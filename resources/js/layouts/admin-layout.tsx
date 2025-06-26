@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AdminSidebar } from '../components/admin/admin-sidebar';
 import { AdminHeader } from '../components/admin/admin-header';
+import { useAppearance } from '@/hooks/use-appearance';
 
 interface BreadcrumbItem {
     href: string;
@@ -34,6 +35,34 @@ const pageVariants = {
 };
 
 export default function AdminLayout({ children, breadcrumbs = [] }: AdminLayoutProps) {
+    // Initialize theme
+    const { theme } = useAppearance();
+
+    // Apply additional settings from localStorage
+    useEffect(() => {
+        // Apply color scheme
+        const colorScheme = localStorage.getItem('colorScheme') || 'teal';
+        const colorMap: Record<string, { primary: string, secondary: string }> = {
+            teal: { primary: '#00887A', secondary: '#D3E3FC' },
+            blue: { primary: '#2563EB', secondary: '#DBEAFE' },
+            purple: { primary: '#7C3AED', secondary: '#EDE9FE' },
+            emerald: { primary: '#059669', secondary: '#D1FAE5' },
+            amber: { primary: '#D97706', secondary: '#FEF3C7' },
+        };
+
+        if (colorMap[colorScheme]) {
+            document.documentElement.style.setProperty('--primary-color', colorMap[colorScheme].primary);
+            document.documentElement.style.setProperty('--secondary-color', colorMap[colorScheme].secondary);
+        }
+
+        // Apply motion settings
+        if (localStorage.getItem('reduceMotion') === 'true') {
+            document.body.classList.add('reduce-motion');
+        } else {
+            document.body.classList.remove('reduce-motion');
+        }
+    }, []);
+
     return (
         <div className="flex h-screen bg-white dark:bg-gray-900">
             <AdminSidebar />

@@ -1030,7 +1030,21 @@ Route::middleware('web')->group(function () {
         ->group(function () {
             Route::get('/', [App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
             Route::get('/users', [App\Http\Controllers\AdminDashboardController::class, 'users'])->name('users.index');
+            Route::delete('/users/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteUser'])->name('users.delete');
             Route::get('/analytics', [App\Http\Controllers\AdminDashboardController::class, 'analytics'])->name('analytics.index');
             Route::get('/audit', [App\Http\Controllers\AdminDashboardController::class, 'audit'])->name('audit.index');
+            Route::get('/groups', [App\Http\Controllers\AdminDashboardController::class, 'groups'])->name('groups.index');
+            Route::delete('/groups/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteGroup'])->name('groups.delete');
+            Route::get('/notifications', [App\Http\Controllers\AdminDashboardController::class, 'notifications'])->name('notifications.index');
+            Route::post('/notifications/{id}/mark-as-read', [App\Http\Controllers\AdminDashboardController::class, 'markNotificationAsRead'])->name('notifications.mark-as-read');
+            Route::post('/notifications/mark-all-as-read', [App\Http\Controllers\AdminDashboardController::class, 'markAllNotificationsAsRead'])->name('notifications.mark-all-as-read');
+            Route::delete('/notifications/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteNotification'])->name('notifications.delete');
+            Route::get('/profile', [App\Http\Controllers\AdminDashboardController::class, 'profile'])->name('profile.index');
+            Route::put('/profile', [App\Http\Controllers\AdminDashboardController::class, 'updateProfile'])->name('profile.update');
+            Route::get('/settings', [App\Http\Controllers\AdminDashboardController::class, 'settings'])->name('settings.index');
+            Route::get('/settings/appearance', function () {
+                return Inertia::render('admin/settings/appearance');
+            })->name('settings.appearance');
+            Route::get('/security', [App\Http\Controllers\AdminDashboardController::class, 'security'])->name('security.index');
         });
 });

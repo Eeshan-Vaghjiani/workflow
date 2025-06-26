@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 import { motion } from 'framer-motion';
 import {
@@ -16,6 +16,28 @@ import {
     CheckCircle,
     XCircle
 } from 'lucide-react';
+import { Card3D } from '@/components/ui/card-3d';
+
+// Define interface for user data
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    is_admin: boolean;
+    created_at: string;
+    last_login_at: string | null;
+    groups_count: number;
+}
+
+interface UsersPageProps {
+    users: {
+        data: User[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
+}
 
 // Animation variants
 const containerVariants = {
@@ -34,103 +56,20 @@ const itemVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            type: "spring",
+            type: "spring" as const,
             stiffness: 100,
             damping: 15
         }
     }
 };
 
-// Mock user data
-const users = [
-    {
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'ADMIN',
-        status: 'active',
-        createdAt: '2023-06-15'
-    },
-    {
-        id: 2,
-        name: 'Sarah Smith',
-        email: 'sarah@example.com',
-        role: 'USER',
-        status: 'active',
-        createdAt: '2023-07-22'
-    },
-    {
-        id: 3,
-        name: 'Michael Johnson',
-        email: 'michael@example.com',
-        role: 'USER',
-        status: 'inactive',
-        createdAt: '2023-08-10'
-    },
-    {
-        id: 4,
-        name: 'Emily Brown',
-        email: 'emily@example.com',
-        role: 'USER',
-        status: 'active',
-        createdAt: '2023-09-05'
-    },
-    {
-        id: 5,
-        name: 'David Wilson',
-        email: 'david@example.com',
-        role: 'ADMIN',
-        status: 'active',
-        createdAt: '2023-10-18'
-    },
-    {
-        id: 6,
-        name: 'Jessica Taylor',
-        email: 'jessica@example.com',
-        role: 'USER',
-        status: 'inactive',
-        createdAt: '2023-11-02'
-    },
-    {
-        id: 7,
-        name: 'Daniel Martinez',
-        email: 'daniel@example.com',
-        role: 'USER',
-        status: 'active',
-        createdAt: '2023-12-14'
-    },
-    {
-        id: 8,
-        name: 'Sophia Anderson',
-        email: 'sophia@example.com',
-        role: 'USER',
-        status: 'active',
-        createdAt: '2024-01-20'
-    },
-    {
-        id: 9,
-        name: 'Matthew Thomas',
-        email: 'matthew@example.com',
-        role: 'USER',
-        status: 'inactive',
-        createdAt: '2024-02-08'
-    },
-    {
-        id: 10,
-        name: 'Olivia Jackson',
-        email: 'olivia@example.com',
-        role: 'ADMIN',
-        status: 'active',
-        createdAt: '2024-03-17'
-    }
-];
-
-export default function UsersIndex() {
+export default function UsersIndex({ users }: UsersPageProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState('name');
-    const [sortDirection, setSortDirection] = useState('asc');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
     // Handle sort
     const handleSort = (field: string) => {
@@ -170,23 +109,66 @@ export default function UsersIndex() {
         setDropdownOpen(dropdownOpen === userId ? null : userId);
     };
 
-    // Filter and sort users
-    const filteredUsers = users
+    // Handle delete user
+    const handleDeleteUser = (userId: number) => {
+        if (confirmDelete === userId) {
+            router.delete(route('admin.users.delete', { id: userId }), {
+                onSuccess: () => {
+                    setDropdownOpen(null);
+                    setConfirmDelete(null);
+                },
+                preserveScroll: true,
+            });
+        } else {
+            setConfirmDelete(userId);
+            // Auto-reset confirmation after 5 seconds
+            setTimeout(() => {
+                setConfirmDelete(null);
+            }, 5000);
+        }
+    };
+
+    // Export users as CSV
+    const exportUsers = () => {
+        const csvHeader = ['ID', 'Name', 'Email', 'Role', 'Created At', 'Last Login', 'Groups'];
+        let csvContent = csvHeader.join(',') + '\n';
+
+        users.data.forEach(user => {
+            const userValues = [
+                user.id,
+                `"${user.name}"`,
+                `"${user.email}"`,
+                user.is_admin ? 'ADMIN' : 'USER',
+                new Date(user.created_at).toLocaleDateString(),
+                user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never',
+                user.groups_count,
+            ];
+            csvContent += userValues.join(',') + '\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'users_data.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Filter users based on search term
+    const filteredUsers = users.data
         .filter(user =>
             user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email.toLowerCase().includes(searchTerm.toLowerCase())
         )
         .sort((a, b) => {
-            const fieldA = a[sortField as keyof typeof a];
-            const fieldB = b[sortField as keyof typeof b];
+            const aValue = String(a[sortField as keyof User] || '');
+            const bValue = String(b[sortField as keyof User] || '');
 
-            if (typeof fieldA === 'string' && typeof fieldB === 'string') {
-                return sortDirection === 'asc'
-                    ? fieldA.localeCompare(fieldB)
-                    : fieldB.localeCompare(fieldA);
-            }
-
-            return 0;
+            return sortDirection === 'asc'
+                ? aValue.localeCompare(bValue)
+                : bValue.localeCompare(aValue);
         });
 
     return (
@@ -218,285 +200,289 @@ export default function UsersIndex() {
                 </motion.div>
 
                 {/* Filters and Search */}
-                <motion.div
-                    variants={itemVariants}
-                    className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
-                    <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-400" />
+                <motion.div variants={itemVariants}>
+                    <Card3D className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="relative flex-1">
+                                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <Search className="h-4 w-4 text-gray-400" />
+                                </div>
+                                <input
+                                    type="search"
+                                    className="block w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-[#00887A] focus:border-[#00887A] dark:focus:ring-[#00ccb4] dark:focus:border-[#00ccb4]"
+                                    placeholder="Search users..."
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    Filter
+                                </button>
+
+                                <button
+                                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                    onClick={exportUsers}
+                                >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Export
+                                </button>
+
+                                <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                    <RefreshCw className="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
-                        <input
-                            type="search"
-                            className="block w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-[#00887A] focus:border-[#00887A] dark:focus:ring-[#00ccb4] dark:focus:border-[#00ccb4]"
-                            placeholder="Search users..."
-                            value={searchTerm}
-                            onChange={handleSearch}
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            <Filter className="h-4 w-4 mr-2" />
-                            Filter
-                        </button>
-
-                        <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export
-                        </button>
-
-                        <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            <RefreshCw className="h-4 w-4" />
-                        </button>
-                    </div>
+                    </Card3D>
                 </motion.div>
 
-                {/* Selected Actions */}
-                {selectedUsers.length > 0 && (
-                    <motion.div
-                        variants={itemVariants}
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="bg-[#D3E3FC] dark:bg-[#1e3a60] p-4 rounded-lg shadow-sm border border-[#77A6F7] dark:border-[#2a4d7d] flex items-center justify-between"
-                    >
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                            {selectedUsers.length} user{selectedUsers.length > 1 ? 's' : ''} selected
-                        </span>
-
-                        <div className="flex items-center gap-2">
-                            <button className="px-3 py-1.5 text-sm font-medium text-[#00887A] dark:text-[#00ccb4] bg-white dark:bg-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                                Export Selected
-                            </button>
-                            <button className="px-3 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
-                                Delete Selected
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-
                 {/* Users Table */}
-                <motion.div variants={itemVariants} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" className="p-4">
-                                        <div className="flex items-center">
-                                            <input
-                                                type="checkbox"
-                                                className="w-4 h-4 text-[#00887A] dark:text-[#00ccb4] rounded border-gray-300 dark:border-gray-600 focus:ring-[#00887A] dark:focus:ring-[#00ccb4]"
-                                                checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                                                onChange={handleSelectAll}
-                                            />
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 cursor-pointer"
-                                        onClick={() => handleSort('name')}
-                                    >
-                                        <div className="flex items-center">
-                                            Name
-                                            {sortField === 'name' && (
-                                                sortDirection === 'asc' ?
-                                                    <ChevronUp className="ml-1 h-4 w-4" /> :
-                                                    <ChevronDown className="ml-1 h-4 w-4" />
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 cursor-pointer"
-                                        onClick={() => handleSort('email')}
-                                    >
-                                        <div className="flex items-center">
-                                            Email
-                                            {sortField === 'email' && (
-                                                sortDirection === 'asc' ?
-                                                    <ChevronUp className="ml-1 h-4 w-4" /> :
-                                                    <ChevronDown className="ml-1 h-4 w-4" />
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 cursor-pointer"
-                                        onClick={() => handleSort('role')}
-                                    >
-                                        <div className="flex items-center">
-                                            Role
-                                            {sortField === 'role' && (
-                                                sortDirection === 'asc' ?
-                                                    <ChevronUp className="ml-1 h-4 w-4" /> :
-                                                    <ChevronDown className="ml-1 h-4 w-4" />
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 cursor-pointer"
-                                        onClick={() => handleSort('status')}
-                                    >
-                                        <div className="flex items-center">
-                                            Status
-                                            {sortField === 'status' && (
-                                                sortDirection === 'asc' ?
-                                                    <ChevronUp className="ml-1 h-4 w-4" /> :
-                                                    <ChevronDown className="ml-1 h-4 w-4" />
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th
-                                        scope="col"
-                                        className="px-6 py-3 cursor-pointer"
-                                        onClick={() => handleSort('createdAt')}
-                                    >
-                                        <div className="flex items-center">
-                                            Created Date
-                                            {sortField === 'createdAt' && (
-                                                sortDirection === 'asc' ?
-                                                    <ChevronUp className="ml-1 h-4 w-4" /> :
-                                                    <ChevronDown className="ml-1 h-4 w-4" />
-                                            )}
-                                        </div>
-                                    </th>
-                                    <th scope="col" className="px-6 py-3">
-                                        <span className="sr-only">Actions</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredUsers.map((user, index) => (
-                                    <motion.tr
-                                        key={user.id}
-                                        className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        variants={itemVariants}
-                                        custom={index}
-                                        transition={{ delay: index * 0.05 }}
-                                        whileHover={{ backgroundColor: 'rgba(211, 227, 252, 0.2)' }}
-                                    >
-                                        <td className="w-4 p-4">
+                <motion.div variants={itemVariants}>
+                    <Card3D className="bg-white dark:bg-gray-800 overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-900/50">
+                                    <tr>
+                                        <th scope="col" className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                             <div className="flex items-center">
                                                 <input
+                                                    id="checkbox-all"
                                                     type="checkbox"
-                                                    className="w-4 h-4 text-[#00887A] dark:text-[#00ccb4] rounded border-gray-300 dark:border-gray-600 focus:ring-[#00887A] dark:focus:ring-[#00ccb4]"
-                                                    checked={selectedUsers.includes(user.id)}
-                                                    onChange={() => handleSelectUser(user.id)}
+                                                    className="w-4 h-4 text-[#00887A] bg-gray-100 border-gray-300 rounded focus:ring-[#00887A] dark:focus:ring-[#00ccb4] dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                                                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                                                    onChange={handleSelectAll}
                                                 />
                                             </div>
-                                        </td>
-                                        <th scope="row" className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                                            {user.name}
                                         </th>
-                                        <td className="px-6 py-4">
-                                            {user.email}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.role === 'ADMIN'
-                                                    ? 'bg-[#00887A]/20 text-[#00887A] dark:bg-[#00887A]/30 dark:text-[#00ccb4]'
-                                                    : 'bg-[#77A6F7]/20 text-[#77A6F7] dark:bg-[#77A6F7]/30'
-                                                }`}>
-                                                {user.role}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort('name')}
+                                        >
                                             <div className="flex items-center">
-                                                {user.status === 'active' ? (
-                                                    <>
-                                                        <div className="h-2.5 w-2.5 rounded-full bg-green-500 mr-2"></div>
-                                                        <span>Active</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className="h-2.5 w-2.5 rounded-full bg-gray-400 mr-2"></div>
-                                                        <span>Inactive</span>
-                                                    </>
+                                                Name
+                                                {sortField === 'name' && (
+                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
                                                 )}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {user.createdAt}
-                                        </td>
-                                        <td className="px-6 py-4 text-right relative">
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort('email')}
+                                        >
+                                            <div className="flex items-center">
+                                                Email
+                                                {sortField === 'email' && (
+                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort('is_admin')}
+                                        >
+                                            <div className="flex items-center">
+                                                Role
+                                                {sortField === 'is_admin' && (
+                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort('created_at')}
+                                        >
+                                            <div className="flex items-center">
+                                                Created
+                                                {sortField === 'created_at' && (
+                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th
+                                            scope="col"
+                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort('last_login_at')}
+                                        >
+                                            <div className="flex items-center">
+                                                Last Login
+                                                {sortField === 'last_login_at' && (
+                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
+                                                )}
+                                            </div>
+                                        </th>
+                                        <th scope="col" className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    {filteredUsers.map((user) => (
+                                        <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                            <td className="px-4 py-3.5 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="w-4 h-4 text-[#00887A] bg-gray-100 border-gray-300 rounded focus:ring-[#00887A] dark:focus:ring-[#00ccb4] dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                                                        checked={selectedUsers.includes(user.id)}
+                                                        onChange={() => handleSelectUser(user.id)}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3.5 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
+                                            </td>
+                                            <td className="px-4 py-3.5 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600 dark:text-gray-300">{user.email}</div>
+                                            </td>
+                                            <td className="px-4 py-3.5 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.is_admin
+                                                    ? 'bg-[#D3E3FC] text-[#00887A] dark:bg-[#1e3a60] dark:text-[#00ccb4]'
+                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                                    }`}>
+                                                    {user.is_admin ? 'ADMIN' : 'USER'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3.5 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600 dark:text-gray-300">
+                                                    {new Date(user.created_at).toLocaleDateString()}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3.5 whitespace-nowrap">
+                                                <div className="text-sm text-gray-600 dark:text-gray-300">
+                                                    {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 relative">
+                                                <div className="flex items-center space-x-3">
+                                                    <button
+                                                        className="text-gray-600 dark:text-gray-400 hover:text-[#00887A] dark:hover:text-[#00ccb4]"
+                                                        onClick={() => router.visit(`/admin/users/${user.id}/edit`)}
+                                                    >
+                                                        <Edit className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        className={`hover:text-red-600 ${confirmDelete === user.id ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'}`}
+                                                        onClick={() => handleDeleteUser(user.id)}
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => toggleDropdown(user.id)}
+                                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+
+                                                {dropdownOpen === user.id && (
+                                                    <div className="absolute right-0 z-10 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
+                                                        <ul className="py-1">
+                                                            <li>
+                                                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                                                    View Profile
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                                                    Reset Password
+                                                                </a>
+                                                            </li>
+                                                            <li>
+                                                                <a href="#" className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                                                    Disable Account
+                                                                </a>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {filteredUsers.length === 0 && (
+                                        <tr>
+                                            <td colSpan={7} className="px-4 py-8 text-sm text-center text-gray-500 dark:text-gray-400">
+                                                No users found matching your search criteria.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination */}
+                        {users.last_page > 1 && (
+                            <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+                                <div className="flex-1 flex justify-between sm:hidden">
+                                    <button
+                                        onClick={() => router.get(route('admin.users.index', { page: users.current_page - 1 }))}
+                                        disabled={users.current_page === 1}
+                                        className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 disabled:opacity-50"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button
+                                        onClick={() => router.get(route('admin.users.index', { page: users.current_page + 1 }))}
+                                        disabled={users.current_page === users.last_page}
+                                        className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 disabled:opacity-50"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                                            Showing <span className="font-medium">{(users.current_page - 1) * users.per_page + 1}</span> to <span className="font-medium">{Math.min(users.current_page * users.per_page, users.total)}</span> of <span className="font-medium">{users.total}</span> results
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                                             <button
-                                                onClick={() => toggleDropdown(user.id)}
-                                                className="font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                                                onClick={() => router.get(route('admin.users.index', { page: users.current_page - 1 }))}
+                                                disabled={users.current_page === 1}
+                                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
                                             >
-                                                <MoreHorizontal className="h-5 w-5" />
+                                                <span className="sr-only">Previous</span>
+                                                <ChevronDown className="h-5 w-5 rotate-90" />
                                             </button>
 
-                                            {dropdownOpen === user.id && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.95 }}
-                                                    transition={{ duration: 0.1 }}
-                                                    className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-gray-800 py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                            {/* Page numbers */}
+                                            {Array.from({ length: users.last_page }, (_, i) => i + 1).map(page => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => router.get(route('admin.users.index', { page }))}
+                                                    className={`
+                                                        relative inline-flex items-center px-4 py-2 border text-sm font-medium
+                                                        ${users.current_page === page
+                                                            ? 'z-10 bg-[#00887A] dark:bg-[#00887A] border-[#00887A] dark:border-[#00887A] text-white'
+                                                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                        }
+                                                    `}
                                                 >
-                                                    <a
-                                                        href={`/admin/users/${user.id}/edit`}
-                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                    >
-                                                        <Edit className="mr-3 h-4 w-4" />
-                                                        Edit
-                                                    </a>
-                                                    <a
-                                                        href="#"
-                                                        className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                    >
-                                                        <Trash className="mr-3 h-4 w-4" />
-                                                        Delete
-                                                    </a>
-                                                    <a
-                                                        href="#"
-                                                        className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                    >
-                                                        {user.status === 'active' ? (
-                                                            <>
-                                                                <XCircle className="mr-3 h-4 w-4" />
-                                                                Deactivate
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CheckCircle className="mr-3 h-4 w-4" />
-                                                                Activate
-                                                            </>
-                                                        )}
-                                                    </a>
-                                                </motion.div>
-                                            )}
-                                        </td>
-                                    </motion.tr>
-                                ))}
+                                                    {page}
+                                                </button>
+                                            ))}
 
-                                {filteredUsers.length === 0 && (
-                                    <tr>
-                                        <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                            No users found
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                            Showing <span className="font-medium">{filteredUsers.length}</span> of <span className="font-medium">{users.length}</span> users
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            <button className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                Previous
-                            </button>
-                            <button className="px-3 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                                Next
-                            </button>
-                        </div>
-                    </div>
+                                            <button
+                                                onClick={() => router.get(route('admin.users.index', { page: users.current_page + 1 }))}
+                                                disabled={users.current_page === users.last_page}
+                                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                                            >
+                                                <span className="sr-only">Next</span>
+                                                <ChevronDown className="h-5 w-5 -rotate-90" />
+                                            </button>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </Card3D>
                 </motion.div>
             </motion.div>
         </AdminLayout>

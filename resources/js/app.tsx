@@ -4,7 +4,6 @@ import './bootstrap.js';
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
-import { initializeTheme } from './hooks/use-appearance';
 
 // Add CSRF import and setup
 import axios from 'axios';
@@ -73,5 +72,13 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on load...
-initializeTheme();
+// Initialize theme based on local storage or system preference
+if (typeof window !== 'undefined') {
+    // Get theme from localStorage or default to system preference
+    const storedTheme = localStorage.getItem('theme') || 'system';
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
+    // Apply theme
+    const theme = storedTheme === 'system' ? systemTheme : storedTheme;
+    document.documentElement.classList.add(theme);
+}

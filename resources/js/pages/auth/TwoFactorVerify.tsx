@@ -1,11 +1,15 @@
-import { useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler, useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 
 import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { Card3D } from '@/components/ui/card-3d';
+import { CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
+import AuthLayout from '@/layouts/auth-layout';
 
 export default function TwoFactorVerify() {
     const [showRecoveryCode, setShowRecoveryCode] = useState(false);
@@ -59,26 +63,27 @@ export default function TwoFactorVerify() {
     };
 
     return (
-        <div className="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
-            <div className="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg">
-                <Card className="w-full max-w-md mx-auto border-0 shadow-none bg-transparent">
-                    <CardHeader>
-                        <CardTitle className="dark:text-white">Two-Factor Verification</CardTitle>
-                        <CardDescription className="dark:text-gray-300">
-                            {!showRecoveryCode ?
-                                'Please enter the code from your authenticator app to verify your identity.' :
-                                'Please enter one of your recovery codes to verify your identity.'}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
+        <AuthLayout title="Two-Factor Verification" description={!showRecoveryCode ?
+            'Please enter the code from your authenticator app to verify your identity.' :
+            'Please enter one of your recovery codes to verify your identity.'}>
+            <Head title="Two-Factor Verification" />
+
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="w-full"
+            >
+                <Card3D className="p-6">
+                    <CardContent className="p-0">
                         {!showRecoveryCode ? (
-                            <form onSubmit={submitCode}>
-                                <div>
+                            <motion.form onSubmit={submitCode} variants={containerVariants}>
+                                <motion.div variants={itemVariants}>
                                     <Label htmlFor="code" className="dark:text-gray-300">Authentication Code</Label>
                                     <Input
                                         id="code"
                                         type="text"
-                                        className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                                        className="mt-1 block w-full dark:bg-gray-700/70 dark:text-gray-200 dark:border-gray-600 backdrop-blur-sm transition-all duration-200"
                                         value={form.data.code}
                                         onChange={(e) => form.setData('code', e.target.value)}
                                         autoComplete="one-time-code"
@@ -88,26 +93,30 @@ export default function TwoFactorVerify() {
                                         placeholder="Enter 6-digit code"
                                     />
                                     <InputError message={form.errors.code} className="mt-2" />
-                                </div>
+                                </motion.div>
 
-                                <div className="mt-6">
-                                    <Button
+                                <motion.div className="mt-6" variants={itemVariants}>
+                                    <EnhancedButton
                                         type="submit"
                                         className="w-full"
                                         disabled={form.processing}
+                                        loading={form.processing}
+                                        variant="primary"
+                                        size="lg"
+                                        magnetic={true}
                                     >
                                         Verify
-                                    </Button>
-                                </div>
-                            </form>
+                                    </EnhancedButton>
+                                </motion.div>
+                            </motion.form>
                         ) : (
-                            <form onSubmit={submitRecoveryCode}>
-                                <div>
+                            <motion.form onSubmit={submitRecoveryCode} variants={containerVariants}>
+                                <motion.div variants={itemVariants}>
                                     <Label htmlFor="recovery_code" className="dark:text-gray-300">Recovery Code</Label>
                                     <Input
                                         id="recovery_code"
                                         type="text"
-                                        className="mt-1 block w-full dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                                        className="mt-1 block w-full dark:bg-gray-700/70 dark:text-gray-200 dark:border-gray-600 backdrop-blur-sm transition-all duration-200"
                                         value={recoveryForm.data.recovery_code}
                                         onChange={(e) => recoveryForm.setData('recovery_code', e.target.value)}
                                         autoComplete="off"
@@ -116,34 +125,41 @@ export default function TwoFactorVerify() {
                                         placeholder="Enter recovery code"
                                     />
                                     <InputError message={recoveryForm.errors.recovery_code} className="mt-2" />
-                                </div>
+                                </motion.div>
 
-                                <div className="mt-6">
-                                    <Button
+                                <motion.div className="mt-6" variants={itemVariants}>
+                                    <EnhancedButton
                                         type="submit"
                                         className="w-full"
                                         disabled={recoveryForm.processing}
+                                        loading={recoveryForm.processing}
+                                        variant="primary"
+                                        size="lg"
+                                        magnetic={true}
                                     >
                                         Verify
-                                    </Button>
-                                </div>
-                            </form>
+                                    </EnhancedButton>
+                                </motion.div>
+                            </motion.form>
                         )}
                     </CardContent>
-                    <CardFooter className="flex-col">
-                        <Button
-                            type="button"
-                            variant="link"
-                            onClick={() => setShowRecoveryCode(!showRecoveryCode)}
-                            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                        >
-                            {!showRecoveryCode ?
-                                "Can't access your authenticator app? Use a recovery code" :
-                                "Back to authenticator code verification"}
-                        </Button>
+                    <CardFooter className="flex-col p-0 mt-6">
+                        <motion.div variants={itemVariants}>
+                            <EnhancedButton
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowRecoveryCode(!showRecoveryCode)}
+                                className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-300"
+                            >
+                                {!showRecoveryCode ?
+                                    "Can't access your authenticator app? Use a recovery code" :
+                                    "Back to authenticator code verification"}
+                            </EnhancedButton>
+                        </motion.div>
                     </CardFooter>
-                </Card>
-            </div>
-        </div>
+                </Card3D>
+            </motion.div>
+        </AuthLayout>
     );
 }

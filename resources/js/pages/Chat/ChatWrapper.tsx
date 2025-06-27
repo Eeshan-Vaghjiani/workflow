@@ -2,6 +2,8 @@ import React from 'react';
 import { Head } from '@inertiajs/react';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import ChatInterface from '@/pages/Chat/ChatInterface';
+import { motion } from 'framer-motion';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 interface User {
     id: number;
@@ -22,7 +24,16 @@ export default function ChatWrapper({ auth }: Props) {
     return (
         <AppSidebarLayout breadcrumbs={breadcrumbs}>
             <Head title="Chat" />
-            <ChatInterface currentUser={auth.user} />
+            <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="h-full w-full"
+            >
+                <motion.div variants={itemVariants}>
+                    <ChatInterface currentUser={auth.user} />
+                </motion.div>
+            </motion.div>
         </AppSidebarLayout>
     );
 }

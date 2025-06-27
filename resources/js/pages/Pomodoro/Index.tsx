@@ -6,31 +6,7 @@ import PomodoroTimer from '@/components/PomodoroTimer';
 import { motion } from 'framer-motion';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { Clock } from 'lucide-react';
-
-// Animation variants
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1,
-            when: "beforeChildren"
-        }
-    }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: "spring",
-            stiffness: 100,
-            damping: 15
-        }
-    }
-};
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 interface Props {
     userId: number;
@@ -70,7 +46,7 @@ export default function Index({ userId }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Pomodoro Timer" />
             <motion.div
-                className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8"
+                className="flex h-full flex-1 flex-col gap-6 p-6"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -81,7 +57,7 @@ export default function Index({ userId }: Props) {
                 >
                     <div className="flex items-center gap-2">
                         <Clock className="h-5 w-5 text-primary-500 dark:text-neon-green" />
-                        <h1 className="text-2xl font-bold">Pomodoro Timer</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pomodoro Timer</h1>
                     </div>
                 </motion.div>
 
@@ -89,16 +65,17 @@ export default function Index({ userId }: Props) {
                     className="flex justify-center"
                     variants={itemVariants}
                 >
-                    <GlassContainer className="p-8 w-full max-w-2xl">
+                    <GlassContainer className="p-8 w-full max-w-2xl" blurIntensity="md">
                         <PomodoroTimer userId={userId} />
 
                         <motion.div
                             className="mt-8 text-center"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            transition={{ delay: 1 }}
+                            transition={{ delay: 0.5 }}
+                            variants={itemVariants}
                         >
-                            <h2 className="text-lg font-medium mb-2">How to use the Pomodoro Technique</h2>
+                            <h2 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">How to use the Pomodoro Technique</h2>
                             <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2 text-left list-disc pl-5">
                                 <li>Set the timer for 25 minutes and focus intensely on your work</li>
                                 <li>When the timer rings, take a short 5-minute break</li>

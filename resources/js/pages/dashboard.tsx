@@ -211,7 +211,11 @@ export default function Dashboard(props: Props) {
             >
                 {/* Welcome Card */}
                 <motion.div variants={itemVariants} className="col-span-full">
-                    <Card3D className="p-6 bg-gradient-to-br from-primary-50 to-white dark:from-gray-800 dark:to-gray-900">
+                    <Card3D
+                        className="p-6 bg-gradient-to-br from-primary-50 to-white dark:from-gray-800 dark:to-gray-900"
+                        glowColor="rgba(0, 136, 122, 0.15)"
+                        hoverScale={1.01}
+                    >
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -245,7 +249,11 @@ export default function Dashboard(props: Props) {
 
                 {/* Stats Cards */}
                 <motion.div variants={itemVariants}>
-                    <Card3D className="p-6">
+                    <Card3D
+                        className="p-6"
+                        glowColor="rgba(0, 136, 122, 0.15)"
+                        hoverScale={1.03}
+                    >
                         <div className="flex justify-between items-center">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Groups</h2>
                             <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-full">
@@ -263,7 +271,11 @@ export default function Dashboard(props: Props) {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                    <Card3D className="p-6">
+                    <Card3D
+                        className="p-6"
+                        glowColor="rgba(119, 166, 247, 0.15)"
+                        hoverScale={1.03}
+                    >
                         <div className="flex justify-between items-center">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Assignments</h2>
                             <div className="bg-ctaBright/10 dark:bg-ctaBright/20 p-2 rounded-full">
@@ -281,7 +293,11 @@ export default function Dashboard(props: Props) {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                    <Card3D className="p-6">
+                    <Card3D
+                        className="p-6"
+                        glowColor="rgba(255, 204, 188, 0.15)"
+                        hoverScale={1.03}
+                    >
                         <div className="flex justify-between items-center">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h2>
                             <div className="bg-accent/20 dark:bg-accent/30 p-2 rounded-full">
@@ -300,7 +316,11 @@ export default function Dashboard(props: Props) {
 
                 {/* Upcoming Tasks */}
                 <motion.div variants={itemVariants} className="col-span-full md:col-span-2">
-                    <Card3D className="p-6">
+                    <Card3D
+                        className="p-6"
+                        glowColor="rgba(0, 136, 122, 0.1)"
+                        hoverScale={1.02}
+                    >
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Upcoming Tasks</h2>
                             <div className="bg-primary/10 dark:bg-primary/20 p-2 rounded-full">
@@ -361,7 +381,11 @@ export default function Dashboard(props: Props) {
 
                 {/* Recent Groups */}
                 <motion.div variants={itemVariants} className="col-span-full md:col-span-1">
-                    <Card3D className="p-6 h-full">
+                    <Card3D
+                        className="p-6 h-full"
+                        glowColor="rgba(119, 166, 247, 0.1)"
+                        hoverScale={1.02}
+                    >
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Groups</h2>
                             <div className="bg-ctaBright/10 dark:bg-ctaBright/20 p-2 rounded-full">

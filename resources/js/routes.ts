@@ -5,6 +5,9 @@ interface RouteMap {
 
 const routes: RouteMap = {
     '/chat': './pages/Chat/ChatWrapper.tsx',
+    '/dashboard/calendar': './pages/Calendar/Index.tsx',
+    '/dashboard/gantt': './pages/Dashboard/Gantt.tsx',
+    '/calendar': './pages/Calendar/Index.tsx',
     // Add more route mappings as needed
 };
 

@@ -115,10 +115,10 @@ const MouseFollower: React.FC<MouseFollowerProps> = ({ theme }) => {
             >
                 <div
                     className={`h-3 w-3 rounded-full ${isClicking
-                            ? isDark ? 'bg-[#00FFA3]' : 'bg-[#00887A]'
-                            : isPointer
-                                ? isDark ? 'bg-[#FF006E]' : 'bg-[#77A6F7]'
-                                : isDark ? 'bg-white' : 'bg-black'
+                        ? isDark ? 'bg-[#00FFA3]' : 'bg-[#00887A]'
+                        : isPointer
+                            ? isDark ? 'bg-[#FF006E]' : 'bg-[#77A6F7]'
+                            : isDark ? 'bg-white' : 'bg-black'
                         }`}
                 />
             </motion.div>
@@ -135,10 +135,10 @@ const MouseFollower: React.FC<MouseFollowerProps> = ({ theme }) => {
             >
                 <div
                     className={`h-12 w-12 rounded-full transform -translate-x-1/2 -translate-y-1/2 ${isClicking
-                            ? isDark ? 'bg-[#00FFA3]' : 'bg-[#00887A]'
-                            : isPointer
-                                ? isDark ? 'bg-[#FF006E]' : 'bg-[#77A6F7]'
-                                : isDark ? 'bg-white' : 'bg-black'
+                        ? isDark ? 'bg-[#00FFA3]' : 'bg-[#00887A]'
+                        : isPointer
+                            ? isDark ? 'bg-[#FF006E]' : 'bg-[#77A6F7]'
+                            : isDark ? 'bg-white' : 'bg-black'
                         }`}
                 />
             </motion.div>

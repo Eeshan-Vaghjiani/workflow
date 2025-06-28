@@ -124,7 +124,6 @@ export default function AdminLayout({ children, breadcrumbs = [] }: AdminLayoutP
 
     return (
         <div className="flex h-screen bg-white dark:bg-gray-900 cursor-hover-area">
-            {shouldUseMouseFollower && <MouseFollower theme={theme} />}
 
             <AdminSidebar />
 

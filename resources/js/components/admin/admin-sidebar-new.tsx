@@ -9,10 +9,14 @@ import {
     Settings,
     FileText,
     Bell,
-    UserCog
+    UserCog,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { useMagneticHover } from '@/hooks/use-animation';
-import GlassContainer from '@/components/ui/glass-container';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { cn } from '@/lib/utils';
 
 // Animation variants for initial load only
 const sidebarVariants: Variants = {
@@ -80,6 +84,12 @@ export const AdminSidebar = () => {
     const { url } = usePage();
     const [shouldAnimate, setShouldAnimate] = useState(true);
     const logoRef = useRef<HTMLDivElement>(null);
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('admin_sidebar_collapsed') === 'true';
+        }
+        return false;
+    });
 
     // Apply magnetic effect to logo
     useMagneticHover(logoRef, 0.3);
@@ -94,9 +104,21 @@ export const AdminSidebar = () => {
         }
     }, []);
 
+    // Save collapsed state to localStorage
+    useEffect(() => {
+        localStorage.setItem('admin_sidebar_collapsed', isCollapsed.toString());
+    }, [isCollapsed]);
+
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+    };
+
     return (
         <motion.aside
-            className="w-64 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-r border-gray-200/50 dark:border-gray-700/30 shadow-sm flex-shrink-0 overflow-y-auto futuristic-scrollbar"
+            className={cn(
+                "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-r border-gray-200/50 dark:border-gray-700/30 shadow-sm flex-shrink-0 overflow-y-auto futuristic-scrollbar transition-all duration-300",
+                isCollapsed ? "w-[4.5rem]" : "w-64"
+            )}
             initial={shouldAnimate ? "hidden" : "visible"}
             animate="visible"
             variants={sidebarVariants}
@@ -114,14 +136,16 @@ export const AdminSidebar = () => {
                     >
                         <span className="text-white font-bold text-xl">A</span>
                     </motion.div>
-                    <motion.span
-                        className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        Admin Panel
-                    </motion.span>
+                    {!isCollapsed && (
+                        <motion.span
+                            className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            Admin Panel
+                        </motion.span>
+                    )}
                 </Link>
             </div>
 
@@ -142,7 +166,7 @@ export const AdminSidebar = () => {
                             >
                                 <motion.div
                                     variants={navItemHoverVariants}
-                                    className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
+                                    className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
                                         ${isActive
                                             ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
                                             : 'text-gray-700 dark:text-gray-300 hover:bg-softBlue/30 dark:hover:bg-gray-800/30'
@@ -151,14 +175,14 @@ export const AdminSidebar = () => {
                                     <motion.div
                                         initial={{ rotate: 0 }}
                                         whileHover={{ rotate: isActive ? 0 : 10 }}
-                                        className={`mr-3 h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
+                                        className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
                                     >
                                         <item.icon />
                                     </motion.div>
-                                    <span>{item.name}</span>
+                                    {!isCollapsed && <span>{item.name}</span>}
 
                                     {/* Animated indicator for active item */}
-                                    {isActive && (
+                                    {isActive && !isCollapsed && (
                                         <motion.div
                                             className="ml-auto h-2 w-2 rounded-full bg-primary-500 dark:bg-neon-green"
                                             animate={{
@@ -180,7 +204,7 @@ export const AdminSidebar = () => {
             </nav>
 
             {/* Admin version info with glass effect */}
-            <div className="absolute bottom-0 left-0 right-0 p-4">
+            <div className="absolute bottom-16 left-0 right-0 p-4">
                 <GlassContainer
                     className="pt-4 mt-4 px-3 py-3"
                     blurIntensity="sm"
@@ -199,11 +223,34 @@ export const AdminSidebar = () => {
                                 repeatType: "loop"
                             }}
                         />
-                        <p className="text-xs text-center font-medium text-gray-600 dark:text-gray-300">
-                            Admin Control Center <span className="text-primary-500 dark:text-neon-green font-semibold">v1.0</span>
-                        </p>
+                        {!isCollapsed && (
+                            <p className="text-xs text-center font-medium text-gray-600 dark:text-gray-300">
+                                Admin Control Center <span className="text-primary-500 dark:text-neon-green font-semibold">v1.0</span>
+                            </p>
+                        )}
                     </div>
                 </GlassContainer>
+            </div>
+
+            {/* Collapse/Expand Toggle Button */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                <EnhancedButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleCollapse}
+                    className="rounded-full p-2 bg-softBlue/30 dark:bg-gray-800/30 hover:bg-softBlue/50 dark:hover:bg-gray-700/50"
+                >
+                    <motion.div
+                        animate={{ rotate: isCollapsed ? 0 : 180 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {isCollapsed ? (
+                            <ChevronRight className="h-4 w-4 text-primary-500 dark:text-neon-green" />
+                        ) : (
+                            <ChevronLeft className="h-4 w-4 text-primary-500 dark:text-neon-green" />
+                        )}
+                    </motion.div>
+                </EnhancedButton>
             </div>
         </motion.aside>
     );

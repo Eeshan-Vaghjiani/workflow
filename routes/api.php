@@ -201,12 +201,28 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::delete('/groups/{group}/messages/{message}', [GroupMessageController::class, 'destroy']);
     Route::post('/groups/{group}/read', [GroupMessageController::class, 'markAsRead']);
 
+    // Enhanced group message features
+    Route::post('/groups/{group}/messages/{message}/reply', [GroupMessageController::class, 'reply']);
+    Route::post('/groups/{group}/messages/{message}/pin', [GroupMessageController::class, 'pin']);
+    Route::delete('/groups/{group}/messages/{message}/pin', [GroupMessageController::class, 'unpin']);
+    Route::get('/groups/{group}/pinned', [GroupMessageController::class, 'getPinnedMessages']);
+    Route::post('/groups/{group}/search', [GroupMessageController::class, 'search']);
+    Route::post('/groups/{group}/messages/attachments', [GroupMessageController::class, 'uploadAttachment']);
+
     // Enhanced direct message endpoints
     Route::get('/direct-messages', [DirectMessageController::class, 'index']);
     Route::get('/direct-messages/{userId}', [DirectMessageController::class, 'messages']);
     Route::post('/direct-messages/{userId}', [DirectMessageController::class, 'store']);
     Route::delete('/direct-messages/{messageId}', [DirectMessageController::class, 'destroy']);
     Route::post('/direct-messages/{userId}/read', [DirectMessageController::class, 'markAsRead']);
+
+    // Enhanced direct message features
+    Route::post('/direct-messages/{messageId}/reply', [DirectMessageController::class, 'reply']);
+    Route::post('/direct-messages/{messageId}/pin', [DirectMessageController::class, 'pin']);
+    Route::delete('/direct-messages/{messageId}/pin', [DirectMessageController::class, 'unpin']);
+    Route::get('/direct-messages/{userId}/pinned', [DirectMessageController::class, 'getPinnedMessages']);
+    Route::post('/direct-messages/{userId}/search', [DirectMessageController::class, 'search']);
+    Route::post('/direct-messages/attachments', [DirectMessageController::class, 'uploadAttachment']);
 
 });
 

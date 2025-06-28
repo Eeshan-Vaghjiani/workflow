@@ -1,12 +1,6 @@
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MoreHorizontal, Phone, Video, Search, ArrowLeft } from 'lucide-react';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Search, ArrowLeft } from 'lucide-react';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { motion } from 'framer-motion';
@@ -31,7 +25,6 @@ interface ChatHeaderProps {
     user?: User;
     group?: Group;
     onBackClick?: () => void;
-    onInfoClick?: () => void;
     onSearchClick?: () => void;
     isMobile?: boolean;
 }
@@ -41,7 +34,6 @@ export function ChatHeader({
     user,
     group,
     onBackClick,
-    onInfoClick,
     onSearchClick,
     isMobile = false,
 }: ChatHeaderProps) {
@@ -126,60 +118,20 @@ export function ChatHeader({
                     </div>
                 </motion.div>
                 <motion.div
-                    className="flex items-center space-x-1"
+                    className="flex items-center"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                 >
-                    {type === 'direct' && (
-                        <>
-                            <EnhancedButton
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                            >
-                                <Phone className="h-5 w-5" />
-                            </EnhancedButton>
-                            <EnhancedButton
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                            >
-                                <Video className="h-5 w-5" />
-                            </EnhancedButton>
-                        </>
-                    )}
                     <EnhancedButton
                         variant="ghost"
                         size="sm"
                         onClick={onSearchClick}
                         className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                        title="Search in conversation"
                     >
                         <Search className="h-5 w-5" />
                     </EnhancedButton>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <EnhancedButton
-                                variant="ghost"
-                                size="sm"
-                                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                            >
-                                <MoreHorizontal className="h-5 w-5" />
-                            </EnhancedButton>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border border-white/20 dark:border-gray-700/50">
-                            <DropdownMenuItem onClick={onInfoClick}>
-                                {type === 'direct' ? 'Contact Info' : 'Group Info'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Clear Chat</DropdownMenuItem>
-                            {type === 'group' && (
-                                <DropdownMenuItem>Leave Group</DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem className="text-red-600 dark:text-red-400">
-                                Block {type === 'direct' ? 'User' : 'Group'}
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
                 </motion.div>
             </div>
         </GlassContainer>

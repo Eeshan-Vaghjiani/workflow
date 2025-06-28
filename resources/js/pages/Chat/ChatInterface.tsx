@@ -582,7 +582,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     // Render chat UI with proper mobile responsiveness
     return (
         <motion.div
-            className="flex h-[calc(100vh-4rem)] overflow-hidden"
+            className="flex h-full overflow-hidden"
             initial="hidden"
             animate="visible"
             variants={containerVariants}
@@ -609,7 +609,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
             {/* Main Chat Area */}
             <motion.div
                 className={`
-                    flex-1 flex flex-col
+                    flex-1 flex flex-col h-full
                     ${selectedChat ? 'block' : 'hidden md:block'}
                 `}
                 variants={itemVariants}
@@ -639,7 +639,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
                         {/* Messages */}
                         <motion.div
-                            className="flex-1 overflow-hidden"
+                            className="flex-1 overflow-hidden h-full"
                             variants={itemVariants}
                         >
                             <AnimatePresence>

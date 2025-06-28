@@ -2,7 +2,6 @@
 
 namespace App\Events;
 
-use App\Models\DirectMessage;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -17,31 +16,31 @@ class MessageDeleted implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
-     * The direct message instance.
+     * The message ID that was deleted.
      *
-     * @var \App\Models\DirectMessage
+     * @var int
      */
-    public $message;
+    public $messageId;
 
     /**
-     * The message data.
+     * The message type (direct or group)
      *
-     * @var array
+     * @var string
      */
-    public $messageData;
+    public $messageType;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(DirectMessage $message, array $messageData)
+    public function __construct(int $messageId, string $messageType = 'direct')
     {
-        $this->message = $message;
-        $this->messageData = $messageData;
+        $this->messageId = $messageId;
+        $this->messageType = $messageType;
 
         // Log for debugging
         Log::debug('MessageDeleted event created', [
-            'message_id' => $message->id,
-            'deleted_by' => $messageData['deleted_by'] ?? null,
+            'message_id' => $messageId,
+            'message_type' => $messageType,
         ]);
     }
 
@@ -73,6 +72,10 @@ class MessageDeleted implements ShouldBroadcast
      */
     public function broadcastWith(): array
     {
-        return $this->messageData;
+        return [
+            'message_id' => $this->messageId,
+            'message_type' => $this->messageType,
+            'deleted_at' => now()->toIso8601String(),
+        ];
     }
 }

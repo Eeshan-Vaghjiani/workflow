@@ -1,5 +1,4 @@
-import React, { useState, useRef } from 'react';
-import { Input } from '@/components/ui/input';
+import React, { useState, useRef, useEffect } from 'react';
 import { Smile, Paperclip, Send, Mic, XCircle } from 'lucide-react';
 import {
     Popover,
@@ -8,9 +7,11 @@ import {
 } from '@/components/ui/popover';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
-import { GlassContainer } from '@/components/ui/glass-container';
-import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
 interface ChatInputProps {
     onSendMessage: (message: string, attachments?: File[]) => void;
@@ -18,6 +19,12 @@ interface ChatInputProps {
     isDisabled?: boolean;
     placeholder?: string;
     conversationId?: number | string;
+    replyingTo?: {
+        id: number | string;
+        content: string;
+        sender?: string;
+    } | null;
+    onCancelReply?: () => void;
 }
 
 interface EmojiObject {
@@ -35,22 +42,39 @@ export function ChatInput({
     isDisabled = false,
     placeholder = "Type a message...",
     conversationId,
+    replyingTo = null,
+    onCancelReply,
 }: ChatInputProps) {
     const [message, setMessage] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const lastTypingTime = useRef<number | null>(null);
     const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    // Resize textarea as content changes
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`; // Max height of 150px
+        }
+    }, [message]);
 
     const handleSend = () => {
         if (message.trim() || attachments.length > 0) {
             onSendMessage(message, attachments);
             setMessage('');
             setAttachments([]);
+
+            // Reset textarea height
+            if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+            }
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
@@ -96,13 +120,40 @@ export function ChatInput({
         }, 3000);
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         setMessage(e.target.value);
         handleTyping();
     };
 
     return (
-        <GlassContainer className="p-3 m-2 mt-0 border-t-0">
+        <Card className="p-3 m-2 mt-0 border-t-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            {/* Reply Banner */}
+            {replyingTo && (
+                <motion.div
+                    className="flex items-center justify-between bg-muted/50 dark:bg-muted/20 rounded-lg p-2 mb-3"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                >
+                    <div className="flex flex-col">
+                        <span className="text-xs text-primary font-medium">
+                            Replying to {replyingTo.sender || 'message'}
+                        </span>
+                        <span className="text-sm text-foreground/80 truncate max-w-[250px]">
+                            {replyingTo.content}
+                        </span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onCancelReply}
+                        className="text-muted-foreground hover:text-foreground"
+                    >
+                        <XCircle className="h-5 w-5" />
+                    </Button>
+                </motion.div>
+            )}
+
             {/* Attachments Preview */}
             <AnimatePresence>
                 {attachments.length > 0 && (
@@ -115,14 +166,14 @@ export function ChatInput({
                     >
                         {attachments.map((file, index) => (
                             <motion.div
-                                key={index}
+                                key={`${file.name}-${index}`}
                                 className="relative group"
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 exit={{ scale: 0.8, opacity: 0 }}
                                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             >
-                                <div className="w-20 h-20 rounded-md border border-white/20 dark:border-gray-700/50 flex items-center justify-center overflow-hidden backdrop-blur-sm bg-white/10 dark:bg-gray-800/30">
+                                <div className="w-20 h-20 rounded-md border border-border flex items-center justify-center overflow-hidden bg-muted/30">
                                     {file.type.startsWith('image/') ? (
                                         <img
                                             src={URL.createObjectURL(file)}
@@ -130,20 +181,20 @@ export function ChatInput({
                                             className="max-w-full max-h-full object-cover"
                                         />
                                     ) : (
-                                        <div className="text-xs text-center p-1 text-gray-600 dark:text-gray-300">
+                                        <div className="text-xs text-center p-1 text-muted-foreground">
                                             {file.name.substring(0, 15)}
                                             {file.name.length > 15 ? '...' : ''}
                                         </div>
                                     )}
                                 </div>
-                                <motion.button
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-80 hover:opacity-100"
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100"
                                     onClick={() => removeAttachment(index)}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
                                 >
-                                    <XCircle className="h-5 w-5" />
-                                </motion.button>
+                                    <XCircle className="h-4 w-4" />
+                                </Button>
                             </motion.div>
                         ))}
                     </motion.div>
@@ -151,27 +202,32 @@ export function ChatInput({
             </AnimatePresence>
 
             {/* Input Area */}
-            <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center gap-2 rounded-full bg-white/10 dark:bg-gray-700/30 backdrop-blur-sm px-4 py-2 border border-white/10 dark:border-gray-700/50">
+            <div className="flex items-start gap-2">
+                <div className="flex-1 flex items-start gap-2 rounded-full bg-muted/50 dark:bg-muted/20 backdrop-blur-sm px-4 py-2 border border-border">
                     {/* Emoji Picker */}
                     <Popover>
                         <PopoverTrigger asChild>
-                            <EnhancedButton variant="ghost" size="sm" className="h-8 w-8 rounded-full">
-                                <Smile className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                            </EnhancedButton>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full self-end flex-shrink-0 text-muted-foreground hover:text-foreground"
+                            >
+                                <Smile className="h-5 w-5" />
+                            </Button>
                         </PopoverTrigger>
                         <PopoverContent
                             side="top"
                             align="start"
-                            className="w-auto p-0 border-none shadow-lg mb-1 backdrop-blur-md bg-white/80 dark:bg-gray-800/80 border border-white/20 dark:border-gray-700/50"
-                            avoidCollisions={false}
+                            className="w-auto p-0 border-none shadow-lg mb-1"
                         >
-                            <Picker
-                                data={data}
-                                onEmojiSelect={handleEmojiSelect}
-                                previewPosition="none"
-                                theme="light"
-                            />
+                            <div className="rounded-lg overflow-hidden border border-border bg-popover">
+                                <Picker
+                                    data={data}
+                                    onEmojiSelect={handleEmojiSelect}
+                                    previewPosition="none"
+                                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+                                />
+                            </div>
                         </PopoverContent>
                     </Popover>
 
@@ -183,45 +239,59 @@ export function ChatInput({
                         className="hidden"
                         multiple
                     />
-                    <EnhancedButton
+                    <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 rounded-full"
+                        size="icon"
+                        className="h-8 w-8 rounded-full self-end flex-shrink-0 text-muted-foreground hover:text-foreground"
                         onClick={triggerFileInput}
                     >
-                        <Paperclip className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                    </EnhancedButton>
+                        <Paperclip className="h-5 w-5" />
+                    </Button>
 
                     {/* Message Input */}
-                    <Input
+                    <Textarea
+                        ref={textareaRef}
                         value={message}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
                         placeholder={placeholder}
-                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-foreground placeholder:text-muted-foreground min-h-[36px] resize-none py-2 overflow-auto"
                         disabled={isDisabled}
                         data-conversation-id={conversationId}
+                        rows={1}
                     />
 
                     {/* Voice Message Button */}
-                    <EnhancedButton variant="ghost" size="sm" className="h-8 w-8 rounded-full">
-                        <Mic className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                    </EnhancedButton>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full self-end flex-shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                        <Mic className="h-5 w-5" />
+                    </Button>
                 </div>
 
                 {/* Send Button */}
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <EnhancedButton
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="self-end"
+                >
+                    <Button
                         onClick={handleSend}
-                        size="sm"
-                        variant="primary"
-                        className="rounded-full h-10 w-10 bg-gradient-to-r from-primary to-blue-500"
+                        size="icon"
+                        className={cn(
+                            "h-10 w-10 rounded-full",
+                            "bg-primary hover:bg-primary/90",
+                            "dark:bg-primary dark:hover:bg-primary/90",
+                            "transition-colors duration-200"
+                        )}
                         disabled={isDisabled || (!message.trim() && attachments.length === 0)}
                     >
-                        <Send className="h-5 w-5 text-white" />
-                    </EnhancedButton>
+                        <Send className="h-5 w-5 text-primary-foreground" />
+                    </Button>
                 </motion.div>
             </div>
-        </GlassContainer>
+        </Card>
     );
 }

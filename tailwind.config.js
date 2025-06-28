@@ -122,10 +122,10 @@ module.exports = {
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
         'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.3)',
-        'magnetic': '0 20px 40px rgba(0,136,122,0.15)',
-        'magnetic-dark': '0 20px 40px rgba(0,201,167,0.15)',
-        'glow': '0 0 15px rgba(0,136,122,0.5)',
-        'glow-dark': '0 0 15px rgba(0,255,163,0.5)',
+        'subtle': '0 5px 15px rgba(0,136,122,0.08)',
+        'subtle-dark': '0 5px 15px rgba(0,201,167,0.08)',
+        'glow': '0 0 8px rgba(0,136,122,0.3)',
+        'glow-dark': '0 0 8px rgba(0,255,163,0.3)',
       }
     },
   },

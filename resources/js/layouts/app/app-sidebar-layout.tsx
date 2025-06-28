@@ -66,7 +66,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
                 </motion.div>
 
                 <motion.main
-                    className="flex-1 overflow-y-auto p-4 md:p-6 bg-softBlue/30 dark:bg-gray-800/30 futuristic-scrollbar"
+                    className="flex-1 overflow-y-auto p-4 md:p-6 bg-softBlue/30 dark:bg-gray-800/30 futuristic-scrollbar h-full flex flex-col"
                     initial="initial"
                     animate="animate"
                     exit="exit"

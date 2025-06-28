@@ -7,15 +7,14 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import axios from 'axios';
-import { CalendarIcon, Check, RefreshCw, Calendar as CalendarLogo, Settings } from 'lucide-react';
+import { CalendarIcon, RefreshCw, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Link } from '@inertiajs/react';
-import { Card3D } from '@/components/ui/card-3d';
-import { GlassContainer } from '@/components/ui/glass-container';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { containerVariants, itemVariants } from '@/lib/theme-constants';
+import { cn } from '@/lib/utils';
 
 // Define minimal types for event handlers
 interface CalendarEventChangeArg {
@@ -162,11 +161,11 @@ export default function CalendarIndex({ events }: Props) {
                         className="col-span-1 md:col-span-3"
                         variants={itemVariants}
                     >
-                        <Card3D>
+                        <Card className="bg-background">
                             <div className="flex flex-row items-center justify-between p-6">
                                 <div>
-                                    <CardTitle className="text-gray-900 dark:text-white">Calendar</CardTitle>
-                                    <CardDescription className="text-gray-600 dark:text-gray-300">View and manage your tasks and assignments</CardDescription>
+                                    <CardTitle className="text-2xl font-semibold text-foreground">Calendar</CardTitle>
+                                    <CardDescription>View and manage your tasks and assignments</CardDescription>
                                 </div>
                                 <div className="flex space-x-2">
                                     <EnhancedButton
@@ -183,142 +182,142 @@ export default function CalendarIndex({ events }: Props) {
                                     >
                                         Sync with Google
                                     </EnhancedButton>
-                                    <EnhancedButton
-                                        variant="outline"
-                                        size="sm"
-                                        icon={<Settings className="h-4 w-4" />}
-                                        iconPosition="left"
-                                        magnetic={true}
-                                    >
-                                        <Link href={route('calendar.settings')}>
+                                    <Link href={route('calendar.settings')}>
+                                        <EnhancedButton
+                                            variant="outline"
+                                            size="sm"
+                                            icon={<Settings className="h-4 w-4" />}
+                                            iconPosition="left"
+                                            magnetic={true}
+                                        >
                                             Settings
-                                        </Link>
-                                    </EnhancedButton>
+                                        </EnhancedButton>
+                                    </Link>
                                 </div>
                             </div>
-                            <CardContent>
-                                <FullCalendar
-                                    ref={calendarRef}
-                                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                                    initialView="dayGridMonth"
-                                    headerToolbar={{
-                                        left: 'prev,next today',
-                                        center: 'title',
-                                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                                    }}
-                                    events={calendarEvents}
-                                    editable={true}
-                                    selectable={true}
-                                    selectMirror={true}
-                                    dayMaxEvents={true}
-                                    eventClick={handleEventClick}
-                                    eventDrop={handleEventChange}
-                                    eventResize={handleEventChange}
-                                    height="auto"
-                                />
+                            <CardContent className="p-0">
+                                <div className={cn(
+                                    "calendar-container",
+                                    "dark:bg-background dark:text-foreground",
+                                    "border-t border-border"
+                                )}>
+                                    <FullCalendar
+                                        ref={calendarRef}
+                                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                        initialView="dayGridMonth"
+                                        events={calendarEvents}
+                                        editable={true}
+                                        selectable={true}
+                                        selectMirror={true}
+                                        dayMaxEvents={true}
+                                        weekends={true}
+                                        eventClick={(info) => handleEventClick(info)}
+                                        eventChange={(info) => handleEventChange(info)}
+                                        headerToolbar={{
+                                            left: 'prev,next today',
+                                            center: 'title',
+                                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                                        }}
+                                        buttonText={{
+                                            today: 'Today',
+                                            month: 'Month',
+                                            week: 'Week',
+                                            day: 'Day'
+                                        }}
+                                        themeSystem="standard"
+                                        height="auto"
+                                        contentHeight="auto"
+                                        aspectRatio={2}
+                                        expandRows={true}
+                                        stickyHeaderDates={true}
+                                        nowIndicator={true}
+                                        dayHeaders={true}
+                                        eventDisplay="block"
+                                        eventTimeFormat={{
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            meridiem: 'short'
+                                        }}
+                                        slotLabelFormat={{
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        }}
+                                        allDaySlot={true}
+                                        allDayText="All Day"
+                                        slotMinTime="06:00:00"
+                                        slotMaxTime="22:00:00"
+                                        slotDuration="00:30:00"
+                                        slotLabelInterval="01:00"
+                                    />
+                                </div>
                             </CardContent>
-                        </Card3D>
+                        </Card>
                     </motion.div>
 
-                    {/* Event Details Sidebar */}
-                    <motion.div className="col-span-1" variants={itemVariants}>
-                        <GlassContainer className="p-6" blurIntensity="sm">
-                            <div className="mb-4">
-                                <CardTitle className="text-gray-900 dark:text-white">Event Details</CardTitle>
-                                <CardDescription className="text-gray-600 dark:text-gray-300">Selected task information</CardDescription>
+                    {/* Sidebar */}
+                    <motion.div
+                        className="col-span-1"
+                        variants={itemVariants}
+                    >
+                        <Card className="bg-background">
+                            <div className="p-6">
+                                <CardTitle className="text-xl font-semibold text-foreground">Event Details</CardTitle>
+                                <CardDescription>
+                                    {selectedEvent ? 'Selected event information' : 'Select an event to view details'}
+                                </CardDescription>
                             </div>
-
-                            {selectedEvent ? (
-                                <motion.div
-                                    className="space-y-4"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ duration: 0.3 }}
-                                >
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{selectedEvent.title}</h3>
-                                        <div className="flex items-center gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                            <CalendarLogo className="h-4 w-4 text-primary-500 dark:text-neon-green" />
-                                            <span>
-                                                {new Date(selectedEvent.start).toLocaleDateString()} - {new Date(selectedEvent.end || selectedEvent.start).toLocaleDateString()}
-                                            </span>
+                            <CardContent>
+                                {selectedEvent ? (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h3 className="font-medium text-foreground">{selectedEvent.title}</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {new Date(selectedEvent.start).toLocaleDateString()} - {new Date(selectedEvent.end).toLocaleDateString()}
+                                            </p>
                                         </div>
-                                    </div>
-
-                                    {selectedEvent.assignmentTitle && (
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Assignment</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{selectedEvent.assignmentTitle}</p>
-                                        </div>
-                                    )}
-
-                                    {selectedEvent.groupName && (
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Group</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">{selectedEvent.groupName}</p>
-                                        </div>
-                                    )}
-
-                                    <div className="flex justify-between pt-2">
+                                        {selectedEvent.groupName && (
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Group</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.groupName}</p>
+                                            </div>
+                                        )}
+                                        {selectedEvent.assignmentTitle && (
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Assignment</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.assignmentTitle}</p>
+                                            </div>
+                                        )}
                                         {selectedEvent.priority && (
                                             <div>
-                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Priority</p>
-                                                <div className="flex items-center">
-                                                    <span
-                                                        className="h-3 w-3 rounded-full mr-2"
-                                                        style={{ backgroundColor: selectedEvent.backgroundColor }}
-                                                    />
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{selectedEvent.priority}</p>
-                                                </div>
+                                                <p className="text-sm font-medium text-foreground">Priority</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.priority}</p>
                                             </div>
                                         )}
-
                                         {selectedEvent.status && (
                                             <div>
-                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Status</p>
-                                                <div className="flex items-center">
-                                                    {selectedEvent.status === 'completed' && (
-                                                        <Check className="h-4 w-4 mr-1 text-green-500" />
-                                                    )}
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{selectedEvent.status.replace('_', ' ')}</p>
+                                                <p className="text-sm font-medium text-foreground">Status</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.status}</p>
+                                            </div>
+                                        )}
+                                        {selectedEvent.progress !== undefined && (
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Progress</p>
+                                                <div className="h-2 w-full rounded-full bg-secondary">
+                                                    <div
+                                                        className="h-full rounded-full bg-primary transition-all"
+                                                        style={{ width: `${selectedEvent.progress}%` }}
+                                                    />
                                                 </div>
+                                                <p className="mt-1 text-xs text-muted-foreground">{selectedEvent.progress}% Complete</p>
                                             </div>
                                         )}
                                     </div>
-
-                                    {selectedEvent.progress !== undefined && (
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Progress</p>
-                                            <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full mt-1">
-                                                <div
-                                                    className="h-full rounded-full"
-                                                    style={{
-                                                        width: `${selectedEvent.progress}%`,
-                                                        backgroundColor: selectedEvent.backgroundColor
-                                                    }}
-                                                />
-                                            </div>
-                                            <p className="text-right text-xs text-gray-600 dark:text-gray-400">{selectedEvent.progress}%</p>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            ) : (
-                                <motion.div
-                                    className="flex flex-col items-center justify-center h-60 text-center text-gray-500 dark:text-gray-400"
-                                    initial={{ opacity: 0.6 }}
-                                    animate={{
-                                        opacity: [0.6, 0.8, 0.6],
-                                        transition: {
-                                            repeat: Infinity,
-                                            duration: 2
-                                        }
-                                    }}
-                                >
-                                    <CalendarLogo className="h-10 w-10 mb-2 text-primary-300 dark:text-primary-600/30" />
-                                    <p>Select an event to view details</p>
-                                </motion.div>
-                            )}
-                        </GlassContainer>
+                                ) : (
+                                    <p className="text-center text-muted-foreground">No event selected</p>
+                                )}
+                            </CardContent>
+                        </Card>
                     </motion.div>
                 </motion.div>
             </motion.div>

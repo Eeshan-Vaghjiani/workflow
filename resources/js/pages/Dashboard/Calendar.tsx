@@ -9,11 +9,12 @@ import { EventClickArg, EventApi, EventDropArg } from '@fullcalendar/core';
 import { EventResizeDoneArg } from '@fullcalendar/interaction';
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { GlassContainer } from '@/components/ui/glass-container';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { CalendarIcon, RefreshCw, Settings, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 // Animation variants
 const containerVariants = {
@@ -338,127 +339,185 @@ export default function Calendar({ events }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Calendar View" />
+            <Head title="Calendar" />
             <motion.div
-                className="flex flex-col gap-4 p-4"
+                className="flex h-full flex-1 flex-col gap-6 p-6"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
-                <motion.div className="flex flex-wrap justify-between items-center" variants={itemVariants}>
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-5 w-5 text-primary-500 dark:text-neon-green" />
-                        <h1 className="text-2xl font-bold">Calendar View</h1>
-                    </div>
-                    <div className="flex gap-2 mt-2 sm:mt-0">
-                        <EnhancedButton
-                            onClick={syncWithGoogle}
-                            disabled={syncing}
-                            variant="outline"
-                            className="gap-1"
-                            icon={<RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />}
-                        >
-                            Sync Calendar
-                        </EnhancedButton>
-                        <Link href="/calendar/settings">
-                            <EnhancedButton variant="outline" className="gap-1" icon={<Settings className="h-4 w-4" />}>
-                                Settings
-                            </EnhancedButton>
-                        </Link>
-                    </div>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <GlassContainer className="p-4">
-                        <div className="mb-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Drag and drop events to reschedule. Click an event for details.
-                            </p>
-                        </div>
-                        <div className="calendar-container">
-                            <FullCalendar
-                                ref={calendarRef}
-                                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                                initialView="dayGridMonth"
-                                headerToolbar={{
-                                    left: 'prev,next today',
-                                    center: 'title',
-                                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                                }}
-                                events={processedEvents}
-                                editable={true}
-                                selectable={true}
-                                selectMirror={true}
-                                dayMaxEvents={true}
-                                eventClick={handleEventClick}
-                                eventMouseEnter={handleEventMouseEnter}
-                                eventMouseLeave={handleEventMouseLeave}
-                                eventDrop={handleEventChange}
-                                eventResize={handleEventChange}
-                                themeSystem="standard"
-                                height="auto"
-                            />
-                        </div>
-                    </GlassContainer>
-                </motion.div>
-
-                {eventInfo && (
+                <motion.div
+                    className="grid grid-cols-1 gap-6"
+                    variants={containerVariants}
+                >
+                    {/* Main Calendar */}
                     <motion.div
+                        className="col-span-1"
                         variants={itemVariants}
-                        className="fixed bottom-4 right-4 z-10"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        transition={{ duration: 0.2 }}
                     >
-                        <GlassContainer className="p-4 max-w-md">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold text-lg">{eventInfo.title}</h3>
-                                <EnhancedButton
-                                    onClick={() => setEventInfo(null)}
-                                    variant="ghost"
-                                    size="sm"
-                                >
-                                    Close
-                                </EnhancedButton>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="text-sm">
-                                    <span className="font-semibold">Start:</span> {formatDate(eventInfo.start)}
+                        <Card className="bg-background">
+                            <div className="flex flex-row items-center justify-between p-6">
+                                <div>
+                                    <CardTitle className="text-2xl font-semibold text-foreground">Calendar</CardTitle>
+                                    <CardDescription>View and manage your tasks and assignments</CardDescription>
                                 </div>
-                                <div className="text-sm">
-                                    <span className="font-semibold">End:</span> {formatDate(eventInfo.end)}
+                                <div className="flex space-x-2">
+                                    <EnhancedButton
+                                        onClick={syncWithGoogle}
+                                        disabled={syncing}
+                                        variant="secondary"
+                                        size="sm"
+                                        icon={syncing ?
+                                            <RefreshCw className="h-4 w-4 animate-spin" /> :
+                                            <CalendarIcon className="h-4 w-4" />
+                                        }
+                                        iconPosition="left"
+                                        magnetic={true}
+                                    >
+                                        Sync with Google
+                                    </EnhancedButton>
+                                    <Link href={route('calendar.settings')}>
+                                        <EnhancedButton
+                                            variant="outline"
+                                            size="sm"
+                                            icon={<Settings className="h-4 w-4" />}
+                                            iconPosition="left"
+                                            magnetic={true}
+                                        >
+                                            Settings
+                                        </EnhancedButton>
+                                    </Link>
                                 </div>
-                                {eventInfo.extendedProps.group && (
-                                    <div className="text-sm">
-                                        <span className="font-semibold">Group:</span> {eventInfo.extendedProps.group}
-                                    </div>
-                                )}
-                                {eventInfo.extendedProps.assignment && (
-                                    <div className="text-sm">
-                                        <span className="font-semibold">Assignment:</span> {eventInfo.extendedProps.assignment}
-                                    </div>
-                                )}
-                                {eventInfo.extendedProps.priority && (
-                                    <div className="text-sm">
-                                        <span className="font-semibold">Priority:</span> {eventInfo.extendedProps.priority}
-                                    </div>
-                                )}
-                                {eventInfo.extendedProps.status && (
-                                    <div className="text-sm">
-                                        <span className="font-semibold">Status:</span> {eventInfo.extendedProps.status}
-                                    </div>
-                                )}
-                                {eventInfo.extendedProps.isPastDue && (
-                                    <div className="flex items-center gap-1 text-red-500 dark:text-red-400 text-sm font-semibold mt-2">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <span>Past Due</span>
-                                    </div>
-                                )}
                             </div>
-                        </GlassContainer>
+                            <CardContent className="p-0">
+                                <div className={cn(
+                                    "calendar-container",
+                                    "dark:bg-background dark:text-foreground",
+                                    "border-t border-border"
+                                )}>
+                                    <FullCalendar
+                                        ref={calendarRef}
+                                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                        initialView="dayGridMonth"
+                                        events={processedEvents}
+                                        editable={true}
+                                        selectable={true}
+                                        selectMirror={true}
+                                        dayMaxEvents={true}
+                                        weekends={true}
+                                        eventClick={handleEventClick}
+                                        eventMouseEnter={handleEventMouseEnter}
+                                        eventMouseLeave={handleEventMouseLeave}
+                                        eventDrop={handleEventChange}
+                                        eventResize={handleEventChange}
+                                        headerToolbar={{
+                                            left: 'prev,next today',
+                                            center: 'title',
+                                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                                        }}
+                                        buttonText={{
+                                            today: 'Today',
+                                            month: 'Month',
+                                            week: 'Week',
+                                            day: 'Day'
+                                        }}
+                                        themeSystem="standard"
+                                        height="auto"
+                                        contentHeight="auto"
+                                        aspectRatio={2}
+                                        expandRows={true}
+                                        stickyHeaderDates={true}
+                                        nowIndicator={true}
+                                        dayHeaders={true}
+                                        eventDisplay="block"
+                                        eventTimeFormat={{
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            meridiem: 'short'
+                                        }}
+                                        slotLabelFormat={{
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        }}
+                                        allDaySlot={true}
+                                        allDayText="All Day"
+                                        slotMinTime="06:00:00"
+                                        slotMaxTime="22:00:00"
+                                        slotDuration="00:30:00"
+                                        slotLabelInterval="01:00"
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
                     </motion.div>
-                )}
+
+                    {/* Event Info */}
+                    {eventInfo && (
+                        <motion.div
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setEventInfo(null)}
+                        >
+                            <motion.div
+                                className="mx-4 w-full max-w-md rounded-lg bg-background p-6 shadow-xl"
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.9, opacity: 0 }}
+                                onClick={e => e.stopPropagation()}
+                            >
+                                <div className="mb-4 flex items-start justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-foreground">{eventInfo.title}</h3>
+                                        <p className="text-sm text-muted-foreground">
+                                            {formatDate(eventInfo.start)} - {formatDate(eventInfo.end)}
+                                        </p>
+                                    </div>
+                                    {eventInfo.extendedProps.isPastDue && (
+                                        <div className="flex items-center text-destructive">
+                                            <AlertTriangle className="mr-1 h-4 w-4" />
+                                            <span className="text-sm">Past Due</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    {eventInfo.extendedProps.assignment && (
+                                        <div>
+                                            <p className="text-sm font-medium text-foreground">Assignment</p>
+                                            <p className="text-sm text-muted-foreground">{eventInfo.extendedProps.assignment}</p>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Group</p>
+                                        <p className="text-sm text-muted-foreground">{eventInfo.extendedProps.group}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Priority</p>
+                                        <p className="text-sm text-muted-foreground capitalize">{eventInfo.extendedProps.priority}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Status</p>
+                                        <p className="text-sm text-muted-foreground capitalize">{eventInfo.extendedProps.status}</p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6 flex justify-end">
+                                    <EnhancedButton
+                                        onClick={() => setEventInfo(null)}
+                                        variant="outline"
+                                        size="sm"
+                                        magnetic={true}
+                                    >
+                                        Close
+                                    </EnhancedButton>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </motion.div>
             </motion.div>
         </AppLayout>
     );

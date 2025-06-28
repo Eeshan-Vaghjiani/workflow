@@ -127,7 +127,7 @@ export default function AppLayout({ children, breadcrumbs, ...props }: AppLayout
         localStorage.getItem('reduceMotion') !== 'true';
 
     return (
-        <div className="flex h-screen bg-white dark:bg-gray-900 cursor-hover-area">
+        <div className="flex h-screen bg-background text-foreground">
             {shouldUseMouseFollower && <MouseFollower theme={theme} />}
 
             <AnimatePresence mode="wait">
@@ -137,12 +137,12 @@ export default function AppLayout({ children, breadcrumbs, ...props }: AppLayout
                     animate="animate"
                     exit="exit"
                     variants={pageVariants}
-                    className="flex flex-1 overflow-hidden"
+                    className="flex flex-1 overflow-hidden h-full"
                 >
                     <AppLayoutTemplate breadcrumbs={breadcrumbs} {...props}>
                         <motion.div
                             variants={childVariants}
-                            className="mx-auto max-w-7xl"
+                            className="mx-auto max-w-7xl h-full"
                         >
                             {children}
                         </motion.div>

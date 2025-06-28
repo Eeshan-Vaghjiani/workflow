@@ -3,8 +3,9 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Suspense, lazy, useState, useCallback, useEffect, useRef } from 'react';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { Button } from '@/components/ui/button';
 import { GlassContainer } from '@/components/ui/glass-container';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { Calendar, Clock, Calendar as CalendarIcon, Plus, Edit, ListTodo, PlusSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import axios from 'axios';
@@ -21,9 +22,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { type ButtonVariant } from '@/components/ui/button';
+import { type VariantProps } from 'class-variance-authority';
+import { buttonVariants } from '@/components/ui/button';
 
 // Animation variants
-const containerVariants = {
+const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
@@ -34,7 +40,7 @@ const containerVariants = {
     }
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
         opacity: 1,
@@ -116,6 +122,22 @@ const viewModeOptions = [
     { mode: ViewMode.Week, label: 'Week', icon: Calendar },
     { mode: ViewMode.Month, label: 'Month', icon: CalendarIcon },
 ];
+
+// Custom tooltip component
+const CustomTooltip = ({ task, fontSize, fontFamily }: { task: Task; fontSize: string; fontFamily: string }) => {
+    const ganttTask = task as unknown as GanttTask;
+    return (
+        <div className="bg-background p-2 rounded-lg shadow-lg border text-sm" style={{ fontSize, fontFamily }}>
+            <div className="font-medium text-foreground">{ganttTask.name}</div>
+            <div className="text-muted-foreground">
+                {new Date(ganttTask.start).toLocaleDateString()} - {new Date(ganttTask.end).toLocaleDateString()}
+            </div>
+            {ganttTask.progress > 0 && (
+                <div className="text-muted-foreground">Progress: {ganttTask.progress}%</div>
+            )}
+        </div>
+    );
+};
 
 export default function GanttView({ tasks, assignments = [], groupMembers = [] }: Props) {
     const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
@@ -401,6 +423,18 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
         setGroupId(assignment.group_id.toString());
     };
 
+    const handleTaskDoubleClick = (task: Task) => {
+        const ganttTask = task as unknown as GanttTask;
+        setSelectedTask(ganttTask);
+        setIsEditTaskModalOpen(true);
+    };
+
+    const handleDateChange = (date: Date | null, setter: React.Dispatch<React.SetStateAction<Date | undefined>>) => {
+        if (date) {
+            setter(date);
+        }
+    };
+
     if (error) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
@@ -420,507 +454,402 @@ export default function GanttView({ tasks, assignments = [], groupMembers = [] }
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Gantt Chart" />
-
             <motion.div
-                className="flex h-full flex-1 flex-col gap-4 p-4"
+                className="flex h-full flex-1 flex-col gap-6 p-6"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
-                <motion.div className="flex flex-wrap justify-between items-center mb-4" variants={itemVariants}>
-                    <div className="flex items-center gap-2">
-                        <CalendarIcon className="h-5 w-5 text-primary-500 dark:text-neon-green" />
-                        <h1 className="text-2xl font-bold">Gantt Chart</h1>
-                    </div>
-                </motion.div>
-
-                <motion.div variants={itemVariants}>
-                    <GlassContainer className="p-4">
-                        <div className="flex flex-col flex-1">
-                            <div className="flex flex-wrap gap-2 items-center justify-between mb-4">
-                                {error && (
-                                    <div className="bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 p-2 rounded-md text-sm w-full mb-2">
-                                        {error}
-                                    </div>
-                                )}
-
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {/* Add task button */}
-                                    <EnhancedButton
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setIsAddTaskModalOpen(true)}
-                                        icon={<Plus className="h-4 w-4" />}
-                                    >
-                                        Add Task
-                                    </EnhancedButton>
-
-                                    {/* Add assignment button */}
-                                    <EnhancedButton
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleCreateAssignment}
-                                        icon={<PlusSquare className="h-4 w-4" />}
-                                    >
-                                        New Assignment
-                                    </EnhancedButton>
-
-                                    {/* Auto distribute tasks button - only show if assignments exist */}
-                                    {assignments.length > 0 && (
-                                        <div className="relative flex items-center gap-2">
-                                            <select
-                                                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                                                value={assignmentId}
-                                                onChange={(e) => {
-                                                    const assignment = assignments.find(a => a.id.toString() === e.target.value);
-                                                    if (assignment) {
-                                                        selectAssignmentForDistribution(assignment);
-                                                    }
-                                                }}
-                                            >
-                                                <option value="">Select assignment</option>
-                                                {assignments.map(assignment => (
-                                                    <option key={assignment.id} value={assignment.id}>
-                                                        {assignment.title} ({assignment.group_name})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <EnhancedButton
-                                                variant="default"
-                                                size="sm"
-                                                onClick={handleAutoDistributeTasks}
-                                                disabled={!assignmentId || isAssigningTasks}
-                                                icon={isAssigningTasks ? (
-                                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                ) : (
-                                                    <ListTodo className="h-4 w-4" />
-                                                )}
-                                            >
-                                                {isAssigningTasks ? 'Assigning...' : 'Auto Assign'}
-                                            </EnhancedButton>
-                                        </div>
-                                    )}
-
-                                    {/* View mode buttons */}
+                <motion.div
+                    className="grid grid-cols-1 gap-6"
+                    variants={containerVariants}
+                >
+                    {/* Main Gantt Chart */}
+                    <motion.div
+                        className="col-span-1"
+                        variants={itemVariants}
+                    >
+                        <Card className="bg-background">
+                            <div className="flex flex-row items-center justify-between p-6">
+                                <div>
+                                    <h2 className="text-2xl font-semibold text-foreground">Gantt Chart</h2>
+                                    <p className="text-sm text-muted-foreground">View and manage your project timeline</p>
+                                </div>
+                                <div className="flex space-x-2">
                                     {viewModeOptions.map(({ mode, label, icon: Icon }) => (
                                         <EnhancedButton
                                             key={mode}
-                                            variant={viewMode === mode ? "default" : "outline"}
-                                            size="sm"
                                             onClick={() => setViewMode(mode)}
-                                            className={cn(
-                                                "gap-2",
-                                                viewMode === mode && "bg-primary text-primary-foreground"
-                                            )}
-                                            icon={<Icon className="w-4 h-4" />}
+                                            variant={viewMode === mode ? "primary" : "outline"}
+                                            size="sm"
+                                            icon={<Icon className="h-4 w-4" />}
+                                            iconPosition="left"
+                                            magnetic={true}
                                         >
                                             {label}
                                         </EnhancedButton>
                                     ))}
+                                    <EnhancedButton
+                                        onClick={() => setIsAddTaskModalOpen(true)}
+                                        variant="primary"
+                                        size="sm"
+                                        icon={<Plus className="h-4 w-4" />}
+                                        iconPosition="left"
+                                        magnetic={true}
+                                    >
+                                        Add Task
+                                    </EnhancedButton>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="gantt-container-wrapper" ref={containerRef}>
-                            <div className="gantt-container">
-                                {ganttTasks.length > 0 ? (
-                                    <Suspense fallback={
-                                        <div className="flex items-center justify-center h-64">
-                                            <motion.div
-                                                className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 dark:border-neon-green"
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{ opacity: 1, scale: 1 }}
-                                                transition={{ duration: 0.3 }}
-                                            />
-                                        </div>
-                                    }>
+                            <div className="p-0">
+                                <div ref={containerRef} className="gantt-container dark:bg-background dark:text-foreground">
+                                    <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
                                         <GanttComponent
                                             tasks={ganttTasks}
                                             viewMode={viewMode}
-                                            onSelect={handleTaskClick}
                                             onDateChange={handleTaskChange}
-                                            onProgressChange={handleProgressChange}
-                                            listCellWidth="155px"
-                                            columnWidth={columnWidth}
+                                            onTaskClick={handleTaskClick}
+                                            onDoubleClick={handleTaskDoubleClick}
+                                            listCellWidth={155}
+                                            columnWidth={columnWidth.toString()}
+                                            ganttHeight={500}
+                                            headerHeight={50}
                                             rowHeight={50}
                                             barCornerRadius={4}
-                                            TooltipContent={() => null}
-                                            arrowColor="currentColor"
+                                            barProgressColor="var(--chart-4)"
+                                            barProgressSelectedColor="var(--chart-5)"
+                                            barBackgroundColor="var(--chart-1)"
+                                            barBackgroundSelectedColor="var(--chart-2)"
+                                            projectProgressColor="var(--chart-4)"
+                                            projectProgressSelectedColor="var(--chart-5)"
+                                            projectBackgroundColor="var(--chart-3)"
+                                            projectBackgroundSelectedColor="var(--chart-2)"
+                                            milestoneBackgroundColor="var(--chart-6)"
+                                            milestoneBackgroundSelectedColor="var(--chart-7)"
+                                            rtl={false}
+                                            TooltipContent={CustomTooltip}
                                         />
-                                        {selectedTask && (
-                                            <motion.div
-                                                className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50"
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 25 }}
-                                            >
-                                                <GlassContainer className="p-4 max-w-md">
-                                                    <h3 className="text-lg font-bold mb-2">{selectedTask.name}</h3>
-                                                    <div className="space-y-2">
-                                                        <p><span className="font-medium">Assigned to:</span> {selectedTask.assignedTo}</p>
-                                                        <p><span className="font-medium">Group:</span> {selectedTask.groupName}</p>
-                                                        {selectedTask.assignmentTitle && (
-                                                            <p><span className="font-medium">Assignment:</span> {selectedTask.assignmentTitle}</p>
-                                                        )}
-                                                        {selectedTask.priority && (
-                                                            <p><span className="font-medium">Priority:</span> {selectedTask.priority}</p>
-                                                        )}
-                                                        {selectedTask.effort_hours && (
-                                                            <p><span className="font-medium">Effort:</span> {selectedTask.effort_hours} hours</p>
-                                                        )}
-                                                        {selectedTask.importance && (
-                                                            <p><span className="font-medium">Importance:</span> {selectedTask.importance}/5</p>
-                                                        )}
-                                                        <p><span className="font-medium">Progress:</span> {selectedTask.progress}%</p>
-                                                        <p><span className="font-medium">Duration:</span> {new Date(selectedTask.start).toLocaleDateString()} - {new Date(selectedTask.end).toLocaleDateString()}</p>
-                                                    </div>
-                                                    <div className="flex justify-between mt-4">
-                                                        <EnhancedButton
-                                                            onClick={() => setSelectedTask(null)}
-                                                            variant="outline"
-                                                        >
-                                                            Close
-                                                        </EnhancedButton>
-
-                                                        {selectedTask.type !== 'project' && (
-                                                            <EnhancedButton
-                                                                onClick={() => openEditTaskModal(selectedTask)}
-                                                                variant="default"
-                                                                icon={<Edit className="w-4 h-4" />}
-                                                            >
-                                                                Edit
-                                                            </EnhancedButton>
-                                                        )}
-                                                    </div>
-                                                </GlassContainer>
-                                            </motion.div>
-                                        )}
                                     </Suspense>
-                                ) : (
-                                    <p className="text-center py-10">No tasks available to display in Gantt chart.</p>
-                                )}
+                                </div>
                             </div>
-                        </div>
-                    </GlassContainer>
+                        </Card>
+                    </motion.div>
                 </motion.div>
+
+                {/* Add Task Modal */}
+                <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>Add New Task</DialogTitle>
+                            <DialogDescription>
+                                Create a new task for your project
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="assignment" className="text-right">
+                                    Assignment
+                                </Label>
+                                <Select
+                                    value={selectedAssignmentId}
+                                    onValueChange={setSelectedAssignmentId}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select an assignment" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {assignments.map((assignment) => (
+                                            <SelectItem key={assignment.id} value={assignment.id.toString()}>
+                                                {assignment.title} ({assignment.group_name})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="title" className="text-right">
+                                    Title
+                                </Label>
+                                <Input
+                                    id="title"
+                                    value={newTaskTitle}
+                                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="description" className="text-right">
+                                    Description
+                                </Label>
+                                <Textarea
+                                    id="description"
+                                    value={newTaskDescription}
+                                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="startDate" className="text-right">
+                                    Start Date
+                                </Label>
+                                <div className="col-span-3">
+                                    <DatePicker
+                                        selected={newTaskStartDate}
+                                        onSelect={(date) => handleDateChange(date, setNewTaskStartDate)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="endDate" className="text-right">
+                                    Due Date
+                                </Label>
+                                <div className="col-span-3">
+                                    <DatePicker
+                                        selected={newTaskEndDate}
+                                        onSelect={(date) => handleDateChange(date, setNewTaskEndDate)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="assignedTo" className="text-right">
+                                    Assign To
+                                </Label>
+                                <Select
+                                    value={newTaskAssignedTo}
+                                    onValueChange={setNewTaskAssignedTo}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select a member" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {groupMembers.map((member) => (
+                                            <SelectItem key={member.id} value={member.id.toString()}>
+                                                {member.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="priority" className="text-right">
+                                    Priority
+                                </Label>
+                                <Select
+                                    value={newTaskPriority}
+                                    onValueChange={setNewTaskPriority}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="effort_hours" className="text-right">
+                                    Effort (hours)
+                                </Label>
+                                <Input
+                                    id="effort_hours"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={newTaskEffortHours}
+                                    onChange={(e) => setNewTaskEffortHours(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="importance" className="text-right">
+                                    Importance
+                                </Label>
+                                <Select
+                                    value={newTaskImportance}
+                                    onValueChange={setNewTaskImportance}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select importance" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">1 (Lowest)</SelectItem>
+                                        <SelectItem value="2">2</SelectItem>
+                                        <SelectItem value="3">3 (Medium)</SelectItem>
+                                        <SelectItem value="4">4</SelectItem>
+                                        <SelectItem value="5">5 (Highest)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddTaskModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" onClick={handleAddTask} disabled={isCreatingTask}>
+                                {isCreatingTask ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-current"></div>
+                                        Creating...
+                                    </>
+                                ) : (
+                                    'Create Task'
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Edit Task Modal */}
+                <Dialog open={isEditTaskModalOpen} onOpenChange={setIsEditTaskModalOpen}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle>Edit Task</DialogTitle>
+                            <DialogDescription>
+                                Update the selected task
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-title" className="text-right">
+                                    Title
+                                </Label>
+                                <Input
+                                    id="edit-title"
+                                    value={newTaskTitle}
+                                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-description" className="text-right">
+                                    Description
+                                </Label>
+                                <Textarea
+                                    id="edit-description"
+                                    value={newTaskDescription}
+                                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-startDate" className="text-right">
+                                    Start Date
+                                </Label>
+                                <div className="col-span-3">
+                                    <DatePicker
+                                        selected={newTaskStartDate}
+                                        onSelect={(date) => handleDateChange(date, setNewTaskStartDate)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-endDate" className="text-right">
+                                    Due Date
+                                </Label>
+                                <div className="col-span-3">
+                                    <DatePicker
+                                        selected={newTaskEndDate}
+                                        onSelect={(date) => handleDateChange(date, setNewTaskEndDate)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-assignedTo" className="text-right">
+                                    Assign To
+                                </Label>
+                                <Select
+                                    value={newTaskAssignedTo}
+                                    onValueChange={setNewTaskAssignedTo}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select a member" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {groupMembers.map((member) => (
+                                            <SelectItem key={member.id} value={member.id.toString()}>
+                                                {member.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-priority" className="text-right">
+                                    Priority
+                                </Label>
+                                <Select
+                                    value={newTaskPriority}
+                                    onValueChange={setNewTaskPriority}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-effort_hours" className="text-right">
+                                    Effort (hours)
+                                </Label>
+                                <Input
+                                    id="edit-effort_hours"
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={newTaskEffortHours}
+                                    onChange={(e) => setNewTaskEffortHours(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-importance" className="text-right">
+                                    Importance
+                                </Label>
+                                <Select
+                                    value={newTaskImportance}
+                                    onValueChange={setNewTaskImportance}
+                                >
+                                    <SelectTrigger className="col-span-3">
+                                        <SelectValue placeholder="Select importance" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">1 (Lowest)</SelectItem>
+                                        <SelectItem value="2">2</SelectItem>
+                                        <SelectItem value="3">3 (Medium)</SelectItem>
+                                        <SelectItem value="4">4</SelectItem>
+                                        <SelectItem value="5">5 (Highest)</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsEditTaskModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" onClick={handleEditTask} disabled={isEditingTask}>
+                                {isEditingTask ? (
+                                    <>
+                                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-current"></div>
+                                        Updating...
+                                    </>
+                                ) : (
+                                    'Update Task'
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </motion.div>
-
-            {/* Add Task Modal */}
-            <Dialog open={isAddTaskModalOpen} onOpenChange={setIsAddTaskModalOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Add New Task</DialogTitle>
-                        <DialogDescription>
-                            Create a new task for an existing assignment
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="assignment" className="text-right">
-                                Assignment
-                            </Label>
-                            <Select
-                                value={selectedAssignmentId}
-                                onValueChange={setSelectedAssignmentId}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select an assignment" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {assignments.map((assignment) => (
-                                        <SelectItem key={assignment.id} value={assignment.id.toString()}>
-                                            {assignment.title} ({assignment.group_name})
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="title" className="text-right">
-                                Title
-                            </Label>
-                            <Input
-                                id="title"
-                                value={newTaskTitle}
-                                onChange={(e) => setNewTaskTitle(e.target.value)}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="description" className="text-right">
-                                Description
-                            </Label>
-                            <Textarea
-                                id="description"
-                                value={newTaskDescription}
-                                onChange={(e) => setNewTaskDescription(e.target.value)}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="startDate" className="text-right">
-                                Start Date
-                            </Label>
-                            <div className="col-span-3">
-                                <DatePicker
-                                    selected={newTaskStartDate}
-                                    onSelect={setNewTaskStartDate}
-                                    className="w-full"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="endDate" className="text-right">
-                                Due Date
-                            </Label>
-                            <div className="col-span-3">
-                                <DatePicker
-                                    selected={newTaskEndDate}
-                                    onSelect={setNewTaskEndDate}
-                                    className="w-full"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="assignedTo" className="text-right">
-                                Assign To
-                            </Label>
-                            <Select
-                                value={newTaskAssignedTo}
-                                onValueChange={setNewTaskAssignedTo}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select a member" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {groupMembers.map((member) => (
-                                        <SelectItem key={member.id} value={member.id.toString()}>
-                                            {member.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="priority" className="text-right">
-                                Priority
-                            </Label>
-                            <Select
-                                value={newTaskPriority}
-                                onValueChange={setNewTaskPriority}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="low">Low</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="high">High</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="effort_hours" className="text-right">
-                                Effort (hours)
-                            </Label>
-                            <Input
-                                id="effort_hours"
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={newTaskEffortHours}
-                                onChange={(e) => setNewTaskEffortHours(e.target.value)}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="importance" className="text-right">
-                                Importance
-                            </Label>
-                            <Select
-                                value={newTaskImportance}
-                                onValueChange={setNewTaskImportance}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select importance" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">1 (Lowest)</SelectItem>
-                                    <SelectItem value="2">2</SelectItem>
-                                    <SelectItem value="3">3 (Medium)</SelectItem>
-                                    <SelectItem value="4">4</SelectItem>
-                                    <SelectItem value="5">5 (Highest)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddTaskModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" onClick={handleAddTask} disabled={isCreatingTask}>
-                            {isCreatingTask ? (
-                                <>
-                                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-current"></div>
-                                    Creating...
-                                </>
-                            ) : (
-                                'Create Task'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Edit Task Modal */}
-            <Dialog open={isEditTaskModalOpen} onOpenChange={setIsEditTaskModalOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Edit Task</DialogTitle>
-                        <DialogDescription>
-                            Update the selected task
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-title" className="text-right">
-                                Title
-                            </Label>
-                            <Input
-                                id="edit-title"
-                                value={newTaskTitle}
-                                onChange={(e) => setNewTaskTitle(e.target.value)}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-description" className="text-right">
-                                Description
-                            </Label>
-                            <Textarea
-                                id="edit-description"
-                                value={newTaskDescription}
-                                onChange={(e) => setNewTaskDescription(e.target.value)}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-startDate" className="text-right">
-                                Start Date
-                            </Label>
-                            <div className="col-span-3">
-                                <DatePicker
-                                    selected={newTaskStartDate}
-                                    onSelect={setNewTaskStartDate}
-                                    className="w-full"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-endDate" className="text-right">
-                                Due Date
-                            </Label>
-                            <div className="col-span-3">
-                                <DatePicker
-                                    selected={newTaskEndDate}
-                                    onSelect={setNewTaskEndDate}
-                                    className="w-full"
-                                />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-assignedTo" className="text-right">
-                                Assign To
-                            </Label>
-                            <Select
-                                value={newTaskAssignedTo}
-                                onValueChange={setNewTaskAssignedTo}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select a member" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {groupMembers.map((member) => (
-                                        <SelectItem key={member.id} value={member.id.toString()}>
-                                            {member.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-priority" className="text-right">
-                                Priority
-                            </Label>
-                            <Select
-                                value={newTaskPriority}
-                                onValueChange={setNewTaskPriority}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="low">Low</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="high">High</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-effort_hours" className="text-right">
-                                Effort (hours)
-                            </Label>
-                            <Input
-                                id="edit-effort_hours"
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={newTaskEffortHours}
-                                onChange={(e) => setNewTaskEffortHours(e.target.value)}
-                                className="col-span-3"
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-importance" className="text-right">
-                                Importance
-                            </Label>
-                            <Select
-                                value={newTaskImportance}
-                                onValueChange={setNewTaskImportance}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="Select importance" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">1 (Lowest)</SelectItem>
-                                    <SelectItem value="2">2</SelectItem>
-                                    <SelectItem value="3">3 (Medium)</SelectItem>
-                                    <SelectItem value="4">4</SelectItem>
-                                    <SelectItem value="5">5 (Highest)</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditTaskModalOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" onClick={handleEditTask} disabled={isEditingTask}>
-                            {isEditingTask ? (
-                                <>
-                                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-t-2 border-current"></div>
-                                    Updating...
-                                </>
-                            ) : (
-                                'Update Task'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </AppLayout>
     );
 }

@@ -16,7 +16,31 @@ class HandleAppearance
      */
     public function handle(Request $request, Closure $next): Response
     {
-        View::share('appearance', $request->cookie('appearance') ?? 'system');
+        // Get the appearance setting from cookie or default to system
+        $appearance = $request->cookie('appearance') ?? 'system';
+
+        // Share the appearance value with all views
+        View::share('appearance', $appearance);
+
+        // For system preference, try to detect if user prefers dark mode
+        if ($appearance === 'system') {
+            // Default to false (light mode) unless we can detect dark mode preference
+            $prefersDark = false;
+
+            // Check for prefers-color-scheme in the Accept header (some browsers include this)
+            $acceptHeader = $request->header('Accept');
+            if (str_contains($acceptHeader, 'prefers-color-scheme=dark')) {
+                $prefersDark = true;
+            }
+
+            // Check user agent for mobile devices that might indicate dark mode
+            $userAgent = $request->header('User-Agent');
+            if (str_contains(strtolower($userAgent), 'dark mode')) {
+                $prefersDark = true;
+            }
+
+            View::share('system_prefers_dark', $prefersDark);
+        }
 
         return $next($request);
     }

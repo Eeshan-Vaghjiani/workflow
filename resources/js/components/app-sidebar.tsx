@@ -28,19 +28,16 @@ import { cn } from '@/lib/utils';
 // Animation variants for initial load only
 const sidebarVariants: Variants = {
     hidden: {
-        x: -300,
-        opacity: 0
+        opacity: 1,
+        x: 0
     },
     visible: {
-        x: 0,
         opacity: 1,
+        x: 0,
         transition: {
-            type: "spring",
-            stiffness: 100,
-            damping: 20,
             when: "beforeChildren",
-            staggerChildren: 0.1,
-            delayChildren: 0.2
+            staggerChildren: 0.08,
+            delayChildren: 0.1
         }
     }
 };
@@ -48,26 +45,25 @@ const sidebarVariants: Variants = {
 // Animation variants for items
 const itemVariants: Variants = {
     hidden: {
-        x: -20,
-        opacity: 0
+        x: -100, // Start further left off-screen
+        opacity: 0,
+        scale: 0.8
     },
-    visible: {
+    visible: (i) => ({
         x: 0,
         opacity: 1,
+        scale: 1,
         transition: {
             type: "spring",
-            stiffness: 100,
-            damping: 10
+            stiffness: 70,
+            damping: 8,
+            delay: i * 0.08 // Slightly faster delay
         }
-    }
-};
-
-// Hover animation for nav items
-const navItemHoverVariants: Variants = {
+    }),
     initial: { scale: 1, x: 0 },
     hover: {
-        scale: 1.02,
-        x: 5,
+        scale: 1.05,
+        x: 8,
         transition: {
             type: "spring",
             stiffness: 400,
@@ -189,15 +185,17 @@ export function AppSidebar() {
     const AnimatedNavMain = () => {
         return (
             <nav className="mt-5 px-4 space-y-2">
-                {mainNavItems.map((item) => {
+                {mainNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
                     const IconComponent = item.icon;
 
                     return (
                         <motion.div
                             key={item.title}
-                            variants={shouldAnimate ? itemVariants : undefined}
-                            initial="initial"
+                            variants={itemVariants}
+                            initial={shouldAnimate ? "hidden" : "visible"}
+                            animate="visible"
+                            custom={index}
                             whileHover="hover"
                         >
                             <Link
@@ -205,7 +203,6 @@ export function AppSidebar() {
                                 className="block"
                             >
                                 <motion.div
-                                    variants={navItemHoverVariants}
                                     className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
                                         ${isActive
                                             ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
@@ -213,7 +210,6 @@ export function AppSidebar() {
                                         }`}
                                 >
                                     <motion.div
-                                        initial={{ rotate: 0 }}
                                         whileHover={{ rotate: isActive ? 0 : 10 }}
                                         className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
                                     >
@@ -254,15 +250,17 @@ export function AppSidebar() {
                         User
                     </h3>
                 )}
-                {settingsNavItems.map((item) => {
+                {settingsNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
                     const IconComponent = item.icon;
 
                     return (
                         <motion.div
                             key={item.title}
-                            variants={shouldAnimate ? itemVariants : undefined}
-                            initial="initial"
+                            variants={itemVariants}
+                            initial={shouldAnimate ? "hidden" : "visible"}
+                            animate="visible"
+                            custom={index}
                             whileHover="hover"
                         >
                             <Link
@@ -270,7 +268,6 @@ export function AppSidebar() {
                                 className="block"
                             >
                                 <motion.div
-                                    variants={navItemHoverVariants}
                                     className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
                                         ${isActive
                                             ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
@@ -278,7 +275,6 @@ export function AppSidebar() {
                                         }`}
                                 >
                                     <motion.div
-                                        initial={{ rotate: 0 }}
                                         whileHover={{ rotate: isActive ? 0 : 10 }}
                                         className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
                                     >
@@ -313,12 +309,15 @@ export function AppSidebar() {
     return (
         <motion.aside
             className={cn(
-                "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-r border-gray-200/50 dark:border-gray-700/30 shadow-sm flex-shrink-0 overflow-y-auto futuristic-scrollbar transition-all duration-300",
+                "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-r border-gray-200/50 dark:border-gray-700/30 shadow-sm flex-shrink-0 overflow-y-auto futuristic-scrollbar",
                 isCollapsed ? "w-[4.5rem]" : "w-64"
             )}
-            initial={shouldAnimate ? "hidden" : "visible"}
+            initial="hidden"
             animate="visible"
             variants={sidebarVariants}
+            style={{
+                transition: "width 0.3s ease-in-out"
+            }}
         >
             <div className="px-6 py-6">
                 <Link href="/dashboard" className="flex items-center space-x-2">
@@ -358,16 +357,19 @@ export function AppSidebar() {
                     variant="ghost"
                     size="sm"
                     onClick={toggleCollapse}
-                    className="rounded-full p-2 bg-softBlue/30 dark:bg-gray-800/30 hover:bg-softBlue/50 dark:hover:bg-gray-700/50"
+                    className="rounded-full p-2 bg-softBlue/50 dark:bg-gray-800/70 hover:bg-softBlue/70 dark:hover:bg-gray-700/90 shadow-md z-10"
+                    magnetic={true}
                 >
                     <motion.div
                         animate={{ rotate: isCollapsed ? 0 : 180 }}
                         transition={{ duration: 0.3 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
                     >
                         {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4 text-primary-500 dark:text-neon-green" />
+                            <ChevronRight className="h-5 w-5 text-primary-600 dark:text-neon-green" />
                         ) : (
-                            <ChevronLeft className="h-4 w-4 text-primary-500 dark:text-neon-green" />
+                            <ChevronLeft className="h-5 w-5 text-primary-600 dark:text-neon-green" />
                         )}
                     </motion.div>
                 </EnhancedButton>

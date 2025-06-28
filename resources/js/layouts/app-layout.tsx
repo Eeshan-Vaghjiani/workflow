@@ -128,7 +128,6 @@ export default function AppLayout({ children, breadcrumbs, ...props }: AppLayout
 
     return (
         <div className="flex h-screen bg-background text-foreground">
-            {shouldUseMouseFollower && <MouseFollower theme={theme} />}
 
             <AnimatePresence mode="wait">
                 <motion.div

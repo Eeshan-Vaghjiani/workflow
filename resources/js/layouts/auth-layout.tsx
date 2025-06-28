@@ -40,7 +40,6 @@ export default function AuthLayout({ children, title, description, ...props }: {
 
     return (
         <>
-            {shouldUseMouseFollower && <MouseFollower theme={theme} />}
 
             <AnimatePresence mode="wait">
                 <motion.div

@@ -279,69 +279,130 @@ class DirectMessageController extends Controller
     public function destroy($id)
     {
         try {
-            Log::info('Attempting to delete message', ['id' => $id]);
-
-            // Handle temporary IDs from frontend
-            if (is_string($id) && strpos($id, 'temp-') === 0) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Temporary message removed from UI only',
-                    'id' => $id
-                ]);
-            }
-
-            // Find the message
-            $message = DirectMessage::find($id);
-
-            // Check if message exists
-            if (!$message) {
-                Log::warning('Message not found for deletion', ['id' => $id]);
-                return response()->json([
-                    'error' => 'Message not found',
-                ], 404);
-            }
-
-            // Check authorization
+            $message = DirectMessage::findOrFail($id);
             $currentUser = auth()->user();
-            if ($message->sender_id !== $currentUser->id && $message->receiver_id !== $currentUser->id) {
-                Log::warning('Unauthorized message deletion attempt', [
+
+            // Check if the user is authorized to delete this message
+            if ($message->sender_id != $currentUser->id) {
+                Log::warning('Unauthorized attempt to delete message', [
+                    'user_id' => $currentUser->id,
                     'message_id' => $id,
-                    'user_id' => $currentUser->id
+                    'message_sender' => $message->sender_id
                 ]);
+
                 return response()->json([
-                    'error' => 'Unauthorized to delete this message',
+                    'error' => 'You are not authorized to delete this message'
                 ], 403);
             }
 
-            // Prepare data for broadcasting
-            $messageData = [
-                'id' => $message->id,
-                'sender_id' => $message->sender_id,
-                'receiver_id' => $message->receiver_id,
-                'deleted_by' => $currentUser->id,
-                'deleted_at' => now()
-            ];
+            // Instead of deleting, mark as deleted (soft delete)
+            $message->deleted_at = now();
+            $message->save();
 
-            // Soft delete the message
-            $message->delete();
+            // Broadcast message deletion event
+            broadcast(new MessageDeleted($message->id, 'direct'))->toOthers();
 
-            // Broadcast deletion event
-            broadcast(new MessageDeleted($message, $messageData));
-
-            Log::info('Message deleted successfully', ['id' => $id]);
+            Log::info('Message soft deleted', [
+                'message_id' => $id,
+                'user_id' => $currentUser->id
+            ]);
 
             return response()->json([
-                'success' => true,
-                'message' => 'Message deleted successfully',
-                'id' => $id
+                'message' => 'Message deleted successfully'
             ]);
         } catch (\Exception $e) {
-            Log::error('Error deleting message: ' . $e->getMessage(), [
-                'id' => $id,
+            Log::error('Error deleting message', [
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
+
             return response()->json([
                 'error' => 'Failed to delete message',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reply to a direct message
+     */
+    public function reply(Request $request, $messageId)
+    {
+        try {
+            $validated = $request->validate([
+                'message' => 'required|string|max:1000',
+            ]);
+
+            $currentUser = auth()->user();
+
+            // Find the original message
+            $originalMessage = DirectMessage::findOrFail($messageId);
+
+            // Determine who to send the reply to
+            $receiverId = $originalMessage->sender_id == $currentUser->id
+                ? $originalMessage->receiver_id
+                : $originalMessage->sender_id;
+
+            // Create the reply message
+            $message = DirectMessage::create([
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $receiverId,
+                'message' => $validated['message'],
+                'parent_id' => $messageId, // Set the parent_id to indicate this is a reply
+                'read' => false,
+            ]);
+
+            // Load sender relationship
+            $message->load('sender:id,name,avatar');
+            $message->load('parent'); // Load the parent message
+
+            // Format for response
+            $messageData = [
+                'id' => $message->id,
+                'content' => $message->message,
+                'message' => $message->message,
+                'timestamp' => $message->created_at->format('g:i A'),
+                'date' => $message->created_at->format('M j, Y'),
+                'created_at' => $message->created_at,
+                'is_from_me' => false,
+                'user_id' => $currentUser->id,
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $receiverId,
+                'parent_id' => $messageId,
+                'parent' => [
+                    'id' => $originalMessage->id,
+                    'content' => $originalMessage->message,
+                    'sender' => [
+                        'id' => $originalMessage->sender_id,
+                        'name' => $originalMessage->sender->name,
+                    ]
+                ],
+                'user' => [
+                    'id' => $currentUser->id,
+                    'name' => $currentUser->name,
+                    'avatar' => $currentUser->avatar
+                ],
+            ];
+
+            // Broadcast the message
+            broadcast(new NewDirectMessage($message, $messageData))->toOthers();
+
+            Log::info('Reply message sent', [
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $receiverId,
+                'message_id' => $message->id,
+                'parent_id' => $messageId
+            ]);
+
+            return response()->json($messageData);
+        } catch (\Exception $e) {
+            Log::error('Error sending reply message', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to send reply',
                 'message' => $e->getMessage()
             ], 500);
         }

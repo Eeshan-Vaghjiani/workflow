@@ -9,8 +9,37 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, X, UserPlus, Users, Info } from 'lucide-react';
+import { Search, X, UserPlus, Users, Info, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { Plus } from 'lucide-react';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
+
+// Enhanced animation variants
+const messageVariants = {
+    hidden: { opacity: 0, scale: 0.8, y: 20 },
+    visible: {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 400,
+            damping: 25
+        }
+    },
+    exit: {
+        opacity: 0,
+        scale: 0.8,
+        y: -20,
+        transition: {
+            duration: 0.3,
+            ease: "easeInOut"
+        }
+    }
+};
 
 interface User {
     id: number;
@@ -552,12 +581,20 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
     // Render chat UI with proper mobile responsiveness
     return (
-        <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+        <motion.div
+            className="flex h-full overflow-hidden"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
             {/* Chat Sidebar (hidden on mobile when chat is selected) */}
-            <div className={`
-        w-full md:w-80 flex-shrink-0 border-r dark:border-gray-700
-        ${selectedChat ? 'hidden md:block' : 'block'}
-      `}>
+            <motion.div
+                className={`
+                    w-full md:w-80 flex-shrink-0 border-r dark:border-gray-700
+                    ${selectedChat ? 'hidden md:block' : 'block'}
+                `}
+                variants={itemVariants}
+            >
                 <ChatSidebar
                     chats={chats}
                     selectedChatId={selectedChat?.id}
@@ -567,13 +604,16 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                     onSettingsClick={() => { }}
                     currentUserId={currentUser.id}
                 />
-            </div>
+            </motion.div>
 
             {/* Main Chat Area */}
-            <div className={`
-        flex-1 flex flex-col
-        ${selectedChat ? 'block' : 'hidden md:block'}
-      `}>
+            <motion.div
+                className={`
+                    flex-1 flex flex-col h-full
+                    ${selectedChat ? 'block' : 'hidden md:block'}
+                `}
+                variants={itemVariants}
+            >
                 {selectedChat ? (
                     <>
                         {/* Chat Header */}
@@ -598,46 +638,73 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                         />
 
                         {/* Messages */}
-                        <div className="flex-1 overflow-hidden">
-                            <ChatList
-                                messages={messages}
-                                currentUserId={currentUser.id}
-                                isLoading={isLoadingMessages}
-                                onMessageDelete={handleDeleteMessage}
-                                onMessageReply={() => { }}
-                                onMessageReaction={handleMessageReaction}
-                                onMessageForward={() => { }}
-                                conversationType={selectedChat.type}
-                            />
-                        </div>
+                        <motion.div
+                            className="flex-1 overflow-hidden h-full"
+                            variants={itemVariants}
+                        >
+                            <AnimatePresence>
+                                <ChatList
+                                    messages={messages}
+                                    currentUserId={currentUser.id}
+                                    isLoading={isLoadingMessages}
+                                    onMessageDelete={handleDeleteMessage}
+                                    onMessageReply={() => { }}
+                                    onMessageReaction={handleMessageReaction}
+                                    onMessageForward={() => { }}
+                                    conversationType={selectedChat.type}
+                                />
+                            </AnimatePresence>
+                        </motion.div>
 
                         {/* Chat Input */}
-                        <ChatInput
-                            onSendMessage={sendMessage}
-                            onTyping={() => { }}
-                            conversationId={selectedChat.id}
-                        />
+                        <motion.div variants={itemVariants}>
+                            <ChatInput
+                                onSendMessage={sendMessage}
+                                onTyping={() => { }}
+                                conversationId={selectedChat.id}
+                            />
+                        </motion.div>
                     </>
                 ) : (
-                    <div className="flex items-center justify-center h-full bg-gray-50 dark:bg-gray-900">
-                        <div className="text-center">
-                            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                Select a conversation
-                            </h3>
-                            <p className="text-gray-500 dark:text-gray-400">
-                                Choose an existing conversation or start a new one
-                            </p>
-                            <Button
-                                className="mt-4 bg-blue-500 hover:bg-blue-600 text-white"
-                                onClick={() => setShowNewChatModal(true)}
+                    <motion.div
+                        className="flex items-center justify-center h-full"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <GlassContainer className="max-w-md p-8 text-center">
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{
+                                    type: "spring",
+                                    stiffness: 300,
+                                    damping: 25,
+                                    delay: 0.3
+                                }}
                             >
-                                <UserPlus className="h-5 w-5 mr-2" />
-                                New Chat
-                            </Button>
-                        </div>
-                    </div>
+                                <div className="mb-6">
+                                    <div className="w-20 h-20 mx-auto bg-primary-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                                        <MessageSquare className="h-10 w-10 text-primary-500 dark:text-neon-green" />
+                                    </div>
+                                </div>
+                                <h3 className="text-xl font-semibold mb-2">
+                                    Select a conversation
+                                </h3>
+                                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                                    Choose an existing conversation or start a new one
+                                </p>
+                                <EnhancedButton
+                                    onClick={() => setShowNewChatModal(true)}
+                                    icon={<UserPlus className="h-5 w-5" />}
+                                >
+                                    New Chat
+                                </EnhancedButton>
+                            </motion.div>
+                        </GlassContainer>
+                    </motion.div>
                 )}
-            </div>
+            </motion.div>
 
             {/* New Chat Modal */}
             <Dialog open={showNewChatModal} onOpenChange={setShowNewChatModal}>
@@ -652,47 +719,67 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    searchUsers(e.target.value);
+                                    if (e.target.value.length >= 2) {
+                                        searchUsers(e.target.value);
+                                    }
                                 }}
-                                className="pl-10"
+                                className="pl-10 pr-4"
                             />
                         </div>
 
-                        <ScrollArea className="h-60">
+                        <div className="relative">
                             {isSearching ? (
-                                <div className="flex justify-center p-4">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                                </div>
-                            ) : searchResults.length === 0 ? (
-                                <div className="text-center p-4 text-gray-500">
-                                    {searchQuery ? 'No users found' : 'Type to search for users'}
+                                <div className="flex justify-center py-4">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 dark:border-neon-green"></div>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {searchResults.map(user => (
-                                        <div
-                                            key={user.id}
-                                            className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer"
-                                            onClick={() => handleCreateDirectChat(user)}
-                                        >
-                                            <Avatar className="h-10 w-10 mr-3">
-                                                {user.avatar ? (
-                                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                                ) : (
-                                                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                                                )}
-                                            </Avatar>
-                                            <div>
-                                                <div className="font-medium">{user.name}</div>
-                                                {user.email && (
-                                                    <div className="text-sm text-gray-500">{user.email}</div>
-                                                )}
+                                <ScrollArea className="h-60">
+                                    <AnimatePresence>
+                                        {searchResults.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {searchResults.map((user) => (
+                                                    <motion.div
+                                                        key={user.id}
+                                                        className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer"
+                                                        onClick={() => handleCreateDirectChat(user)}
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -10 }}
+                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                        whileHover={{ scale: 1.02 }}
+                                                    >
+                                                        <div className="flex items-center">
+                                                            <Avatar className="h-10 w-10">
+                                                                <AvatarImage src={user.avatar} alt={user.name} />
+                                                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="ml-3">
+                                                                <div className="font-medium">{user.name}</div>
+                                                                {user.email && <div className="text-xs text-gray-500">{user.email}</div>}
+                                                            </div>
+                                                        </div>
+                                                        <EnhancedButton size="sm" variant="ghost">Chat</EnhancedButton>
+                                                    </motion.div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                        ) : searchQuery.length >= 2 ? (
+                                            <div className="text-center py-4 text-gray-500">
+                                                No users found
+                                            </div>
+                                        ) : null}
+                                    </AnimatePresence>
+                                </ScrollArea>
                             )}
-                        </ScrollArea>
+                        </div>
+
+                        <div className="mt-4 flex justify-end">
+                            <EnhancedButton
+                                variant="outline"
+                                onClick={() => setShowNewChatModal(false)}
+                            >
+                                Cancel
+                            </EnhancedButton>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>
@@ -701,13 +788,33 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
             <Dialog open={showNewGroupModal} onOpenChange={setShowNewGroupModal}>
                 <DialogContent className="sm:max-w-md">
                     <div className="space-y-4">
-                        <div className="text-xl font-semibold">Create Group Chat</div>
+                        <div className="text-xl font-semibold">Create New Group</div>
 
-                        <Input
-                            placeholder="Group name"
-                            value={groupName}
-                            onChange={(e) => setGroupName(e.target.value)}
-                        />
+                        <div>
+                            <Input
+                                placeholder="Group name"
+                                value={groupName}
+                                onChange={(e) => setGroupName(e.target.value)}
+                                className="mb-4"
+                            />
+                        </div>
+
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {selectedUsers.map(user => (
+                                <div
+                                    key={user.id}
+                                    className="flex items-center gap-1 bg-primary-100 dark:bg-gray-700 px-2 py-1 rounded-full"
+                                >
+                                    <span className="text-xs">{user.name}</span>
+                                    <button
+                                        onClick={() => setSelectedUsers(prev => prev.filter(u => u.id !== user.id))}
+                                        className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
 
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -716,80 +823,81 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    searchUsers(e.target.value);
+                                    if (e.target.value.length >= 2) {
+                                        searchUsers(e.target.value);
+                                    }
                                 }}
-                                className="pl-10"
+                                className="pl-10 pr-4"
                             />
                         </div>
 
-                        {/* Selected users */}
-                        {selectedUsers.length > 0 && (
-                            <div className="flex flex-wrap gap-2 p-2 border rounded-md">
-                                {selectedUsers.map(user => (
-                                    <div key={user.id} className="flex items-center bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">
-                                        <span className="text-sm text-blue-800 dark:text-blue-100">{user.name}</span>
-                                        <button
-                                            className="ml-1 text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100"
-                                            onClick={() => setSelectedUsers(prev => prev.filter(u => u.id !== user.id))}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <ScrollArea className="h-60">
+                        <div className="relative">
                             {isSearching ? (
-                                <div className="flex justify-center p-4">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                                </div>
-                            ) : searchResults.length === 0 ? (
-                                <div className="text-center p-4 text-gray-500">
-                                    {searchQuery ? 'No users found' : 'Type to search for users'}
+                                <div className="flex justify-center py-4">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 dark:border-neon-green"></div>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
-                                    {searchResults
-                                        .filter(user => !selectedUsers.some(u => u.id === user.id))
-                                        .map(user => (
-                                            <div
-                                                key={user.id}
-                                                className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer"
-                                                onClick={() => setSelectedUsers(prev => [...prev, user])}
-                                            >
-                                                <Avatar className="h-10 w-10 mr-3">
-                                                    {user.avatar ? (
-                                                        <AvatarImage src={user.avatar} alt={user.name} />
-                                                    ) : (
-                                                        <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
-                                                    )}
-                                                </Avatar>
-                                                <div>
-                                                    <div className="font-medium">{user.name}</div>
-                                                    {user.email && (
-                                                        <div className="text-sm text-gray-500">{user.email}</div>
-                                                    )}
-                                                </div>
+                                <ScrollArea className="h-60">
+                                    <AnimatePresence>
+                                        {searchResults.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {searchResults
+                                                    .filter(user => !selectedUsers.some(selected => selected.id === user.id))
+                                                    .map((user) => (
+                                                        <motion.div
+                                                            key={user.id}
+                                                            className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer"
+                                                            onClick={() => setSelectedUsers(prev => [...prev, user])}
+                                                            initial={{ opacity: 0, y: 10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                            whileHover={{ scale: 1.02 }}
+                                                        >
+                                                            <div className="flex items-center">
+                                                                <Avatar className="h-10 w-10">
+                                                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="ml-3">
+                                                                    <div className="font-medium">{user.name}</div>
+                                                                    {user.email && <div className="text-xs text-gray-500">{user.email}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <EnhancedButton size="sm" variant="ghost" icon={<Plus className="h-4 w-4" />}>
+                                                                Add
+                                                            </EnhancedButton>
+                                                        </motion.div>
+                                                    ))}
                                             </div>
-                                        ))}
-                                </div>
+                                        ) : searchQuery.length >= 2 ? (
+                                            <div className="text-center py-4 text-gray-500">
+                                                No users found
+                                            </div>
+                                        ) : null}
+                                    </AnimatePresence>
+                                </ScrollArea>
                             )}
-                        </ScrollArea>
+                        </div>
 
-                        <div className="flex justify-end">
-                            <Button
-                                onClick={handleCreateGroupChat}
-                                disabled={!groupName.trim() || selectedUsers.length === 0}
-                                className="bg-blue-500 hover:bg-blue-600 text-white"
+                        <div className="mt-4 flex justify-between">
+                            <EnhancedButton
+                                variant="outline"
+                                onClick={() => setShowNewGroupModal(false)}
                             >
-                                <Users className="h-5 w-5 mr-2" />
+                                Cancel
+                            </EnhancedButton>
+                            <EnhancedButton
+                                onClick={handleCreateGroupChat}
+                                disabled={!groupName || selectedUsers.length === 0}
+                                icon={<Users className="h-4 w-4" />}
+                            >
                                 Create Group
-                            </Button>
+                            </EnhancedButton>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
-        </div>
+        </motion.div>
     );
 }

@@ -23,7 +23,7 @@ class ChatController extends Controller
     {
         $currentUserId = auth()->id();
 
-        return Inertia::render('Chat/Index', [
+        return Inertia::render('Chat/ChatWrapper', [
             'currentUserId' => $currentUserId,
         ]);
     }

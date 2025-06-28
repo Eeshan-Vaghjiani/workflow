@@ -1,15 +1,16 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useEffect } from 'react';
 import { refreshCsrfToken } from '../../Utils/csrf.js';
+import { motion, Variants } from 'framer-motion';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import { GlassContainer } from '@/components/ui/glass-container';
 
 type LoginForm = {
     email: string;
@@ -21,6 +22,31 @@ interface LoginProps {
     status?: string;
     canResetPassword: boolean;
 }
+
+// Animation variants
+const formVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.2
+        }
+    }
+};
+
+const inputVariants: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 15
+        }
+    }
+};
 
 export default function Login({ status, canResetPassword }: LoginProps) {
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
@@ -48,9 +74,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
         <AuthLayout title="Log in to your account" description="Enter your email and password below to log in">
             <Head title="Log in" />
 
-            <form className="flex flex-col gap-6" onSubmit={submit}>
+            <motion.form
+                className="flex flex-col gap-6"
+                onSubmit={submit}
+                variants={formVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 <div className="grid gap-6">
-                    <div className="grid gap-2">
+                    <motion.div className="grid gap-2" variants={inputVariants}>
                         <Label htmlFor="email" className="dark:text-gray-300">Email address</Label>
                         <Input
                             id="email"
@@ -62,16 +94,16 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
                             placeholder="email@example.com"
-                            className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                            className="dark:bg-gray-700/70 dark:text-gray-200 dark:border-gray-600 backdrop-blur-sm transition-all duration-200"
                         />
                         <InputError message={errors.email} />
-                    </div>
+                    </motion.div>
 
-                    <div className="grid gap-2">
+                    <motion.div className="grid gap-2" variants={inputVariants}>
                         <div className="flex items-center">
                             <Label htmlFor="password" className="dark:text-gray-300">Password</Label>
                             {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm dark:text-gray-300 dark:hover:text-white" tabIndex={5}>
+                                <TextLink href={route('password.request')} className="ml-auto text-sm dark:text-gray-300 dark:hover:text-white hover:text-primary-600 transition-colors" tabIndex={5}>
                                     Forgot password?
                                 </TextLink>
                             )}
@@ -85,12 +117,12 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
                             placeholder="Password"
-                            className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                            className="dark:bg-gray-700/70 dark:text-gray-200 dark:border-gray-600 backdrop-blur-sm transition-all duration-200"
                         />
-                        <InputError message={errors.password} />
-                    </div>
+                        <InputError message={errors.email} />
+                    </motion.div>
 
-                    <div className="flex items-center space-x-3">
+                    <motion.div className="flex items-center space-x-3" variants={inputVariants}>
                         <Checkbox
                             id="remember"
                             name="remember"
@@ -100,23 +132,48 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             className="dark:border-gray-600"
                         />
                         <Label htmlFor="remember" className="dark:text-gray-300">Remember me</Label>
-                    </div>
+                    </motion.div>
 
-                    <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
-                        {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Log in
-                    </Button>
+                    <motion.div variants={inputVariants}>
+                        <EnhancedButton
+                            type="submit"
+                            className="mt-4 w-full bg-primary hover:bg-primary-600 text-white"
+                            tabIndex={4}
+                            disabled={processing}
+                            loading={processing}
+                            magnetic={true}
+                            size="lg"
+                        >
+                            Log in
+                        </EnhancedButton>
+                    </motion.div>
                 </div>
 
-                <div className="text-muted-foreground text-center text-sm dark:text-gray-400">
+                <motion.div
+                    className="text-muted-foreground text-center text-sm dark:text-gray-400"
+                    variants={inputVariants}
+                >
                     Don't have an account?{' '}
-                    <TextLink href={route('register')} tabIndex={5} className="dark:text-gray-300 dark:hover:text-white">
+                    <TextLink href={route('register')} tabIndex={5} className="dark:text-gray-300 dark:hover:text-white hover:text-primary-600 transition-colors">
                         Sign up
                     </TextLink>
-                </div>
-            </form>
+                </motion.div>
+            </motion.form>
 
-            {status && <div className="mb-4 text-center text-sm font-medium text-green-600 dark:text-green-400">{status}</div>}
+            {status && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-4"
+                >
+                    <GlassContainer className="p-3 bg-green-500/10 dark:bg-green-500/20">
+                        <p className="text-center text-sm font-medium text-green-600 dark:text-green-400">
+                            {status}
+                        </p>
+                    </GlassContainer>
+                </motion.div>
+            )}
         </AuthLayout>
     );
 }

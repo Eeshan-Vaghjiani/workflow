@@ -1,13 +1,14 @@
 // Components
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
+import { motion } from 'framer-motion';
 
 import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 export default function ConfirmPassword() {
     const { data, setData, post, processing, errors, reset } = useForm<Required<{ password: string }>>({
@@ -29,9 +30,14 @@ export default function ConfirmPassword() {
         >
             <Head title="Confirm password" />
 
-            <form onSubmit={submit}>
+            <motion.form
+                onSubmit={submit}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 <div className="space-y-6">
-                    <div className="grid gap-2">
+                    <motion.div className="grid gap-2" variants={itemVariants}>
                         <Label htmlFor="password" className="dark:text-gray-300">Password</Label>
                         <Input
                             id="password"
@@ -42,20 +48,26 @@ export default function ConfirmPassword() {
                             value={data.password}
                             autoFocus
                             onChange={(e) => setData('password', e.target.value)}
-                            className="dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600"
+                            className="dark:bg-gray-700/70 dark:text-gray-200 dark:border-gray-600 backdrop-blur-sm transition-all duration-200"
                         />
 
                         <InputError message={errors.password} />
-                    </div>
+                    </motion.div>
 
-                    <div className="flex items-center">
-                        <Button className="w-full" disabled={processing}>
-                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                    <motion.div className="flex items-center" variants={itemVariants}>
+                        <EnhancedButton
+                            className="w-full"
+                            disabled={processing}
+                            loading={processing}
+                            variant="primary"
+                            size="lg"
+                            magnetic={true}
+                        >
                             Confirm password
-                        </Button>
-                    </div>
+                        </EnhancedButton>
+                    </motion.div>
                 </div>
-            </form>
+            </motion.form>
         </AuthLayout>
     );
 }

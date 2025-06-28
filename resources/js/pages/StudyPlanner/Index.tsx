@@ -3,6 +3,9 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import StudyPlanner from '@/components/StudyPlanner';
+import { motion } from 'framer-motion';
+import { Card3D } from '@/components/ui/card-3d';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 interface Props {
     userId: number;
@@ -39,12 +42,26 @@ export default function Index({ userId }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Study Planner" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Study Planner</h1>
-                </div>
-                <StudyPlanner userId={userId} />
-            </div>
+            <motion.div
+                className="flex h-full flex-1 flex-col gap-6 p-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div variants={itemVariants}>
+                    <Card3D className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Study Planner</h1>
+                        </div>
+                        <motion.div
+                            variants={itemVariants}
+                            className="w-full"
+                        >
+                            <StudyPlanner userId={userId} />
+                        </motion.div>
+                    </Card3D>
+                </motion.div>
+            </motion.div>
         </AppLayout>
     );
 }

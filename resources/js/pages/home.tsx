@@ -155,10 +155,8 @@ const HomePage = () => {
                 const response = await axios.get('/debug/auth-status');
                 setIsAuthenticated(response.data.authenticated);
 
-                // If user is authenticated and admin, redirect to admin dashboard
-                if (response.data.authenticated && response.data.user?.is_admin) {
-                    window.location.href = '/admin';
-                } else if (response.data.authenticated) {
+                // If user is authenticated, redirect to dashboard (both normal users and admins)
+                if (response.data.authenticated) {
                     window.location.href = '/dashboard';
                 }
             } catch (error) {

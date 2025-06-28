@@ -20,6 +20,7 @@ class DirectMessage extends Model
         'receiver_id',
         'message',
         'read',
+        'parent_id',
     ];
 
     /**
@@ -48,5 +49,39 @@ class DirectMessage extends Model
     public function receiver()
     {
         return $this->belongsTo(User::class, 'receiver_id');
+    }
+
+    /**
+     * Get the parent message if this is a reply.
+     */
+    public function parent()
+    {
+        return $this->belongsTo(DirectMessage::class, 'parent_id');
+    }
+
+    /**
+     * Get all replies to this message.
+     */
+    public function replies()
+    {
+        return $this->hasMany(DirectMessage::class, 'parent_id');
+    }
+
+    /**
+     * Get all attachments for this message.
+     */
+    public function attachments()
+    {
+        return $this->hasMany(MessageAttachment::class, 'message_id')
+            ->where('message_type', 'direct');
+    }
+
+    /**
+     * Check if this message has been pinned.
+     */
+    public function pins()
+    {
+        return $this->hasMany(PinnedMessage::class, 'message_id')
+            ->where('message_type', 'direct');
     }
 }

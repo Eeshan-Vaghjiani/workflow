@@ -88,6 +88,26 @@ class AIService
     public function processTaskPrompt(string $prompt, int $userId, int $groupId): array
     {
         try {
+            // Check if the user has prompts remaining
+            $user = \App\Models\User::find($userId);
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'error' => 'User not found',
+                    'redirect_to_pricing' => false
+                ];
+            }
+
+            // Use the PromptService to check and consume a prompt
+            $promptService = app(\App\Services\PromptService::class);
+            if (!$promptService->hasPromptsRemaining($user)) {
+                return [
+                    'success' => false,
+                    'error' => 'You have no AI prompts remaining. Please purchase more to continue using AI services.',
+                    'redirect_to_pricing' => true
+                ];
+            }
+
             // Start timing the response
             $startTime = microtime(true);
 
@@ -351,31 +371,17 @@ class AIService
                 ]
             ]);
 
+            // After successful response processing, use a prompt
+            $promptService->usePrompt($user, 'task_creation');
+
             return $content;
         } catch (\Exception $e) {
-            Log::error('Exception in AI processing', [
-                'error' => $e->getMessage(),
+            Log::error('Error in processTaskPrompt: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
-
-            // Update the AI prompt record with exception details if it exists
-            if (isset($aiPrompt)) {
-                $aiPrompt->update([
-                    'response' => $e->getMessage(),
-                    'metadata' => [
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine(),
-                        'trace' => $e->getTraceAsString()
-                    ]
-                ]);
-            }
-
             return [
-                'error' => 'AI Service Error: ' . $e->getMessage(),
-                'debug' => [
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine()
-                ]
+                'success' => false,
+                'error' => 'An error occurred while processing your request: ' . $e->getMessage()
             ];
         }
     }

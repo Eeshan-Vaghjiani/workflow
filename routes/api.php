@@ -23,6 +23,8 @@ use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\StudyPlannerController;
 use App\Http\Controllers\CalendarController as CalendarControllerGroup;
 use App\Http\Controllers\MpesaController;
+use App\Http\Controllers\API\PricingController;
+use App\Http\Controllers\API\PromptController;
 
 /*
 |--------------------------------------------------------------------------
@@ -170,6 +172,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{group}/assignments/ai-create', [AITaskController::class, 'createAssignment']);
     Route::post('groups/{group}/assignments/{assignment}/tasks/ai-create', [AITaskController::class, 'addTasksToAssignment']);
     Route::post('groups/{group}/ai-tasks/distribute', [AITaskController::class, 'autoDistributeTasks']);
+
+    // AI Pricing and Prompts
+    Route::get('/pricing', [PricingController::class, 'index']);
+    Route::get('/pricing/{id}', [PricingController::class, 'show']);
+    Route::post('/pricing/purchase', [PricingController::class, 'purchase']);
+    Route::get('/user/prompts', [PromptController::class, 'getBalance']);
+    Route::post('/ai/use-prompt', [PromptController::class, 'usePrompt']);
 
     // Auto-distribute tasks
     Route::post('groups/{groupId}/assignments/{assignmentId}/auto-distribute', [App\Http\Controllers\GroupTaskController::class, 'autoDistributeTasksAPI']);

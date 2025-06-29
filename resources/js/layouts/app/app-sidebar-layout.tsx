@@ -1,4 +1,3 @@
-
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
@@ -50,14 +49,15 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
     return (
         <AppShell variant="sidebar">
             <AppSidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex flex-col flex-1 overflow-hidden pl-0">
                 <motion.div
                     variants={headerVariants}
                     initial="initial"
                     animate="animate"
+                    className="px-1 pt-1"
                 >
                     <GlassContainer
-                        className="mb-4"
+                        className="mb-2"
                         blurIntensity="sm"
                         border={true}
                     >
@@ -66,7 +66,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
                 </motion.div>
 
                 <motion.main
-                    className="flex-1 overflow-y-auto p-4 md:p-6 bg-softBlue/30 dark:bg-gray-800/30 futuristic-scrollbar h-full flex flex-col"
+                    className="flex-1 overflow-y-auto p-2 md:p-3 bg-gradient-to-br from-softBlue/20 to-white/10 dark:from-gray-800/30 dark:to-gray-900/20 futuristic-scrollbar h-full flex flex-col"
                     initial="initial"
                     animate="animate"
                     exit="exit"

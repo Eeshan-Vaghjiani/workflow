@@ -4,17 +4,23 @@ import { useMagneticHover } from '@/hooks/use-animation';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
+type IconPosition = 'left' | 'right' | 'top';
 
-interface EnhancedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface EnhancedButtonProps {
     variant?: ButtonVariant;
     size?: ButtonSize;
     loading?: boolean;
     icon?: React.ReactNode;
-    iconPosition?: 'left' | 'right';
+    iconPosition?: IconPosition;
     fullWidth?: boolean;
     magnetic?: boolean;
     magneticStrength?: number;
     children: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    type?: "button" | "submit" | "reset";
+    [key: string]: any;
 }
 
 export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
@@ -114,6 +120,11 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
             {/* Icon on the left */}
             {icon && iconPosition === 'left' && !loading && (
                 <span className="mr-2">{icon}</span>
+            )}
+
+            {/* Icon on top */}
+            {icon && iconPosition === 'top' && !loading && (
+                <span className="mb-2">{icon}</span>
             )}
 
             {/* Button content */}

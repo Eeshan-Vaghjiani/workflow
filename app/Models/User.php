@@ -29,6 +29,10 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
+        'ai_prompts_remaining',
+        'is_paid_user',
+        'last_payment_date',
+        'total_prompts_purchased',
     ];
 
     /**
@@ -56,6 +60,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'last_login_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
+            'last_payment_date' => 'datetime',
+            'is_paid_user' => 'boolean',
         ];
     }
 
@@ -146,5 +152,42 @@ class User extends Authenticatable
     {
         // Cast to boolean and handle both 1/0 and true/false
         return $this->is_admin == true;
+    }
+
+    /**
+     * Get the AI usage logs for the user.
+     */
+    public function aiUsageLogs()
+    {
+        return $this->hasMany(AIUsageLog::class);
+    }
+
+    /**
+     * Check if the user has AI prompts remaining.
+     */
+    public function hasPromptsRemaining(): bool
+    {
+        return $this->ai_prompts_remaining > 0;
+    }
+
+    /**
+     * Use an AI prompt and log the usage.
+     */
+    public function usePrompt(string $serviceType): bool
+    {
+        if (!$this->hasPromptsRemaining()) {
+            return false;
+        }
+
+        $this->decrement('ai_prompts_remaining');
+
+        // Create usage log
+        $this->aiUsageLogs()->create([
+            'service_type' => $serviceType,
+            'prompts_used' => 1,
+            'remaining_prompts_after' => $this->ai_prompts_remaining,
+        ]);
+
+        return true;
     }
 }

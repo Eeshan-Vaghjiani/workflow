@@ -729,6 +729,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'updateTask'])->name('study-tasks.update');
     Route::delete('/study-tasks/{task}', [App\Http\Controllers\StudyPlannerController::class, 'deleteTask'])->name('study-tasks.destroy');
 
+    // AI Pricing routes
+    Route::get('/pricing', [App\Http\Controllers\PricingController::class, 'index'])->name('pricing.index');
+    Route::get('/pricing/{id}/confirm', [App\Http\Controllers\PricingController::class, 'confirmPurchase'])->name('pricing.confirm');
+
     // Direct Pomodoro access through web routes
     Route::post('/pomodoro/settings', [App\Http\Controllers\PomodoroController::class, 'updateSettings'])->name('pomodoro.settings.update');
     Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession'])->name('pomodoro.sessions.store');

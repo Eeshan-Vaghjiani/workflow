@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { motion, Variants } from 'framer-motion';
-import { type NavItem } from '@/types';
+import { type NavItem, PageProps } from '@/types';
 import {
     LayoutGrid,
     Users,
@@ -18,29 +18,26 @@ import {
     Settings,
     User,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Sparkles
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { useMagneticHover } from '@/hooks/use-animation';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
-import { cn } from '@/lib/utils';
 
 // Animation variants for initial load only
 const sidebarVariants: Variants = {
     hidden: {
-        x: -300,
-        opacity: 0
+        opacity: 1,
+        x: 0
     },
     visible: {
-        x: 0,
         opacity: 1,
+        x: 0,
         transition: {
-            type: "spring",
-            stiffness: 100,
-            damping: 20,
             when: "beforeChildren",
-            staggerChildren: 0.1,
-            delayChildren: 0.2
+            staggerChildren: 0.08,
+            delayChildren: 0.1
         }
     }
 };
@@ -48,26 +45,25 @@ const sidebarVariants: Variants = {
 // Animation variants for items
 const itemVariants: Variants = {
     hidden: {
-        x: -20,
-        opacity: 0
+        x: -100, // Start further left off-screen
+        opacity: 0,
+        scale: 0.8
     },
-    visible: {
+    visible: (i) => ({
         x: 0,
         opacity: 1,
+        scale: 1,
         transition: {
             type: "spring",
-            stiffness: 100,
-            damping: 10
+            stiffness: 70,
+            damping: 8,
+            delay: i * 0.08 // Slightly faster delay
         }
-    }
-};
-
-// Hover animation for nav items
-const navItemHoverVariants: Variants = {
+    }),
     initial: { scale: 1, x: 0 },
     hover: {
-        scale: 1.02,
-        x: 5,
+        scale: 1.05,
+        x: 8,
         transition: {
             type: "spring",
             stiffness: 400,
@@ -152,8 +148,18 @@ const settingsNavItems: NavItem[] = [
     }
 ];
 
+// Extend the User type to include AI prompt properties
+interface ExtendedUser {
+    id: number;
+    name: string;
+    email: string;
+    ai_prompts_remaining?: number;
+    is_paid_user?: boolean;
+    total_prompts_purchased?: number;
+}
+
 export function AppSidebar() {
-    const { url } = usePage();
+    const { url, props } = usePage<PageProps>();
     const [shouldAnimate, setShouldAnimate] = useState(true);
     const logoRef = useRef<HTMLDivElement>(null);
     const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -182,61 +188,40 @@ export function AppSidebar() {
     }, [isCollapsed]);
 
     const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+        setIsCollapsed(prev => !prev);
     };
 
-    // Custom NavMain component with animations
     const AnimatedNavMain = () => {
         return (
-            <nav className="mt-5 px-4 space-y-2">
-                {mainNavItems.map((item) => {
+            <nav className="space-y-1 px-3">
+                {mainNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
-                    const IconComponent = item.icon;
-
                     return (
                         <motion.div
-                            key={item.title}
-                            variants={shouldAnimate ? itemVariants : undefined}
-                            initial="initial"
+                            key={item.href}
+                            custom={index}
+                            initial="hidden"
+                            animate="visible"
+                            variants={itemVariants}
                             whileHover="hover"
+                            className="mb-1"
                         >
                             <Link
                                 href={item.href}
-                                className="block"
+                                className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/20'
+                                    } ${isCollapsed ? 'justify-center' : ''}`}
                             >
-                                <motion.div
-                                    variants={navItemHoverVariants}
-                                    className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
-                                        ${isActive
-                                            ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-softBlue/30 dark:hover:bg-gray-800/30'
-                                        }`}
-                                >
-                                    <motion.div
-                                        initial={{ rotate: 0 }}
-                                        whileHover={{ rotate: isActive ? 0 : 10 }}
-                                        className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
-                                    >
-                                        {IconComponent && <IconComponent />}
-                                    </motion.div>
-                                    {!isCollapsed && <span>{item.title}</span>}
-
-                                    {/* Animated indicator for active item */}
-                                    {isActive && !isCollapsed && (
-                                        <motion.div
-                                            className="ml-auto h-2 w-2 rounded-full bg-primary-500 dark:bg-neon-green"
-                                            animate={{
-                                                scale: [1, 1.2, 1],
-                                                opacity: [0.7, 1, 0.7]
-                                            }}
-                                            transition={{
-                                                duration: 2,
-                                                repeat: Infinity,
-                                                repeatType: "loop"
-                                            }}
-                                        />
-                                    )}
-                                </motion.div>
+                                <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-white' : ''}`} />
+                                {!isCollapsed && (
+                                    <span className={`${isActive ? 'font-medium' : ''}`}>{item.title}</span>
+                                )}
+                                {!isCollapsed && item.badge && (
+                                    <span className="ml-auto bg-primary/20 text-primary text-xs py-0.5 px-1.5 rounded">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </Link>
                         </motion.div>
                     );
@@ -245,65 +230,25 @@ export function AppSidebar() {
         );
     };
 
-    // Settings navigation component with animations
     const SettingsNav = () => {
         return (
-            <nav className="px-4 space-y-2 mb-4">
-                {!isCollapsed && (
-                    <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        User
-                    </h3>
-                )}
-                {settingsNavItems.map((item) => {
+            <nav className="space-y-1 px-3">
+                {settingsNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
-                    const IconComponent = item.icon;
-
                     return (
-                        <motion.div
-                            key={item.title}
-                            variants={shouldAnimate ? itemVariants : undefined}
-                            initial="initial"
-                            whileHover="hover"
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
+                                ? 'bg-primary text-white'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                } ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Link
-                                href={item.href}
-                                className="block"
-                            >
-                                <motion.div
-                                    variants={navItemHoverVariants}
-                                    className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
-                                        ${isActive
-                                            ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-softBlue/30 dark:hover:bg-gray-800/30'
-                                        }`}
-                                >
-                                    <motion.div
-                                        initial={{ rotate: 0 }}
-                                        whileHover={{ rotate: isActive ? 0 : 10 }}
-                                        className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
-                                    >
-                                        {IconComponent && <IconComponent />}
-                                    </motion.div>
-                                    {!isCollapsed && <span>{item.title}</span>}
-
-                                    {/* Animated indicator for active item */}
-                                    {isActive && !isCollapsed && (
-                                        <motion.div
-                                            className="ml-auto h-2 w-2 rounded-full bg-primary-500 dark:bg-neon-green"
-                                            animate={{
-                                                scale: [1, 1.2, 1],
-                                                opacity: [0.7, 1, 0.7]
-                                            }}
-                                            transition={{
-                                                duration: 2,
-                                                repeat: Infinity,
-                                                repeatType: "loop"
-                                            }}
-                                        />
-                                    )}
-                                </motion.div>
-                            </Link>
-                        </motion.div>
+                            <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-white' : ''}`} />
+                            {!isCollapsed && (
+                                <span className={`${isActive ? 'font-medium' : ''}`}>{item.title}</span>
+                            )}
+                        </Link>
                     );
                 })}
             </nav>
@@ -312,65 +257,45 @@ export function AppSidebar() {
 
     return (
         <motion.aside
-            className={cn(
-                "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-r border-gray-200/50 dark:border-gray-700/30 shadow-sm flex-shrink-0 overflow-y-auto futuristic-scrollbar transition-all duration-300",
-                isCollapsed ? "w-[4.5rem]" : "w-64"
-            )}
+            className={`fixed inset-y-0 left-0 z-20 flex flex-col bg-white/80 dark:bg-gray-900/80 shadow-sm backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
+                }`}
+            variants={sidebarVariants}
             initial={shouldAnimate ? "hidden" : "visible"}
             animate="visible"
-            variants={sidebarVariants}
         >
-            <div className="px-6 py-6">
-                <Link href="/dashboard" className="flex items-center space-x-2">
-                    <motion.div
-                        ref={logoRef}
-                        className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-neon-green dark:to-primary-500 rounded-lg p-2 flex items-center justify-center shadow-md shadow-primary-500/20 dark:shadow-neon-green/20"
-                        whileHover={{
-                            scale: 1.05,
-                            boxShadow: "0px 10px 20px 0px rgba(0, 136, 122, 0.3)",
-                        }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <AppLogo />
-                    </motion.div>
-                    {!isCollapsed && (
-                        <motion.span
-                            className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent"
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                        >
-                            Workflow
-                        </motion.span>
-                    )}
-                </Link>
-            </div>
-
-            <AnimatedNavMain />
-
-            <div className="mt-8">
-                <SettingsNav />
-            </div>
-
-            {/* Collapse/Expand Toggle Button */}
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+            <div className="flex items-center justify-between p-4">
+                <div ref={logoRef} className={`flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`}>
+                    <AppLogo />
+                </div>
                 <EnhancedButton
+                    onClick={toggleCollapse}
                     variant="ghost"
                     size="sm"
-                    onClick={toggleCollapse}
-                    className="rounded-full p-2 bg-softBlue/30 dark:bg-gray-800/30 hover:bg-softBlue/50 dark:hover:bg-gray-700/50"
+                    className={`${isCollapsed ? 'absolute -right-3 top-5 bg-white dark:bg-gray-800 rounded-full shadow-sm' : ''}`}
                 >
-                    <motion.div
-                        animate={{ rotate: isCollapsed ? 0 : 180 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        {isCollapsed ? (
-                            <ChevronRight className="h-4 w-4 text-primary-500 dark:text-neon-green" />
-                        ) : (
-                            <ChevronLeft className="h-4 w-4 text-primary-500 dark:text-neon-green" />
-                        )}
-                    </motion.div>
+                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                 </EnhancedButton>
+            </div>
+
+            {/* AI Prompts Buy Button */}
+            {!isCollapsed && (
+                <div className="px-4 mb-2">
+                    <Link
+                        href="/pricing"
+                        className="flex items-center justify-center py-1.5 px-2 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                    >
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Buy AI Prompts
+                    </Link>
+                </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto futuristic-scrollbar">
+                <AnimatedNavMain />
+            </div>
+
+            <div className="p-3">
+                <SettingsNav />
             </div>
         </motion.aside>
     );

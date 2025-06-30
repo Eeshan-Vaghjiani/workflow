@@ -8,6 +8,8 @@ const routes: RouteMap = {
     '/dashboard/calendar': './pages/Dashboard/Calendar.tsx',
     '/dashboard/gantt': './pages/Dashboard/Gantt.tsx',
     '/calendar': './pages/Calendar/Index.tsx',
+    '/pricing': './pages/Pricing/Index.tsx',
+    '/pricing/:id/confirm': './pages/Pricing/Confirm.tsx',
     // Add more route mappings as needed
 };
 

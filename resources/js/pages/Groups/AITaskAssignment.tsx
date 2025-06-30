@@ -3,20 +3,20 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card3D } from '@/components/ui/card-3d';
 import { Textarea } from '@/components/ui/textarea';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BrainCircuit, Loader2, Sparkles, CalendarRange, Clock, AlertCircle, RefreshCw, Users } from 'lucide-react';
-import { AxiosError } from 'axios';
 import { useToast } from '@/components/ui/use-toast';
-import { type BreadcrumbItem } from '@/types';
-import { format, parseISO } from 'date-fns';
+import { csrfRequest, getCsrfToken, refreshCsrfToken } from '@/Utils/csrf';
+import { AxiosError } from 'axios';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { getCsrfToken, refreshCsrfToken, csrfRequest } from '../../Utils/csrf.js';
+import { Card3D } from '@/components/ui/card-3d';
 import { motion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/lib/theme-constants';
+import { format, parseISO } from 'date-fns';
+import { type BreadcrumbItem } from '@/types';
 
 // Helper function to format dates in DD/MM/YYYY format
 const formatDate = (dateString: string): string => {
@@ -135,6 +135,16 @@ export default function AITaskAssignment({ group, assignment, workloadStats }: A
         refreshCsrfToken();
     }, []);
 
+    // Add keyboard shortcut handler for Ctrl+Enter
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (prompt.trim() && !isLoading) {
+                handleSubmit(e as unknown as React.FormEvent);
+            }
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -189,7 +199,40 @@ export default function AITaskAssignment({ group, assignment, workloadStats }: A
         } catch (err: unknown) {
             console.error('API Error:', err);
             const error = err as AxiosError<ErrorResponse>;
-            const errorMessage = error.response?.data?.error || 'An error occurred while generating tasks';
+
+            // Extract the error message from the response
+            let errorMessage = 'An error occurred while generating tasks';
+
+            if (error.response?.status === 422) {
+                // Handle validation errors (422 Unprocessable Entity)
+                const validationErrors = error.response.data as {
+                    errors?: Record<string, string[]>;
+                    message?: string;
+                    error?: string;
+                };
+
+                if (validationErrors.errors) {
+                    // Laravel validation errors format
+                    const firstError = Object.values(validationErrors.errors)[0];
+                    errorMessage = Array.isArray(firstError) ? firstError[0] : String(firstError);
+                } else if (validationErrors.message) {
+                    errorMessage = validationErrors.message;
+                } else if (validationErrors.error) {
+                    errorMessage = validationErrors.error;
+                }
+
+                console.log('Validation error details:', validationErrors);
+            } else if (error.response?.status === 500) {
+                // Handle server errors (500 Internal Server Error)
+                errorMessage = 'The server encountered an error processing your request. This might be due to the AI service being unavailable or overloaded. Please try again later.';
+
+                // Log the error for debugging
+                console.error('Server error details:', error.response?.data);
+            } else {
+                // Handle other types of errors
+                errorMessage = error.response?.data?.error || 'An error occurred while generating tasks';
+            }
+
             setError(errorMessage);
 
             // Check for specific authentication errors
@@ -398,10 +441,16 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
                                         className="h-64"
+                                        onKeyDown={handleKeyDown}
                                     />
-                                    <p className="text-sm text-muted-foreground">
-                                        Be specific about what the assignment entails, including requirements, format, learning objectives, and any other relevant details.
-                                    </p>
+                                    <div className="flex justify-between mt-2">
+                                        <p className="text-sm text-muted-foreground">
+                                            Be specific about what the assignment entails, including requirements, format, learning objectives, and any other relevant details.
+                                        </p>
+                                        <p className="text-sm text-primary-600 dark:text-primary-400 font-medium">
+                                            Press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl+Enter</kbd> to submit
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {error && (
@@ -425,18 +474,31 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                         ) : (
                                             <>
                                                 <Sparkles className="mr-2 h-4 w-4" />
-                                                Generate Tasks
+                                                <span>Generate</span>
+                                                <span className="ml-1 text-xs opacity-80">(Ctrl+Enter)</span>
                                             </>
                                         )}
                                     </Button>
                                 </div>
                             </form>
+
+                            {isLoading && (
+                                <div className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-md flex items-center">
+                                    <div className="mr-3">
+                                        <div className="h-8 w-8 rounded-full border-2 border-primary-500 border-t-transparent animate-spin"></div>
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-primary-700 dark:text-primary-300">Processing your request</p>
+                                        <p className="text-sm text-muted-foreground">This may take up to 30 seconds depending on the complexity of your prompt...</p>
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card3D>
                 </motion.div>
 
                 {result && (
-                    <div className="space-y-6">
+                    <motion.div variants={itemVariants} className="space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle>{result.assignment.title}</CardTitle>
@@ -523,78 +585,80 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                 </Table>
                             </CardContent>
                         </Card>
-                    </div>
+                    </motion.div>
                 )}
 
                 {workloadStatsState && workloadStatsState.distribution.length > 0 && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Users className="h-5 w-5 text-primary" />
-                                Member Workload Preview
-                            </CardTitle>
-                            <CardDescription>
-                                This shows how workload would be distributed if these tasks are saved.
-                                <span className="text-amber-500 font-medium block mt-1">
-                                    Note: Tasks are not saved until you click "Save Assignment"
-                                </span>
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                {workloadStatsState.distribution.map((member) => (
-                                    <div key={member.id} className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                                                    {member.name.charAt(0).toUpperCase()}
+                    <motion.div variants={itemVariants}>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Users className="h-5 w-5 text-primary" />
+                                    Member Workload Preview
+                                </CardTitle>
+                                <CardDescription>
+                                    This shows how workload would be distributed if these tasks are saved.
+                                    <span className="text-amber-500 font-medium block mt-1">
+                                        Note: Tasks are not saved until you click "Save Assignment"
+                                    </span>
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-6">
+                                    {workloadStatsState.distribution.map((member) => (
+                                        <div key={member.id} className="space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
+                                                        {member.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium">{member.name}</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {member.taskCount} tasks
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium">{member.name}</p>
+                                                <div className="text-right">
+                                                    <p className="font-medium">{member.percentage.toFixed(1)}%</p>
                                                     <p className="text-sm text-muted-foreground">
-                                                        {member.taskCount} tasks
+                                                        Total Effort: {member.totalEffort} hours
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="font-medium">{member.percentage.toFixed(1)}%</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Total Effort: {member.totalEffort} hours
-                                                </p>
+                                            <Progress value={member.percentage} className="h-2" />
+                                            <div className="text-xs text-muted-foreground">
+                                                <span>Task Details:</span>
+                                                <p>Total Effort: {member.totalEffort} hours</p>
+                                                <p>Importance Score: {member.totalImportance}</p>
+                                                <div className="mt-1">
+                                                    {member.tasks.map((task, idx) => (
+                                                        <Badge key={idx} variant="outline" className="mr-1 mb-1">
+                                                            {task.title}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                        <Progress value={member.percentage} className="h-2" />
-                                        <div className="text-xs text-muted-foreground">
-                                            <span>Task Details:</span>
-                                            <p>Total Effort: {member.totalEffort} hours</p>
-                                            <p>Importance Score: {member.totalImportance}</p>
-                                            <div className="mt-1">
-                                                {member.tasks.map((task, idx) => (
-                                                    <Badge key={idx} variant="outline" className="mr-1 mb-1">
-                                                        {task.title}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                        {result && (
-                            <CardFooter className="flex justify-end p-4 pt-0">
-                                <Button onClick={handleSave} disabled={isLoading}>
-                                    {isLoading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        'Save Assignment'
-                                    )}
-                                </Button>
-                            </CardFooter>
-                        )}
-                    </Card>
+                                    ))}
+                                </div>
+                            </CardContent>
+                            {result && (
+                                <CardFooter className="flex justify-end p-4 pt-0">
+                                    <Button onClick={handleSave} disabled={isLoading}>
+                                        {isLoading ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            'Save Assignment'
+                                        )}
+                                    </Button>
+                                </CardFooter>
+                            )}
+                        </Card>
+                    </motion.div>
                 )}
 
                 {/* If we have results but no workload stats, still show the save button */}

@@ -38,6 +38,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\SkipCsrfForWorkOS::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\HandleAppearance::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ],
@@ -75,6 +76,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'two_factor' => \App\Http\Middleware\TwoFactorAuthenticationMiddleware::class,
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
+        'ai.prompts' => \App\Http\Middleware\AIUsageMiddleware::class,
         // Add your custom middleware aliases here, e.g.:
         // 'role' => \App\Http\Middleware\RoleMiddleware::class,
     ];

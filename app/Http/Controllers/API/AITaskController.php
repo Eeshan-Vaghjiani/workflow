@@ -198,7 +198,6 @@ class AITaskController extends Controller
             Log::info('AI Task Generation: Processing prompt', [
                 'prompt_length' => strlen($request->prompt),
                 'user_id' => Auth::id(),
-                'group_id' => $group->id,
             ]);
 
             $result = $this->aiService->processTaskPrompt(
@@ -207,99 +206,41 @@ class AITaskController extends Controller
                 $group->id
             );
 
+            // Check if the user needs to purchase more prompts
+            if (isset($result['redirect_to_pricing']) && $result['redirect_to_pricing']) {
+                return response()->json([
+                    'error' => $result['error'],
+                    'redirect' => route('pricing.index')
+                ], 403);
+            }
+
             if (isset($result['error'])) {
-                Log::error('AI Task Generation: Service error', [
+                Log::error('AI Task Generation: Error in AI processing', [
                     'error' => $result['error'],
                     'user_id' => Auth::id(),
-                    'group_id' => $group->id,
                 ]);
 
-                return response()->json(['error' => $result['error']], 500);
+                return response()->json([
+                    'error' => $result['error']
+                ], 500);
             }
 
-            // Get the group members with their user data
-            $members = $group->members()
-                ->select('users.id', 'users.name', 'users.email')
-                ->get();
-
-            // Get existing tasks for this group to calculate current workload
-            $existingTasks = GroupTask::whereHas('assignment', function($query) use ($group) {
-                $query->where('group_id', $group->id);
-            })->with('assigned_user:id,name')->get();
-
-            // Create temporary task objects from the generated tasks
-            $generatedTasks = collect();
-            foreach ($result['tasks'] as $taskData) {
-                // Find the user ID based on the name if assigned
-                $assignedUserId = null;
-                $assignedUserName = null;
-
-                if (!empty($taskData['assigned_to_name'])) {
-                    $user = $members->where('name', $taskData['assigned_to_name'])->first();
-                    if ($user) {
-                        $assignedUserId = $user->id;
-                        $assignedUserName = $user->name;
-                    }
-                } elseif (!empty($taskData['assigned_user_id'])) {
-                    $user = $members->where('id', $taskData['assigned_user_id'])->first();
-                    if ($user) {
-                        $assignedUserId = $user->id;
-                        $assignedUserName = $user->name;
-                    }
-                }
-
-                // Create a temporary task object with the same structure as DB tasks
-                $task = new \stdClass();
-                $task->id = 'temp_' . uniqid();
-                $task->title = $taskData['title'];
-                $task->description = $taskData['description'];
-                $task->start_date = $taskData['start_date'];
-                $task->end_date = $taskData['end_date'];
-                $task->priority = $taskData['priority'];
-                $task->effort_hours = $taskData['effort_hours'];
-                $task->importance = $taskData['importance'];
-                $task->assigned_user_id = $assignedUserId;
-                $task->assigned_user = $assignedUserName ? (object)['id' => $assignedUserId, 'name' => $assignedUserName] : null;
-
-                $generatedTasks->push($task);
-            }
-
-            // Combine existing and generated tasks to show projected workload
-            $combinedTasks = $existingTasks->concat($generatedTasks);
-
-            // Calculate workload distribution based on combined tasks
-            $workloadDistribution = $this->calculateWorkloadDistribution($combinedTasks, $members);
-
-            // Add workload stats to the response
-            $result['workloadStats'] = [
-                'distribution' => $workloadDistribution,
-                'hasUnassignedTasks' => $combinedTasks->contains(function($task) {
-                    return empty($task->assigned_user_id);
-                })
-            ];
-
-            // Log successful processing
-            Log::info('AI Task Generation: Successful processing', [
+            // Log successful task generation
+            Log::info('AI Task Generation: Tasks generated successfully', [
                 'user_id' => Auth::id(),
-                'group_id' => $group->id,
                 'task_count' => count($result['tasks'] ?? []),
             ]);
 
             return response()->json($result);
         } catch (\Exception $e) {
             Log::error('AI Task Generation: Exception', [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'user_id' => Auth::id(),
-                'group_id' => $group->id,
             ]);
 
             return response()->json([
-                'error' => 'Failed to process task prompt: ' . $e->getMessage(),
-                'trace' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'error' => 'An error occurred: ' . $e->getMessage()
             ], 500);
         }
     }

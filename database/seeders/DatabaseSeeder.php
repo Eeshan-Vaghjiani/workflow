@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             DirectMessageSeeder::class,
             GroupMessageSeeder::class,
             AdminUserSeeder::class,
+            PricingPackageSeeder::class,
         ]);
     }
 }

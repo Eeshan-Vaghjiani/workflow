@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark' || (($appearance ?? 'system') == 'system' && (isset($system_prefers_dark) ? $system_prefers_dark : false))])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,8 +15,24 @@
 
                     if (prefersDark) {
                         document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
                     }
+
+                    // Listen for changes in system theme
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                        if (e.matches) {
+                            document.documentElement.classList.add('dark');
+                        } else {
+                            document.documentElement.classList.remove('dark');
+                        }
+                    });
                 }
+
+                // Debug info
+                console.log('Appearance:', appearance);
+                console.log('System prefers dark:', window.matchMedia('(prefers-color-scheme: dark)').matches);
+                console.log('Is dark class applied:', document.documentElement.classList.contains('dark'));
             })();
         </script>
 

@@ -11,16 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('direct_messages')) {
-            Schema::create('direct_messages', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
-                $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-                $table->text('message');
-                $table->boolean('read')->default(false);
-                $table->timestamps();
-            });
-        }
+        // No-op: Table is already created in 2024_05_08_000000_create_chat_and_calendar_tables.php
     }
 
     /**
@@ -28,6 +19,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('direct_messages');
+        // No-op: Table is managed by 2024_05_08_000000_create_chat_and_calendar_tables.php
     }
-}; 
+};

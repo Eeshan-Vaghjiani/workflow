@@ -275,7 +275,7 @@ class AIService
                     ['role' => 'system', 'content' => $systemMessage],
                     ['role' => 'user', 'content' => $prompt]
                 ],
-                'temperature' => 0.1,
+                'temperature' => 1,
                 'response_format' => ["type" => "json_object"],
             ]);
 

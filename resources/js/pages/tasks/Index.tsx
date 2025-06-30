@@ -5,9 +5,12 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card3D } from '@/components/ui/card-3d';
+import { GlassContainer } from '@/components/ui/glass-container';
 import { CalendarIcon, ChevronDown, ChevronUp, Clock, Search, X } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import _ from 'lodash';
@@ -17,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import axios from 'axios';
 import { toast } from '@/components/ui/use-toast';
 import { getCsrfToken } from '../../Utils/csrf.js';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Task {
     id: number;
@@ -114,7 +118,32 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function Index({ tasks, assignments, userGroups, filters }: Props) {
+// Define animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            when: "beforeChildren"
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100,
+            damping: 15
+        }
+    }
+};
+
+export default function Index({ tasks: tasksProp, assignments, userGroups, filters }: Props) {
     const [search, setSearch] = useState(filters.search || '');
     const [assignmentId, setAssignmentId] = useState(filters.assignment_id || 'all');
     const [groupId, setGroupId] = useState(filters.group_id || 'all');
@@ -124,6 +153,9 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
     const [direction, setDirection] = useState(filters.direction || 'asc');
     const [viewAll, setViewAll] = useState(filters.view_all === 'true');
     const [activeTab, setActiveTab] = useState('uncompleted');
+
+    // Ensure tasks is always an array
+    const tasks = Array.isArray(tasksProp) ? tasksProp : [];
 
     // Function to complete a task
     const completeTask = async (taskId: number) => {
@@ -299,9 +331,17 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={viewAll ? 'All Tasks' : 'My Tasks'} />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">
+            <motion.div
+                className="flex h-full flex-1 flex-col gap-4 p-4"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div
+                    className="flex justify-between items-center mb-4"
+                    variants={itemVariants}
+                >
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-neon-green bg-clip-text text-transparent">
                         {viewAll ? 'All Tasks' : 'My Tasks'}
                     </h1>
                     <div className="flex items-center gap-4">
@@ -317,133 +357,137 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                         </div>
                         <Link
                             href={route('group-tasks.create')}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
                         >
-                            Create Task
+                            <EnhancedButton variant="glow">
+                                Create Task
+                            </EnhancedButton>
                         </Link>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Filters */}
-                <Card className="mb-4">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Filters</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Search</label>
-                                <div className="relative">
-                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search tasks..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="pl-8"
-                                    />
+                <motion.div variants={itemVariants}>
+                    <GlassContainer className="mb-4" blurIntensity="md" border={true}>
+                        <div className="p-4">
+                            <h2 className="text-lg font-semibold mb-3">Filters</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Search</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search tasks..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            className="pl-8"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Assignment</label>
+                                    <Select
+                                        value={assignmentId}
+                                        onValueChange={(value) => {
+                                            setAssignmentId(value);
+                                            updateFilters({ assignment_id: value });
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Assignments" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Assignments</SelectItem>
+                                            {assignments.map((assignment) => (
+                                                <SelectItem key={assignment.id} value={assignment.id.toString()}>
+                                                    {assignment.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Group</label>
+                                    <Select
+                                        value={groupId}
+                                        onValueChange={(value) => {
+                                            setGroupId(value);
+                                            updateFilters({ group_id: value });
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Groups" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Groups</SelectItem>
+                                            {userGroups.map((group) => (
+                                                <SelectItem key={group.id} value={group.id.toString()}>
+                                                    {group.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Status</label>
+                                    <Select
+                                        value={status}
+                                        onValueChange={(value) => {
+                                            setStatus(value);
+                                            updateFilters({ status: value });
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Statuses" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                            <SelectItem value="in_progress">In Progress</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium">Priority</label>
+                                    <Select
+                                        value={priority}
+                                        onValueChange={(value) => {
+                                            setPriority(value);
+                                            updateFilters({ priority: value });
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Priorities" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Priorities</SelectItem>
+                                            <SelectItem value="low">Low</SelectItem>
+                                            <SelectItem value="medium">Medium</SelectItem>
+                                            <SelectItem value="high">High</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="md:col-span-3 lg:col-span-5 flex justify-end">
+                                    <EnhancedButton
+                                        variant="outline"
+                                        onClick={resetFilters}
+                                        className="w-full md:w-auto"
+                                    >
+                                        <X className="mr-2 h-4 w-4" />
+                                        Reset Filters
+                                    </EnhancedButton>
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Assignment</label>
-                                <Select
-                                    value={assignmentId}
-                                    onValueChange={(value) => {
-                                        setAssignmentId(value);
-                                        updateFilters({ assignment_id: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Assignments" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Assignments</SelectItem>
-                                        {assignments.map((assignment) => (
-                                            <SelectItem key={assignment.id} value={assignment.id.toString()}>
-                                                {assignment.title}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Group</label>
-                                <Select
-                                    value={groupId}
-                                    onValueChange={(value) => {
-                                        setGroupId(value);
-                                        updateFilters({ group_id: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Groups" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Groups</SelectItem>
-                                        {userGroups.map((group) => (
-                                            <SelectItem key={group.id} value={group.id.toString()}>
-                                                {group.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Status</label>
-                                <Select
-                                    value={status}
-                                    onValueChange={(value) => {
-                                        setStatus(value);
-                                        updateFilters({ status: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Statuses" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="in_progress">In Progress</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Priority</label>
-                                <Select
-                                    value={priority}
-                                    onValueChange={(value) => {
-                                        setPriority(value);
-                                        updateFilters({ priority: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Priorities" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Priorities</SelectItem>
-                                        <SelectItem value="low">Low</SelectItem>
-                                        <SelectItem value="medium">Medium</SelectItem>
-                                        <SelectItem value="high">High</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="md:col-span-3 lg:col-span-5 flex justify-end">
-                                <Button
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    className="w-full md:w-auto"
-                                >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Reset Filters
-                                </Button>
-                            </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </GlassContainer>
+                </motion.div>
 
                 {/* Sort Controls */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
+                <motion.div
+                    className="flex flex-wrap gap-2 mb-4"
+                    variants={itemVariants}
+                >
+                    <EnhancedButton
                         variant={sort === 'end_date' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('end_date')}
@@ -455,8 +499,8 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                 <ChevronUp className="ml-1 h-4 w-4" /> :
                                 <ChevronDown className="ml-1 h-4 w-4" />
                         )}
-                    </Button>
-                    <Button
+                    </EnhancedButton>
+                    <EnhancedButton
                         variant={sort === 'title' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('title')}
@@ -468,8 +512,8 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                 <ChevronUp className="ml-1 h-4 w-4" /> :
                                 <ChevronDown className="ml-1 h-4 w-4" />
                         )}
-                    </Button>
-                    <Button
+                    </EnhancedButton>
+                    <EnhancedButton
                         variant={sort === 'priority' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('priority')}
@@ -481,8 +525,8 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                 <ChevronUp className="ml-1 h-4 w-4" /> :
                                 <ChevronDown className="ml-1 h-4 w-4" />
                         )}
-                    </Button>
-                    <Button
+                    </EnhancedButton>
+                    <EnhancedButton
                         variant={sort === 'status' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('status')}
@@ -494,8 +538,8 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                 <ChevronUp className="ml-1 h-4 w-4" /> :
                                 <ChevronDown className="ml-1 h-4 w-4" />
                         )}
-                    </Button>
-                    <Button
+                    </EnhancedButton>
+                    <EnhancedButton
                         variant={sort === 'effort_hours' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('effort_hours')}
@@ -507,217 +551,241 @@ export default function Index({ tasks, assignments, userGroups, filters }: Props
                                 <ChevronUp className="ml-1 h-4 w-4" /> :
                                 <ChevronDown className="ml-1 h-4 w-4" />
                         )}
-                    </Button>
-                </div>
+                    </EnhancedButton>
+                </motion.div>
 
                 {/* Tabs for completed/uncompleted tasks */}
-                <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                        <TabsTrigger value="uncompleted">
-                            Uncompleted Tasks
-                            <Badge variant="outline" className="ml-2">
-                                {tasks.filter(task => task.status !== 'completed').length}
-                            </Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="completed">
-                            Completed Tasks
-                            <Badge variant="outline" className="ml-2">
-                                {tasks.filter(task => task.status === 'completed').length}
-                            </Badge>
-                        </TabsTrigger>
-                    </TabsList>
+                <motion.div variants={itemVariants}>
+                    <GlassContainer className="p-4" blurIntensity="sm" border={true}>
+                        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 mb-4">
+                                <TabsTrigger value="uncompleted">
+                                    Uncompleted Tasks
+                                    <Badge variant="outline" className="ml-2">
+                                        {tasks.filter(task => task.status !== 'completed').length}
+                                    </Badge>
+                                </TabsTrigger>
+                                <TabsTrigger value="completed">
+                                    Completed Tasks
+                                    <Badge variant="outline" className="ml-2">
+                                        {tasks.filter(task => task.status === 'completed').length}
+                                    </Badge>
+                                </TabsTrigger>
+                            </TabsList>
 
-                    {/* Uncompleted Tasks Tab */}
-                    <TabsContent value="uncompleted">
-                        {tasks.filter(task => task.status !== 'completed').length > 0 ? (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {tasks
-                                    .filter(task => task.status !== 'completed')
-                                    .map((task) => (
-                                        <Card
-                                            key={task.id}
-                                            className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(task)}`}
+                            {/* Uncompleted Tasks Tab */}
+                            <TabsContent value="uncompleted">
+                                <AnimatePresence>
+                                    {tasks.filter(task => task.status !== 'completed').length > 0 ? (
+                                        <motion.div
+                                            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="visible"
                                         >
-                                            <CardHeader className="pb-2">
-                                                <div className="flex justify-between items-start">
-                                                    {task.assignment && task.assignment.group ? (
-                                                        <Link href={route('group-tasks.show', {
-                                                            group: task.assignment.group.id,
-                                                            assignment: task.assignment.id,
-                                                            task: task.id
-                                                        })}>
-                                                            <CardTitle className="text-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1">{task.title}</CardTitle>
-                                                        </Link>
-                                                    ) : (
-                                                        <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
-                                                    )}
-                                                    <div className="flex gap-2">
-                                                        <Badge className={getPriorityColor(task.priority)}>
-                                                            {task.priority}
-                                                        </Badge>
-                                                        <Badge className={getStatusColor(task.status)}>
-                                                            {task.status.replace('_', ' ')}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
-                                                {task.assignment && (
-                                                    <CardDescription>
-                                                        {task.assignment.title}
-                                                    </CardDescription>
-                                                )}
-                                            </CardHeader>
-                                            <CardContent className="pb-2">
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="flex items-center">
-                                                        <CalendarIcon className="mr-1 h-4 w-4" />
-                                                        <span className={getDueDateColor(task.end_date)}>
-                                                            {formatDate(task.end_date)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="flex items-center">
-                                                        <Clock className="mr-1 h-4 w-4" />
-                                                        {formatTimeDistance(task.end_date)}
-                                                    </span>
-                                                </div>
-                                            </CardContent>
-                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
-                                                <div className="flex items-center">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                        {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
-                                                    </span>
-                                                </div>
-                                                {task.assigned_user && (
-                                                    <Badge variant="outline">
-                                                        {task.assigned_user.name}
-                                                    </Badge>
-                                                )}
-                                            </CardFooter>
-                                            <div className="px-4 pb-4">
-                                                <Button
-                                                    onClick={() => completeTask(task.id)}
-                                                    className="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition"
-                                                >
-                                                    Mark as Complete
-                                                </Button>
-                                            </div>
-                                        </Card>
-                                    ))}
-                            </div>
-                        ) : (
-                            <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border">
-                                <div className="text-center">
-                                    <h3 className="text-xl font-semibold mb-2">No Uncompleted Tasks</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                                        {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
-                                            ? 'Try adjusting your filters to see more tasks.'
-                                            : 'All your tasks are completed. Great job!'}
-                                    </p>
-                                    {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') ? (
-                                        <Button onClick={resetFilters} variant="outline">
-                                            <X className="mr-2 h-4 w-4" />
-                                            Reset Filters
-                                        </Button>
+                                            {tasks
+                                                .filter(task => task.status !== 'completed')
+                                                .map((task) => (
+                                                    <motion.div key={task.id} variants={itemVariants}>
+                                                        <Card3D intensity={10} className="h-full">
+                                                            <CardHeader className="pb-2">
+                                                                <div className="flex justify-between items-start">
+                                                                    {task.assignment && task.assignment.group ? (
+                                                                        <Link href={route('group-tasks.show', {
+                                                                            group: task.assignment.group.id,
+                                                                            assignment: task.assignment.id,
+                                                                            task: task.id
+                                                                        })}>
+                                                                            <CardTitle className="text-lg text-primary-600 hover:text-primary-500 dark:text-neon-green dark:hover:text-primary-400 line-clamp-1">{task.title}</CardTitle>
+                                                                        </Link>
+                                                                    ) : (
+                                                                        <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
+                                                                    )}
+                                                                    <div className="flex gap-2">
+                                                                        <Badge className={getPriorityColor(task.priority)}>
+                                                                            {task.priority}
+                                                                        </Badge>
+                                                                        <Badge className={getStatusColor(task.status)}>
+                                                                            {task.status.replace('_', ' ')}
+                                                                        </Badge>
+                                                                    </div>
+                                                                </div>
+                                                                {task.assignment && (
+                                                                    <CardDescription>
+                                                                        {task.assignment.title}
+                                                                    </CardDescription>
+                                                                )}
+                                                            </CardHeader>
+                                                            <CardContent className="pb-2">
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
+                                                                <div className="flex justify-between items-center text-sm">
+                                                                    <span className="flex items-center">
+                                                                        <CalendarIcon className="mr-1 h-4 w-4" />
+                                                                        <span className={getDueDateColor(task.end_date)}>
+                                                                            {formatDate(task.end_date)}
+                                                                        </span>
+                                                                    </span>
+                                                                    <span className="flex items-center">
+                                                                        <Clock className="mr-1 h-4 w-4" />
+                                                                        {formatTimeDistance(task.end_date)}
+                                                                    </span>
+                                                                </div>
+                                                            </CardContent>
+                                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
+                                                                <div className="flex items-center">
+                                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                                        {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
+                                                                    </span>
+                                                                </div>
+                                                                {task.assigned_user && (
+                                                                    <Badge variant="outline">
+                                                                        {task.assigned_user.name}
+                                                                    </Badge>
+                                                                )}
+                                                            </CardFooter>
+                                                            <div className="px-4 pb-4">
+                                                                <EnhancedButton
+                                                                    onClick={() => completeTask(task.id)}
+                                                                    variant="glow"
+                                                                    className="w-full"
+                                                                >
+                                                                    Mark as Complete
+                                                                </EnhancedButton>
+                                                            </div>
+                                                        </Card3D>
+                                                    </motion.div>
+                                                ))}
+                                        </motion.div>
                                     ) : (
-                                        <Link
-                                            href={route('group-tasks.create')}
-                                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                                        <motion.div
+                                            className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border"
+                                            variants={itemVariants}
                                         >
-                                            Create Task
-                                        </Link>
+                                            <div className="text-center">
+                                                <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-neon-green bg-clip-text text-transparent">No Uncompleted Tasks</h3>
+                                                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                                    {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
+                                                        ? 'Try adjusting your filters to see more tasks.'
+                                                        : 'All your tasks are completed. Great job!'}
+                                                </p>
+                                                {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') ? (
+                                                    <EnhancedButton onClick={resetFilters} variant="outline">
+                                                        <X className="mr-2 h-4 w-4" />
+                                                        Reset Filters
+                                                    </EnhancedButton>
+                                                ) : (
+                                                    <Link
+                                                        href={route('group-tasks.create')}
+                                                    >
+                                                        <EnhancedButton variant="glow">
+                                                            Create Task
+                                                        </EnhancedButton>
+                                                    </Link>
+                                                )}
+                                            </div>
+                                            <PlaceholderPattern className="absolute inset-0 size-full stroke-primary-600/10 dark:stroke-neon-green/10" />
+                                        </motion.div>
                                     )}
-                                </div>
-                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
-                            </div>
-                        )}
-                    </TabsContent>
+                                </AnimatePresence>
+                            </TabsContent>
 
-                    {/* Completed Tasks Tab */}
-                    <TabsContent value="completed">
-                        {tasks.filter(task => task.status === 'completed').length > 0 ? (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {tasks
-                                    .filter(task => task.status === 'completed')
-                                    .map((task) => (
-                                        <Card
-                                            key={task.id}
-                                            className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(task)}`}
+                            {/* Completed Tasks Tab */}
+                            <TabsContent value="completed">
+                                <AnimatePresence>
+                                    {tasks.filter(task => task.status === 'completed').length > 0 ? (
+                                        <motion.div
+                                            className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+                                            variants={containerVariants}
+                                            initial="hidden"
+                                            animate="visible"
                                         >
-                                            <CardHeader className="pb-2">
-                                                <div className="flex justify-between items-start">
-                                                    {task.assignment && task.assignment.group ? (
-                                                        <Link href={route('group-tasks.show', {
-                                                            group: task.assignment.group.id,
-                                                            assignment: task.assignment.id,
-                                                            task: task.id
-                                                        })}>
-                                                            <CardTitle className="text-lg text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1">{task.title}</CardTitle>
-                                                        </Link>
-                                                    ) : (
-                                                        <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
-                                                    )}
-                                                    <Badge className={getStatusColor(task.status)}>
-                                                        {task.status.replace('_', ' ')}
-                                                    </Badge>
-                                                </div>
-                                                {task.assignment && (
-                                                    <CardDescription>
-                                                        {task.assignment.title}
-                                                    </CardDescription>
+                                            {tasks
+                                                .filter(task => task.status === 'completed')
+                                                .map((task) => (
+                                                    <motion.div key={task.id} variants={itemVariants}>
+                                                        <Card3D intensity={5} className="h-full">
+                                                            <CardHeader className="pb-2">
+                                                                <div className="flex justify-between items-start">
+                                                                    {task.assignment && task.assignment.group ? (
+                                                                        <Link href={route('group-tasks.show', {
+                                                                            group: task.assignment.group.id,
+                                                                            assignment: task.assignment.id,
+                                                                            task: task.id
+                                                                        })}>
+                                                                            <CardTitle className="text-lg text-primary-600 hover:text-primary-500 dark:text-neon-green dark:hover:text-primary-400 line-clamp-1">{task.title}</CardTitle>
+                                                                        </Link>
+                                                                    ) : (
+                                                                        <CardTitle className="text-lg line-clamp-1">{task.title}</CardTitle>
+                                                                    )}
+                                                                    <Badge className={getStatusColor(task.status)}>
+                                                                        {task.status.replace('_', ' ')}
+                                                                    </Badge>
+                                                                </div>
+                                                                {task.assignment && (
+                                                                    <CardDescription>
+                                                                        {task.assignment.title}
+                                                                    </CardDescription>
+                                                                )}
+                                                            </CardHeader>
+                                                            <CardContent className="pb-2">
+                                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
+                                                                <div className="flex justify-between items-center text-sm">
+                                                                    <span className="flex items-center">
+                                                                        <CalendarIcon className="mr-1 h-4 w-4" />
+                                                                        <span>
+                                                                            {formatDate(task.end_date)}
+                                                                        </span>
+                                                                    </span>
+                                                                    <span className="flex items-center">
+                                                                        <Clock className="mr-1 h-4 w-4" />
+                                                                        {formatTimeDistance(task.end_date)}
+                                                                    </span>
+                                                                </div>
+                                                            </CardContent>
+                                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
+                                                                <div className="flex items-center">
+                                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                                                                        {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
+                                                                    </span>
+                                                                </div>
+                                                                {task.assigned_user && (
+                                                                    <Badge variant="outline">
+                                                                        {task.assigned_user.name}
+                                                                    </Badge>
+                                                                )}
+                                                            </CardFooter>
+                                                        </Card3D>
+                                                    </motion.div>
+                                                ))}
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border"
+                                            variants={itemVariants}
+                                        >
+                                            <div className="text-center">
+                                                <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-neon-green bg-clip-text text-transparent">No Completed Tasks</h3>
+                                                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                                                    {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
+                                                        ? 'Try adjusting your filters to see more tasks.'
+                                                        : 'You have not completed any tasks yet.'}
+                                                </p>
+                                                {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') && (
+                                                    <EnhancedButton onClick={resetFilters} variant="outline">
+                                                        <X className="mr-2 h-4 w-4" />
+                                                        Reset Filters
+                                                    </EnhancedButton>
                                                 )}
-                                            </CardHeader>
-                                            <CardContent className="pb-2">
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{task.description || 'No description'}</p>
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="flex items-center">
-                                                        <CalendarIcon className="mr-1 h-4 w-4" />
-                                                        <span>
-                                                            {formatDate(task.end_date)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="flex items-center">
-                                                        <Clock className="mr-1 h-4 w-4" />
-                                                        {formatTimeDistance(task.end_date)}
-                                                    </span>
-                                                </div>
-                                            </CardContent>
-                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
-                                                <div className="flex items-center">
-                                                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                                                        {task.effort_hours} {task.effort_hours === 1 ? 'hour' : 'hours'}
-                                                    </span>
-                                                </div>
-                                                {task.assigned_user && (
-                                                    <Badge variant="outline">
-                                                        {task.assigned_user.name}
-                                                    </Badge>
-                                                )}
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                            </div>
-                        ) : (
-                            <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border">
-                                <div className="text-center">
-                                    <h3 className="text-xl font-semibold mb-2">No Completed Tasks</h3>
-                                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                                        {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all')
-                                            ? 'Try adjusting your filters to see more tasks.'
-                                            : 'You have not completed any tasks yet.'}
-                                    </p>
-                                    {(search || assignmentId !== 'all' || groupId !== 'all' || status !== 'all' || priority !== 'all') && (
-                                        <Button onClick={resetFilters} variant="outline">
-                                            <X className="mr-2 h-4 w-4" />
-                                            Reset Filters
-                                        </Button>
+                                            </div>
+                                            <PlaceholderPattern className="absolute inset-0 size-full stroke-primary-600/10 dark:stroke-neon-green/10" />
+                                        </motion.div>
                                     )}
-                                </div>
-                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
-                            </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
-            </div>
+                                </AnimatePresence>
+                            </TabsContent>
+                        </Tabs>
+                    </GlassContainer>
+                </motion.div>
+            </motion.div>
         </AppLayout>
     );
 }

@@ -4,14 +4,18 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarIcon, ChevronDown, ChevronUp, Clock, Search, X } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import _ from 'lodash';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card3D } from '@/components/ui/card-3d';
+import { GlassContainer } from '@/components/ui/glass-container';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
 
 interface Assignment {
     id: number;
@@ -243,322 +247,376 @@ export default function AssignmentsIndex({ assignments, userGroups, filters }: P
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Assignments" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">Assignments</h1>
+            <motion.div
+                className="flex h-full flex-1 flex-col gap-6 p-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div variants={itemVariants} className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Assignments</h1>
+
                     <Link
                         href={route('groups.index')}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
+                        className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-700 text-white rounded-md font-semibold text-xs tracking-widest transition hover:bg-primary-700 dark:hover:bg-primary-600"
                     >
                         Create Assignment
                     </Link>
-                </div>
+                </motion.div>
 
                 {/* Filters */}
-                <Card className="mb-4">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Filters</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Search</label>
-                                <div className="relative">
-                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search assignments..."
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        className="pl-8"
-                                    />
+                <motion.div variants={itemVariants}>
+                    <Card3D className="p-6">
+                        <CardHeader className="pb-2 px-0 pt-0">
+                            <CardTitle className="text-lg text-gray-900 dark:text-white">Filters</CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-0 pb-0">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Search</label>
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                        <Input
+                                            placeholder="Search assignments..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                            className="pl-8"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Group</label>
+                                    <Select
+                                        value={groupId}
+                                        onValueChange={(value) => {
+                                            setGroupId(value);
+                                            updateFilters({ group_id: value });
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Groups" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Groups</SelectItem>
+                                            {userGroups.map((group) => (
+                                                <SelectItem key={group.id} value={group.id.toString()}>
+                                                    {group.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                                    <Select
+                                        value={status}
+                                        onValueChange={(value) => {
+                                            setStatus(value);
+                                            updateFilters({ status: value });
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="All Statuses" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Statuses</SelectItem>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="due">Due</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                            <SelectItem value="archived">Archived</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="flex items-end">
+                                    <EnhancedButton
+                                        variant="outline"
+                                        onClick={resetFilters}
+                                        className="w-full"
+                                        icon={<X className="h-4 w-4" />}
+                                        iconPosition="left"
+                                        magnetic={true}
+                                    >
+                                        Reset Filters
+                                    </EnhancedButton>
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Group</label>
-                                <Select
-                                    value={groupId}
-                                    onValueChange={(value) => {
-                                        setGroupId(value);
-                                        updateFilters({ group_id: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Groups" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Groups</SelectItem>
-                                        {userGroups.map((group) => (
-                                            <SelectItem key={group.id} value={group.id.toString()}>
-                                                {group.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium">Status</label>
-                                <Select
-                                    value={status}
-                                    onValueChange={(value) => {
-                                        setStatus(value);
-                                        updateFilters({ status: value });
-                                    }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="All Statuses" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="due">Due</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
-                                        <SelectItem value="archived">Archived</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="flex items-end">
-                                <Button
-                                    variant="outline"
-                                    onClick={resetFilters}
-                                    className="w-full"
-                                >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Reset Filters
-                                </Button>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card3D>
+                </motion.div>
 
                 {/* Sort Controls */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                    <Button
-                        variant={sort === 'due_date' ? 'default' : 'outline'}
+                <motion.div variants={itemVariants} className="flex flex-wrap gap-2">
+                    <EnhancedButton
+                        variant={sort === 'due_date' ? 'primary' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('due_date')}
                         className="flex items-center"
+                        icon={sort === 'due_date' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="h-4 w-4" /> :
+                                <ChevronDown className="h-4 w-4" />
+                        )}
+                        iconPosition="right"
+                        magnetic={true}
                     >
                         Due Date
-                        {sort === 'due_date' && (
-                            direction === 'asc' ?
-                                <ChevronUp className="ml-1 h-4 w-4" /> :
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                    </Button>
-                    <Button
-                        variant={sort === 'title' ? 'default' : 'outline'}
+                    </EnhancedButton>
+                    <EnhancedButton
+                        variant={sort === 'title' ? 'primary' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('title')}
                         className="flex items-center"
+                        icon={sort === 'title' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="h-4 w-4" /> :
+                                <ChevronDown className="h-4 w-4" />
+                        )}
+                        iconPosition="right"
+                        magnetic={true}
                     >
                         Title
-                        {sort === 'title' && (
-                            direction === 'asc' ?
-                                <ChevronUp className="ml-1 h-4 w-4" /> :
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                    </Button>
-                    <Button
-                        variant={sort === 'created_at' ? 'default' : 'outline'}
+                    </EnhancedButton>
+                    <EnhancedButton
+                        variant={sort === 'created_at' ? 'primary' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('created_at')}
                         className="flex items-center"
+                        icon={sort === 'created_at' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="h-4 w-4" /> :
+                                <ChevronDown className="h-4 w-4" />
+                        )}
+                        iconPosition="right"
+                        magnetic={true}
                     >
                         Created Date
-                        {sort === 'created_at' && (
-                            direction === 'asc' ?
-                                <ChevronUp className="ml-1 h-4 w-4" /> :
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                    </Button>
-                    <Button
-                        variant={sort === 'unit_name' ? 'default' : 'outline'}
+                    </EnhancedButton>
+                    <EnhancedButton
+                        variant={sort === 'unit_name' ? 'primary' : 'outline'}
                         size="sm"
                         onClick={() => handleSort('unit_name')}
                         className="flex items-center"
+                        icon={sort === 'unit_name' && (
+                            direction === 'asc' ?
+                                <ChevronUp className="h-4 w-4" /> :
+                                <ChevronDown className="h-4 w-4" />
+                        )}
+                        iconPosition="right"
+                        magnetic={true}
                     >
                         Unit Name
-                        {sort === 'unit_name' && (
-                            direction === 'asc' ?
-                                <ChevronUp className="ml-1 h-4 w-4" /> :
-                                <ChevronDown className="ml-1 h-4 w-4" />
-                        )}
-                    </Button>
-                </div>
+                    </EnhancedButton>
+                </motion.div>
 
                 {/* Tabs for completed/uncompleted assignments */}
-                <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
-                        <TabsTrigger value="uncompleted">
-                            Uncompleted Assignments
-                            <Badge variant="outline" className="ml-2">
-                                {processedAssignments.filter(assignment => assignment.status !== 'completed').length}
-                            </Badge>
-                        </TabsTrigger>
-                        <TabsTrigger value="completed">
-                            Completed Assignments
-                            <Badge variant="outline" className="ml-2">
-                                {processedAssignments.filter(assignment => assignment.status === 'completed').length}
-                            </Badge>
-                        </TabsTrigger>
-                    </TabsList>
+                <motion.div variants={itemVariants}>
+                    <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 mb-4">
+                            <TabsTrigger value="uncompleted">
+                                Uncompleted Assignments
+                                <Badge variant="outline" className="ml-2">
+                                    {processedAssignments.filter(assignment => assignment.status !== 'completed').length}
+                                </Badge>
+                            </TabsTrigger>
+                            <TabsTrigger value="completed">
+                                Completed Assignments
+                                <Badge variant="outline" className="ml-2">
+                                    {processedAssignments.filter(assignment => assignment.status === 'completed').length}
+                                </Badge>
+                            </TabsTrigger>
+                        </TabsList>
 
-                    {/* Uncompleted Assignments Tab */}
-                    <TabsContent value="uncompleted">
-                        {processedAssignments.filter(assignment => assignment.status !== 'completed').length > 0 ? (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {processedAssignments
-                                    .filter(assignment => assignment.status !== 'completed')
-                                    .map((assignment) => (
-                                        <Card
-                                            key={assignment.id}
-                                            className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(assignment)}`}
-                                        >
-                                            <CardHeader className="pb-2">
-                                                <div className="flex justify-between items-start">
-                                                    <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })}>
-                                                        <CardTitle className="text-lg text-blue-600 hover:text-blue-800 line-clamp-1">{assignment.title}</CardTitle>
-                                                    </Link>
-                                                    <Badge className={getStatusColor(assignment.status)}>
-                                                        {assignment.status}
-                                                    </Badge>
-                                                </div>
-                                                <CardDescription>
-                                                    {assignment.unit_name || 'General'}
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent className="pb-2">
-                                                <p className="text-sm text-gray-500 line-clamp-2 mb-2">{assignment.description || 'No description'}</p>
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="flex items-center">
-                                                        <CalendarIcon className="mr-1 h-4 w-4" />
-                                                        <span className={getDueDateColor(assignment.due_date)}>
-                                                            {formatDate(assignment.due_date)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="flex items-center">
-                                                        <Clock className="mr-1 h-4 w-4" />
-                                                        {formatTimeDistance(assignment.due_date)}
-                                                    </span>
-                                                </div>
-                                            </CardContent>
-                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
-                                                <Link
-                                                    href={route('groups.show', assignment.group.id)}
-                                                    className="text-sm text-blue-500 hover:text-blue-700"
-                                                >
-                                                    {assignment.group.name}
-                                                </Link>
-                                                <Badge variant="outline">
-                                                    {assignment.tasks.length} {assignment.tasks.length === 1 ? 'task' : 'tasks'}
-                                                </Badge>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                            </div>
-                        ) : (
-                            <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border">
-                                <div className="text-center">
-                                    <h3 className="text-xl font-semibold mb-2">No Uncompleted Assignments</h3>
-                                    <p className="text-gray-500 mb-4">
-                                        {(search || groupId !== 'all' || status !== 'all')
-                                            ? 'Try adjusting your filters to see more assignments.'
-                                            : 'All your assignments are completed. Great job!'}
-                                    </p>
-                                    {(search || groupId !== 'all' || status !== 'all') ? (
-                                        <Button onClick={resetFilters} variant="outline">
-                                            <X className="mr-2 h-4 w-4" />
-                                            Reset Filters
-                                        </Button>
-                                    ) : (
-                                        <Link
-                                            href={route('groups.index')}
-                                            className="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 transition"
-                                        >
-                                            Create Assignment
-                                        </Link>
-                                    )}
-                                </div>
-                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
-                            </div>
-                        )}
-                    </TabsContent>
+                        {/* Uncompleted Assignments Tab */}
+                        <TabsContent value="uncompleted">
+                            {processedAssignments.filter(assignment => assignment.status !== 'completed').length > 0 ? (
+                                <motion.div
+                                    className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+                                    variants={containerVariants}
+                                >
+                                    {processedAssignments
+                                        .filter(assignment => assignment.status !== 'completed')
+                                        .map((assignment, index) => (
+                                            <motion.div
+                                                key={assignment.id}
+                                                variants={itemVariants}
+                                                custom={index}
+                                                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                                            >
+                                                <Card3D className={`overflow-hidden border-2 ${getBorderColor(assignment)}`}>
+                                                    <CardHeader className="pb-2">
+                                                        <div className="flex justify-between items-start">
+                                                            <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })}>
+                                                                <CardTitle className="text-lg text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 line-clamp-1">{assignment.title}</CardTitle>
+                                                            </Link>
+                                                            <Badge className={getStatusColor(assignment.status)}>
+                                                                {assignment.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <CardDescription className="text-gray-600 dark:text-gray-300">
+                                                            {assignment.unit_name || 'General'}
+                                                        </CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent className="pb-2">
+                                                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">{assignment.description || 'No description'}</p>
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <span className="flex items-center">
+                                                                <CalendarIcon className="mr-1 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                                                <span className={getDueDateColor(assignment.due_date)}>
+                                                                    {formatDate(assignment.due_date)}
+                                                                </span>
+                                                            </span>
+                                                            <span className="flex items-center text-gray-600 dark:text-gray-300">
+                                                                <Clock className="mr-1 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                                                {formatTimeDistance(assignment.due_date)}
+                                                            </span>
+                                                        </div>
+                                                    </CardContent>
+                                                    <CardFooter className="pt-2 flex justify-between items-center border-t border-gray-200 dark:border-gray-700">
+                                                        <Link
+                                                            href={route('groups.show', assignment.group.id)}
+                                                            className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                                                        >
+                                                            {assignment.group.name}
+                                                        </Link>
+                                                        <Badge variant="outline">
+                                                            {assignment.tasks.length} {assignment.tasks.length === 1 ? 'task' : 'tasks'}
+                                                        </Badge>
+                                                    </CardFooter>
+                                                </Card3D>
+                                            </motion.div>
+                                        ))}
+                                </motion.div>
+                            ) : (
+                                <GlassContainer className="min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl relative" blurIntensity="sm">
+                                    <motion.div
+                                        className="text-center z-10"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                    >
+                                        <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">No Uncompleted Assignments</h3>
+                                        <p className="text-gray-600 dark:text-gray-300 mb-4">
+                                            {(search || groupId !== 'all' || status !== 'all')
+                                                ? 'Try adjusting your filters to see more assignments.'
+                                                : 'All your assignments are completed. Great job!'}
+                                        </p>
+                                        {(search || groupId !== 'all' || status !== 'all') ? (
+                                            <EnhancedButton
+                                                onClick={resetFilters}
+                                                variant="outline"
+                                                icon={<X className="h-4 w-4" />}
+                                                iconPosition="left"
+                                                magnetic={true}
+                                            >
+                                                Reset Filters
+                                            </EnhancedButton>
+                                        ) : (
+                                            <Link
+                                                href={route('groups.index')}
+                                                className="inline-flex items-center px-4 py-2 bg-primary-600 dark:bg-primary-700 text-white rounded-md font-semibold text-xs tracking-widest transition hover:bg-primary-700 dark:hover:bg-primary-600"
+                                            >
+                                                Create Assignment
+                                            </Link>
+                                        )}
+                                    </motion.div>
+                                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
+                                </GlassContainer>
+                            )}
+                        </TabsContent>
 
-                    {/* Completed Assignments Tab */}
-                    <TabsContent value="completed">
-                        {processedAssignments.filter(assignment => assignment.status === 'completed').length > 0 ? (
-                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                {processedAssignments
-                                    .filter(assignment => assignment.status === 'completed')
-                                    .map((assignment) => (
-                                        <Card
-                                            key={assignment.id}
-                                            className={`overflow-hidden hover:shadow-md transition-shadow border-2 ${getBorderColor(assignment)}`}
-                                        >
-                                            <CardHeader className="pb-2">
-                                                <div className="flex justify-between items-start">
-                                                    <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })}>
-                                                        <CardTitle className="text-lg text-blue-600 hover:text-blue-800 line-clamp-1">{assignment.title}</CardTitle>
-                                                    </Link>
-                                                    <Badge className={getStatusColor(assignment.status)}>
-                                                        {assignment.status}
-                                                    </Badge>
-                                                </div>
-                                                <CardDescription>
-                                                    {assignment.unit_name || 'General'}
-                                                </CardDescription>
-                                            </CardHeader>
-                                            <CardContent className="pb-2">
-                                                <p className="text-sm text-gray-500 line-clamp-2 mb-2">{assignment.description || 'No description'}</p>
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="flex items-center">
-                                                        <CalendarIcon className="mr-1 h-4 w-4" />
-                                                        <span>
-                                                            {formatDate(assignment.due_date)}
-                                                        </span>
-                                                    </span>
-                                                    <span className="flex items-center">
-                                                        <Clock className="mr-1 h-4 w-4" />
-                                                        {formatTimeDistance(assignment.due_date)}
-                                                    </span>
-                                                </div>
-                                            </CardContent>
-                                            <CardFooter className="pt-2 flex justify-between items-center border-t">
-                                                <Link
-                                                    href={route('groups.show', assignment.group.id)}
-                                                    className="text-sm text-blue-500 hover:text-blue-700"
-                                                >
-                                                    {assignment.group.name}
-                                                </Link>
-                                                <Badge variant="outline">
-                                                    {assignment.tasks.length} {assignment.tasks.length === 1 ? 'task' : 'tasks'}
-                                                </Badge>
-                                            </CardFooter>
-                                        </Card>
-                                    ))}
-                            </div>
-                        ) : (
-                            <div className="border-sidebar-border/70 dark:border-sidebar-border relative min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl border">
-                                <div className="text-center">
-                                    <h3 className="text-xl font-semibold mb-2">No Completed Assignments</h3>
-                                    <p className="text-gray-500 mb-4">
-                                        {(search || groupId !== 'all' || status !== 'all')
-                                            ? 'Try adjusting your filters to see more assignments.'
-                                            : 'You have not completed any assignments yet.'}
-                                    </p>
-                                    {(search || groupId !== 'all' || status !== 'all') && (
-                                        <Button onClick={resetFilters} variant="outline">
-                                            <X className="mr-2 h-4 w-4" />
-                                            Reset Filters
-                                        </Button>
-                                    )}
-                                </div>
-                                <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
-                            </div>
-                        )}
-                    </TabsContent>
-                </Tabs>
-            </div>
+                        {/* Completed Assignments Tab */}
+                        <TabsContent value="completed">
+                            {processedAssignments.filter(assignment => assignment.status === 'completed').length > 0 ? (
+                                <motion.div
+                                    className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+                                    variants={containerVariants}
+                                >
+                                    {processedAssignments
+                                        .filter(assignment => assignment.status === 'completed')
+                                        .map((assignment, index) => (
+                                            <motion.div
+                                                key={assignment.id}
+                                                variants={itemVariants}
+                                                custom={index}
+                                                whileHover={{ y: -5, transition: { duration: 0.2 } }}
+                                            >
+                                                <Card3D className={`overflow-hidden border-2 ${getBorderColor(assignment)}`}>
+                                                    <CardHeader className="pb-2">
+                                                        <div className="flex justify-between items-start">
+                                                            <Link href={route('group-assignments.show', { group: assignment.group.id, assignment: assignment.id })}>
+                                                                <CardTitle className="text-lg text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 line-clamp-1">{assignment.title}</CardTitle>
+                                                            </Link>
+                                                            <Badge className={getStatusColor(assignment.status)}>
+                                                                {assignment.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <CardDescription className="text-gray-600 dark:text-gray-300">
+                                                            {assignment.unit_name || 'General'}
+                                                        </CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent className="pb-2">
+                                                        <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-2">{assignment.description || 'No description'}</p>
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <span className="flex items-center">
+                                                                <CalendarIcon className="mr-1 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                                                <span>
+                                                                    {formatDate(assignment.due_date)}
+                                                                </span>
+                                                            </span>
+                                                            <span className="flex items-center text-gray-600 dark:text-gray-300">
+                                                                <Clock className="mr-1 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                                                {formatTimeDistance(assignment.due_date)}
+                                                            </span>
+                                                        </div>
+                                                    </CardContent>
+                                                    <CardFooter className="pt-2 flex justify-between items-center border-t border-gray-200 dark:border-gray-700">
+                                                        <Link
+                                                            href={route('groups.show', assignment.group.id)}
+                                                            className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                                                        >
+                                                            {assignment.group.name}
+                                                        </Link>
+                                                        <Badge variant="outline">
+                                                            {assignment.tasks.length} {assignment.tasks.length === 1 ? 'task' : 'tasks'}
+                                                        </Badge>
+                                                    </CardFooter>
+                                                </Card3D>
+                                            </motion.div>
+                                        ))}
+                                </motion.div>
+                            ) : (
+                                <GlassContainer className="min-h-[30vh] flex items-center justify-center overflow-hidden rounded-xl relative" blurIntensity="sm">
+                                    <motion.div
+                                        className="text-center z-10"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.2 }}
+                                    >
+                                        <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">No Completed Assignments</h3>
+                                        <p className="text-gray-600 dark:text-gray-300 mb-4">
+                                            {(search || groupId !== 'all' || status !== 'all')
+                                                ? 'Try adjusting your filters to see more assignments.'
+                                                : 'You have not completed any assignments yet.'}
+                                        </p>
+                                        {(search || groupId !== 'all' || status !== 'all') && (
+                                            <EnhancedButton
+                                                onClick={resetFilters}
+                                                variant="outline"
+                                                icon={<X className="h-4 w-4" />}
+                                                iconPosition="left"
+                                                magnetic={true}
+                                            >
+                                                Reset Filters
+                                            </EnhancedButton>
+                                        )}
+                                    </motion.div>
+                                    <PlaceholderPattern className="absolute inset-0 size-full stroke-neutral-900/10 dark:stroke-neutral-100/10" />
+                                </GlassContainer>
+                            )}
+                        </TabsContent>
+                    </Tabs>
+                </motion.div>
+            </motion.div>
         </AppLayout>
     );
 }

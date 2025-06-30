@@ -39,5 +39,9 @@ export interface User {
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;
+    ai_prompts_remaining?: number;
+    is_paid_user?: boolean;
+    last_payment_date?: string | null;
+    total_prompts_purchased?: number;
     [key: string]: unknown; // This allows for additional properties...
 }

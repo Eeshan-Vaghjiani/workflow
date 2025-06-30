@@ -57,6 +57,16 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Chat theme variables */
+    --color-chat-bubble-sent: var(--primary);
+    --color-chat-bubble-sent-foreground: var(--primary-foreground);
+    --color-chat-bubble-received: var(--muted);
+    --color-chat-bubble-received-foreground: var(--foreground);
+    --color-chat-input-bg: var(--muted);
+    --color-chat-input-border: var(--border);
+    --color-chat-attachment-bg: var(--muted);
+    --color-chat-attachment-border: var(--border);
 }
 
 /*
@@ -482,4 +492,308 @@
 
 .dark .gantt-container .bar.project {
     background-color: hsl(246, 83%, 45%);
+}
+
+/* Enhanced animations for the UI transformation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes hover-subtle {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.01); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-hover-subtle {
+  animation: hover-subtle 0.2s ease-out forwards;
+}
+
+/* Glass morphism utility classes */
+.glass-morphism-light {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+.glass-morphism-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Theme transition utility */
+html:root {
+  --theme-transition: none;
+}
+
+html.theme-transition * {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Subtle hover effects */
+.hover-element {
+  transition: transform 0.2s ease-out, background-color 0.2s ease-out;
+}
+
+.hover-element:hover {
+  transform: scale(1.01);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Enhanced focus styles */
+.focus-glow:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 136, 122, 0.2), 0 0 10px 2px rgba(0, 136, 122, 0.1);
+  outline: none;
+}
+
+.dark .focus-glow:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 201, 167, 0.4), 0 0 15px 2px rgba(0, 201, 167, 0.2);
+  outline: none;
+}
+
+/* Enhanced scrollbar for the futuristic UI */
+.futuristic-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.futuristic-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.futuristic-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 136, 122, 0.3);
+  border-radius: 10px;
+}
+
+.dark .futuristic-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 201, 167, 0.3);
+}
+
+.futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 136, 122, 0.5);
+}
+
+.dark .futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 201, 167, 0.5);
+}
+
+/* FullCalendar Dark Mode Support */
+.dark .fc {
+    --fc-border-color: var(--border);
+    --fc-button-text-color: var(--foreground);
+    --fc-button-bg-color: var(--secondary);
+    --fc-button-border-color: var(--border);
+    --fc-button-hover-bg-color: var(--accent);
+    --fc-button-hover-border-color: var(--accent);
+    --fc-button-active-bg-color: var(--primary);
+    --fc-button-active-border-color: var(--primary);
+    --fc-event-bg-color: var(--primary);
+    --fc-event-border-color: var(--primary);
+    --fc-event-text-color: var(--primary-foreground);
+    --fc-event-selected-overlay-color: rgba(0, 0, 0, 0.25);
+    --fc-more-link-bg-color: var(--secondary);
+    --fc-more-link-text-color: var(--foreground);
+    --fc-non-business-color: rgba(0, 0, 0, 0.1);
+    --fc-today-bg-color: var(--accent);
+    --fc-now-indicator-color: var(--destructive);
+    --fc-list-event-hover-bg-color: var(--accent);
+    --fc-highlight-color: var(--accent);
+    --fc-page-bg-color: var(--background);
+    --fc-neutral-bg-color: var(--secondary);
+    --fc-neutral-text-color: var(--foreground);
+    --fc-neutral-border-color: var(--border);
+}
+
+.dark .fc-theme-standard .fc-list {
+    border-color: var(--border);
+}
+
+.dark .fc .fc-list-empty {
+    background-color: var(--background);
+    color: var(--foreground);
+}
+
+.dark .fc .fc-list-event:hover td {
+    background-color: var(--accent);
+}
+
+.dark .fc .fc-list-event-dot {
+    border-color: var(--primary);
+}
+
+.dark .fc .fc-list-event-title a {
+    color: var(--foreground);
+}
+
+.dark .fc .fc-list-event-time {
+    color: var(--muted-foreground);
+}
+
+.dark .fc .fc-timegrid-slot-label {
+    color: var(--muted-foreground);
+}
+
+.dark .fc .fc-timegrid-axis {
+    border-color: var(--border);
+}
+
+.dark .fc .fc-timegrid-col-frame {
+    background-color: var(--background);
+}
+
+.dark .fc .fc-timegrid-now-indicator-line {
+    border-color: var(--destructive);
+}
+
+.dark .fc .fc-timegrid-now-indicator-arrow {
+    border-color: var(--destructive);
+}
+
+.dark .fc .fc-daygrid-day-number {
+    color: var(--foreground);
+}
+
+.dark .fc .fc-daygrid-day-top {
+    background-color: var(--background);
+}
+
+.dark .fc .fc-daygrid-day.fc-day-today {
+    background-color: var(--accent);
+}
+
+.dark .fc .fc-toolbar-title {
+    color: var(--foreground);
+}
+
+.dark .fc .fc-button {
+    background-color: var(--secondary);
+    border-color: var(--border);
+    color: var(--foreground);
+}
+
+.dark .fc .fc-button:hover {
+    background-color: var(--accent);
+    border-color: var(--accent);
+}
+
+.dark .fc .fc-button-primary:not(:disabled).fc-button-active,
+.dark .fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+/* Chat component styles */
+.chat-container {
+    @apply flex flex-col h-full bg-background;
+}
+
+.chat-messages {
+    @apply flex-1 overflow-y-auto p-4 space-y-6;
+}
+
+.chat-message {
+    @apply flex gap-3;
+}
+
+.chat-message-sent {
+    @apply flex-row-reverse;
+}
+
+.chat-message-received {
+    @apply flex-row;
+}
+
+.chat-bubble {
+    @apply relative px-3 py-2 rounded-2xl max-w-[70%];
+}
+
+.chat-bubble-sent {
+    @apply bg-primary text-primary-foreground rounded-br-none;
+}
+
+.chat-bubble-received {
+    @apply bg-muted/50 dark:bg-muted/20 text-foreground rounded-bl-none;
+}
+
+.chat-input-container {
+    @apply p-3 m-2 mt-0 border-t-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
+}
+
+.chat-input-wrapper {
+    @apply flex-1 flex items-start gap-2 rounded-full bg-muted/50 dark:bg-muted/20 backdrop-blur-sm px-4 py-2 border border-border;
+}
+
+.chat-input {
+    @apply flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-foreground placeholder:text-muted-foreground min-h-[36px] resize-none py-2 overflow-auto;
+}
+
+.chat-attachment-preview {
+    @apply w-20 h-20 rounded-md border border-border flex items-center justify-center overflow-hidden bg-muted/30;
+}
+
+.chat-date-divider {
+    @apply sticky top-0 z-10 flex justify-center;
+}
+
+.chat-date-label {
+    @apply px-3 py-1 text-xs font-medium rounded-full bg-muted/50 dark:bg-muted/20 text-muted-foreground;
+}
+
+.chat-reaction {
+    @apply flex items-center gap-1 bg-muted/50 dark:bg-muted/20 px-2 py-0.5 rounded-full text-sm cursor-pointer hover:bg-muted dark:hover:bg-muted/30;
+}
+
+.chat-file-attachment {
+    @apply flex items-center gap-2 p-2 rounded-lg bg-muted/50 dark:bg-muted/20 hover:bg-muted dark:hover:bg-muted/30;
+}
+
+.chat-message-actions {
+    @apply opacity-0 transition-opacity;
+}
+
+.chat-message:hover .chat-message-actions {
+    @apply opacity-100;
+}
+
+/* Emoji picker customization */
+.emoji-mart {
+    @apply !bg-popover !border-border;
+}
+
+.dark .emoji-mart {
+    @apply !bg-popover;
+}
+
+.emoji-mart-bar {
+    @apply !border-border;
+}
+
+.emoji-mart-search {
+    @apply !border-border;
+}
+
+.emoji-mart-search input {
+    @apply !bg-muted/50 !border-border !text-foreground !placeholder-muted-foreground;
+}
+
+.emoji-mart-category-label span {
+    @apply !bg-background !text-muted-foreground;
 }

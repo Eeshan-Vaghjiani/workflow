@@ -2,16 +2,19 @@ import { useState, useRef } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import axios from 'axios';
-import { CalendarIcon, Check, RefreshCw, Calendar as CalendarLogo, Settings } from 'lucide-react';
+import { CalendarIcon, RefreshCw, Settings } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Link } from '@inertiajs/react';
+import { EnhancedButton } from '@/components/ui/enhanced-button';
+import { containerVariants, itemVariants } from '@/lib/theme-constants';
+import { cn } from '@/lib/utils';
 
 // Define minimal types for event handlers
 interface CalendarEventChangeArg {
@@ -143,141 +146,181 @@ export default function CalendarIndex({ events }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Calendar" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <motion.div
+                className="flex h-full flex-1 flex-col gap-6 p-6"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <motion.div
+                    className="grid grid-cols-1 gap-6 md:grid-cols-4"
+                    variants={containerVariants}
+                >
                     {/* Main Calendar */}
-                    <Card className="col-span-1 md:col-span-3">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <div>
-                                <CardTitle>Calendar</CardTitle>
-                                <CardDescription>View and manage your tasks and assignments</CardDescription>
-                            </div>
-                            <div className="flex space-x-2">
-                                <Button onClick={syncWithGoogle} disabled={syncing}>
-                                    {syncing ? (
-                                        <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                    )}
-                                    Sync with Google
-                                </Button>
-                                <Button variant="outline" asChild>
+                    <motion.div
+                        className="col-span-1 md:col-span-3"
+                        variants={itemVariants}
+                    >
+                        <Card className="bg-background">
+                            <div className="flex flex-row items-center justify-between p-6">
+                                <div>
+                                    <CardTitle className="text-2xl font-semibold text-foreground">Calendar</CardTitle>
+                                    <CardDescription>View and manage your tasks and assignments</CardDescription>
+                                </div>
+                                <div className="flex space-x-2">
+                                    <EnhancedButton
+                                        onClick={syncWithGoogle}
+                                        disabled={syncing}
+                                        variant="secondary"
+                                        size="sm"
+                                        icon={syncing ?
+                                            <RefreshCw className="h-4 w-4 animate-spin" /> :
+                                            <CalendarIcon className="h-4 w-4" />
+                                        }
+                                        iconPosition="left"
+                                        magnetic={true}
+                                    >
+                                        Sync with Google
+                                    </EnhancedButton>
                                     <Link href={route('calendar.settings')}>
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        Settings
+                                        <EnhancedButton
+                                            variant="outline"
+                                            size="sm"
+                                            icon={<Settings className="h-4 w-4" />}
+                                            iconPosition="left"
+                                            magnetic={true}
+                                        >
+                                            Settings
+                                        </EnhancedButton>
                                     </Link>
-                                </Button>
+                                </div>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <FullCalendar
-                                ref={calendarRef}
-                                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                                initialView="dayGridMonth"
-                                headerToolbar={{
-                                    left: 'prev,next today',
-                                    center: 'title',
-                                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                                }}
-                                events={calendarEvents}
-                                editable={true}
-                                selectable={true}
-                                selectMirror={true}
-                                dayMaxEvents={true}
-                                eventClick={handleEventClick}
-                                eventDrop={handleEventChange}
-                                eventResize={handleEventChange}
-                                height="auto"
-                            />
-                        </CardContent>
-                    </Card>
+                            <CardContent className="p-0">
+                                <div className={cn(
+                                    "calendar-container",
+                                    "dark:bg-background dark:text-foreground",
+                                    "border-t border-border"
+                                )}>
+                                    <FullCalendar
+                                        ref={calendarRef}
+                                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                                        initialView="dayGridMonth"
+                                        events={calendarEvents}
+                                        editable={true}
+                                        selectable={true}
+                                        selectMirror={true}
+                                        dayMaxEvents={true}
+                                        weekends={true}
+                                        eventClick={(info) => handleEventClick(info)}
+                                        eventChange={(info) => handleEventChange(info)}
+                                        headerToolbar={{
+                                            left: 'prev,next today',
+                                            center: 'title',
+                                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                                        }}
+                                        buttonText={{
+                                            today: 'Today',
+                                            month: 'Month',
+                                            week: 'Week',
+                                            day: 'Day'
+                                        }}
+                                        themeSystem="standard"
+                                        height="auto"
+                                        contentHeight="auto"
+                                        aspectRatio={2}
+                                        expandRows={true}
+                                        stickyHeaderDates={true}
+                                        nowIndicator={true}
+                                        dayHeaders={true}
+                                        eventDisplay="block"
+                                        eventTimeFormat={{
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            meridiem: 'short'
+                                        }}
+                                        slotLabelFormat={{
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        }}
+                                        allDaySlot={true}
+                                        allDayText="All Day"
+                                        slotMinTime="06:00:00"
+                                        slotMaxTime="22:00:00"
+                                        slotDuration="00:30:00"
+                                        slotLabelInterval="01:00"
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </motion.div>
 
-                    {/* Event Details Sidebar */}
-                    <Card className="col-span-1">
-                        <CardHeader>
-                            <CardTitle>Event Details</CardTitle>
-                            <CardDescription>Selected task information</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {selectedEvent ? (
-                                <div className="space-y-4">
-                                    <div>
-                                        <h3 className="text-lg font-semibold">{selectedEvent.title}</h3>
-                                        <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                            <CalendarLogo className="h-4 w-4" />
-                                            <span>
-                                                {new Date(selectedEvent.start).toLocaleDateString()} - {new Date(selectedEvent.end || selectedEvent.start).toLocaleDateString()}
-                                            </span>
+                    {/* Sidebar */}
+                    <motion.div
+                        className="col-span-1"
+                        variants={itemVariants}
+                    >
+                        <Card className="bg-background">
+                            <div className="p-6">
+                                <CardTitle className="text-xl font-semibold text-foreground">Event Details</CardTitle>
+                                <CardDescription>
+                                    {selectedEvent ? 'Selected event information' : 'Select an event to view details'}
+                                </CardDescription>
+                            </div>
+                            <CardContent>
+                                {selectedEvent ? (
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h3 className="font-medium text-foreground">{selectedEvent.title}</h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {new Date(selectedEvent.start).toLocaleDateString()} - {new Date(selectedEvent.end).toLocaleDateString()}
+                                            </p>
                                         </div>
-                                    </div>
-
-                                    {selectedEvent.assignmentTitle && (
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium">Assignment</p>
-                                            <p className="text-sm text-muted-foreground">{selectedEvent.assignmentTitle}</p>
-                                        </div>
-                                    )}
-
-                                    {selectedEvent.groupName && (
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium">Group</p>
-                                            <p className="text-sm text-muted-foreground">{selectedEvent.groupName}</p>
-                                        </div>
-                                    )}
-
-                                    <div className="flex justify-between pt-2">
+                                        {selectedEvent.groupName && (
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Group</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.groupName}</p>
+                                            </div>
+                                        )}
+                                        {selectedEvent.assignmentTitle && (
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Assignment</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.assignmentTitle}</p>
+                                            </div>
+                                        )}
                                         {selectedEvent.priority && (
                                             <div>
-                                                <p className="text-sm font-medium">Priority</p>
-                                                <div className="flex items-center">
-                                                    <span
-                                                        className="h-3 w-3 rounded-full mr-2"
-                                                        style={{ backgroundColor: selectedEvent.backgroundColor }}
-                                                    />
-                                                    <p className="text-sm text-muted-foreground capitalize">{selectedEvent.priority}</p>
-                                                </div>
+                                                <p className="text-sm font-medium text-foreground">Priority</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.priority}</p>
                                             </div>
                                         )}
-
                                         {selectedEvent.status && (
                                             <div>
-                                                <p className="text-sm font-medium">Status</p>
-                                                <div className="flex items-center">
-                                                    {selectedEvent.status === 'completed' && (
-                                                        <Check className="h-4 w-4 mr-1 text-green-500" />
-                                                    )}
-                                                    <p className="text-sm text-muted-foreground capitalize">{selectedEvent.status.replace('_', ' ')}</p>
+                                                <p className="text-sm font-medium text-foreground">Status</p>
+                                                <p className="text-sm text-muted-foreground">{selectedEvent.status}</p>
+                                            </div>
+                                        )}
+                                        {selectedEvent.progress !== undefined && (
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Progress</p>
+                                                <div className="h-2 w-full rounded-full bg-secondary">
+                                                    <div
+                                                        className="h-full rounded-full bg-primary transition-all"
+                                                        style={{ width: `${selectedEvent.progress}%` }}
+                                                    />
                                                 </div>
+                                                <p className="mt-1 text-xs text-muted-foreground">{selectedEvent.progress}% Complete</p>
                                             </div>
                                         )}
                                     </div>
-
-                                    {selectedEvent.progress !== undefined && (
-                                        <div className="pt-2">
-                                            <p className="text-sm font-medium">Progress</p>
-                                            <div className="h-2 w-full bg-neutral-200 dark:bg-neutral-700 rounded-full mt-1">
-                                                <div
-                                                    className="h-full rounded-full"
-                                                    style={{
-                                                        width: `${selectedEvent.progress}%`,
-                                                        backgroundColor: selectedEvent.backgroundColor
-                                                    }}
-                                                />
-                                            </div>
-                                            <p className="text-right text-xs text-muted-foreground">{selectedEvent.progress}%</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center h-60 text-center text-muted-foreground">
-                                    <CalendarLogo className="h-10 w-10 mb-2 opacity-30" />
-                                    <p>Select an event to view details</p>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
+                                ) : (
+                                    <p className="text-center text-muted-foreground">No event selected</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </motion.div>
+                </motion.div>
+            </motion.div>
         </AppLayout>
     );
 }

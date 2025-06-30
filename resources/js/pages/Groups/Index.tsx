@@ -76,4 +76,4 @@ export default function GroupsIndex({ groups }: Props) {
             </div>
         </AppLayout>
     );
-} 
+}

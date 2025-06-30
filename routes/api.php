@@ -23,6 +23,8 @@ use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\StudyPlannerController;
 use App\Http\Controllers\CalendarController as CalendarControllerGroup;
 use App\Http\Controllers\MpesaController;
+use App\Http\Controllers\API\PricingController;
+use App\Http\Controllers\API\PromptController;
 
 /*
 |--------------------------------------------------------------------------
@@ -171,6 +173,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('groups/{group}/assignments/{assignment}/tasks/ai-create', [AITaskController::class, 'addTasksToAssignment']);
     Route::post('groups/{group}/ai-tasks/distribute', [AITaskController::class, 'autoDistributeTasks']);
 
+    // AI Pricing and Prompts
+    Route::get('/pricing', [PricingController::class, 'index']);
+    Route::get('/pricing/{id}', [PricingController::class, 'show']);
+    Route::post('/pricing/purchase', [PricingController::class, 'purchase']);
+    Route::get('/user/prompts', [PromptController::class, 'getBalance']);
+    Route::post('/ai/use-prompt', [PromptController::class, 'usePrompt']);
+
     // Auto-distribute tasks
     Route::post('groups/{groupId}/assignments/{assignmentId}/auto-distribute', [App\Http\Controllers\GroupTaskController::class, 'autoDistributeTasksAPI']);
 
@@ -201,12 +210,28 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::delete('/groups/{group}/messages/{message}', [GroupMessageController::class, 'destroy']);
     Route::post('/groups/{group}/read', [GroupMessageController::class, 'markAsRead']);
 
+    // Enhanced group message features
+    Route::post('/groups/{group}/messages/{message}/reply', [GroupMessageController::class, 'reply']);
+    Route::post('/groups/{group}/messages/{message}/pin', [GroupMessageController::class, 'pin']);
+    Route::delete('/groups/{group}/messages/{message}/pin', [GroupMessageController::class, 'unpin']);
+    Route::get('/groups/{group}/pinned', [GroupMessageController::class, 'getPinnedMessages']);
+    Route::post('/groups/{group}/search', [GroupMessageController::class, 'search']);
+    Route::post('/groups/{group}/messages/attachments', [GroupMessageController::class, 'uploadAttachment']);
+
     // Enhanced direct message endpoints
     Route::get('/direct-messages', [DirectMessageController::class, 'index']);
     Route::get('/direct-messages/{userId}', [DirectMessageController::class, 'messages']);
     Route::post('/direct-messages/{userId}', [DirectMessageController::class, 'store']);
     Route::delete('/direct-messages/{messageId}', [DirectMessageController::class, 'destroy']);
     Route::post('/direct-messages/{userId}/read', [DirectMessageController::class, 'markAsRead']);
+
+    // Enhanced direct message features
+    Route::post('/direct-messages/{messageId}/reply', [DirectMessageController::class, 'reply']);
+    Route::post('/direct-messages/{messageId}/pin', [DirectMessageController::class, 'pin']);
+    Route::delete('/direct-messages/{messageId}/pin', [DirectMessageController::class, 'unpin']);
+    Route::get('/direct-messages/{userId}/pinned', [DirectMessageController::class, 'getPinnedMessages']);
+    Route::post('/direct-messages/{userId}/search', [DirectMessageController::class, 'search']);
+    Route::post('/direct-messages/attachments', [DirectMessageController::class, 'uploadAttachment']);
 
 });
 
@@ -526,55 +551,59 @@ Route::post('/chat-test', function(Illuminate\Http\Request $request) {
 });
 
 // Function to sanitize and validate dates in AI response
-function sanitizeAiResponseDates($response) {
-    if (isset($response['assignment'])) {
-        // Ensure dates are in correct format or set defaults
-        $now = now();
-        if (!isset($response['assignment']['due_date']) || !validateDate($response['assignment']['due_date'])) {
-            $response['assignment']['due_date'] = $now->addDays(14)->format('Y-m-d');
-        }
-        if (!isset($response['assignment']['start_date']) || !validateDate($response['assignment']['start_date'])) {
-            $response['assignment']['start_date'] = $now->format('Y-m-d');
-        }
-        if (!isset($response['assignment']['end_date']) || !validateDate($response['assignment']['end_date'])) {
-            $response['assignment']['end_date'] = $now->addDays(14)->format('Y-m-d');
-        }
-    }
-
-    if (isset($response['tasks']) && is_array($response['tasks'])) {
-        foreach ($response['tasks'] as $key => $task) {
+if (!function_exists('sanitizeAiResponseDates')) {
+    function sanitizeAiResponseDates($response) {
+        if (isset($response['assignment'])) {
+            // Ensure dates are in correct format or set defaults
             $now = now();
-
-            // Validate task has required fields
-            if (!isset($task['title']) || empty($task['title'])) {
-                $response['tasks'][$key]['title'] = 'Task ' . ($key + 1);
+            if (!isset($response['assignment']['due_date']) || !validateDate($response['assignment']['due_date'])) {
+                $response['assignment']['due_date'] = $now->addDays(14)->format('Y-m-d');
             }
-
-            // Sanitize dates
-            if (!isset($task['start_date']) || !validateDate($task['start_date'])) {
-                $response['tasks'][$key]['start_date'] = $now->format('Y-m-d');
+            if (!isset($response['assignment']['start_date']) || !validateDate($response['assignment']['start_date'])) {
+                $response['assignment']['start_date'] = $now->format('Y-m-d');
             }
-
-            if (!isset($task['end_date']) || !validateDate($task['end_date'])) {
-                $response['tasks'][$key]['end_date'] = $now->addDays(7)->format('Y-m-d');
-            }
-
-            // Sanitize priority
-            if (!isset($task['priority']) || !in_array($task['priority'], ['low', 'medium', 'high'])) {
-                $response['tasks'][$key]['priority'] = 'medium';
+            if (!isset($response['assignment']['end_date']) || !validateDate($response['assignment']['end_date'])) {
+                $response['assignment']['end_date'] = $now->addDays(14)->format('Y-m-d');
             }
         }
-    }
 
-    return $response;
+        if (isset($response['tasks']) && is_array($response['tasks'])) {
+            foreach ($response['tasks'] as $key => $task) {
+                $now = now();
+
+                // Validate task has required fields
+                if (!isset($task['title']) || empty($task['title'])) {
+                    $response['tasks'][$key]['title'] = 'Task ' . ($key + 1);
+                }
+
+                // Sanitize dates
+                if (!isset($task['start_date']) || !validateDate($task['start_date'])) {
+                    $response['tasks'][$key]['start_date'] = $now->format('Y-m-d');
+                }
+
+                if (!isset($task['end_date']) || !validateDate($task['end_date'])) {
+                    $response['tasks'][$key]['end_date'] = $now->addDays(7)->format('Y-m-d');
+                }
+
+                // Sanitize priority
+                if (!isset($task['priority']) || !in_array($task['priority'], ['low', 'medium', 'high'])) {
+                    $response['tasks'][$key]['priority'] = 'medium';
+                }
+            }
+        }
+
+        return $response;
+    }
 }
 
 // Helper function to validate a date string
-function validateDate($date, $format = 'Y-m-d') {
-    if (!is_string($date)) return false;
+if (!function_exists('validateDate')) {
+    function validateDate($date, $format = 'Y-m-d') {
+        if (!is_string($date)) return false;
 
-    $d = \DateTime::createFromFormat($format, $date);
-    return $d && $d->format($format) === $date;
+        $d = \DateTime::createFromFormat($format, $date);
+        return $d && $d->format($format) === $date;
+    }
 }
 
 // Dashboard chat routes

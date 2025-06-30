@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { motion, Variants } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 import { type NavItem, PageProps } from '@/types';
 import {
     LayoutGrid,
@@ -15,64 +15,22 @@ import {
     Timer,
     BrainCircuit,
     CreditCard,
-    Settings,
     User,
     ChevronLeft,
     ChevronRight,
-    Sparkles
+    Sparkles,
+    LogOut,
+    LucideIcon
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { useMagneticHover } from '@/hooks/use-animation';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 
-// Animation variants for initial load only
-const sidebarVariants: Variants = {
-    hidden: {
-        opacity: 1,
-        x: 0
-    },
-    visible: {
-        opacity: 1,
-        x: 0,
-        transition: {
-            when: "beforeChildren",
-            staggerChildren: 0.08,
-            delayChildren: 0.1
-        }
-    }
-};
+interface NavItemWithIcon extends NavItem {
+    icon: LucideIcon;
+}
 
-// Animation variants for items
-const itemVariants: Variants = {
-    hidden: {
-        x: -100, // Start further left off-screen
-        opacity: 0,
-        scale: 0.8
-    },
-    visible: (i) => ({
-        x: 0,
-        opacity: 1,
-        scale: 1,
-        transition: {
-            type: "spring",
-            stiffness: 70,
-            damping: 8,
-            delay: i * 0.08 // Slightly faster delay
-        }
-    }),
-    initial: { scale: 1, x: 0 },
-    hover: {
-        scale: 1.05,
-        x: 8,
-        transition: {
-            type: "spring",
-            stiffness: 400,
-            damping: 10
-        }
-    }
-};
-
-const mainNavItems: NavItem[] = [
+const mainNavItems: NavItemWithIcon[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -135,32 +93,24 @@ const mainNavItems: NavItem[] = [
     }
 ];
 
-const settingsNavItems: NavItem[] = [
+const settingsNavItems: NavItemWithIcon[] = [
     {
         title: 'Profile',
         href: '/settings/profile',
         icon: User,
     },
     {
-        title: 'Settings',
-        href: '/settings',
-        icon: Settings,
+        title: 'Logout',
+        href: route('logout'),
+        icon: LogOut,
     }
 ];
 
-// Extend the User type to include AI prompt properties
-interface ExtendedUser {
-    id: number;
-    name: string;
-    email: string;
-    ai_prompts_remaining?: number;
-    is_paid_user?: boolean;
-    total_prompts_purchased?: number;
-}
-
 export function AppSidebar() {
-    const { url, props } = usePage<PageProps>();
-    const [shouldAnimate, setShouldAnimate] = useState(true);
+    const { url } = usePage<PageProps>();
+    const controls = useAnimation();
+    const hasAnimatedRef = useRef(false);
+    const prevUrlRef = useRef(url);
     const logoRef = useRef<HTMLDivElement>(null);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -172,15 +122,21 @@ export function AppSidebar() {
     // Apply magnetic effect to logo
     useMagneticHover(logoRef, 0.3);
 
-    // Use session storage to track if the sidebar has been animated before
-    useEffect(() => {
-        const hasAnimated = sessionStorage.getItem('app_sidebar_animated');
-        if (hasAnimated) {
-            setShouldAnimate(false);
-        } else {
-            sessionStorage.setItem('app_sidebar_animated', 'true');
+    // Handle initial animation and page navigation
+    useLayoutEffect(() => {
+        const shouldAnimate = !hasAnimatedRef.current || prevUrlRef.current !== url;
+
+        if (shouldAnimate) {
+            controls.start({
+                x: 0,
+                opacity: 1,
+                transition: { duration: 0.3, ease: "easeOut" }
+            });
+            hasAnimatedRef.current = true;
         }
-    }, []);
+
+        prevUrlRef.current = url;
+    }, [url, controls]);
 
     // Save collapsed state to localStorage
     useEffect(() => {
@@ -196,31 +152,42 @@ export function AppSidebar() {
             <nav className="space-y-1 px-3">
                 {mainNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
+                    const Icon = item.icon;
                     return (
                         <motion.div
                             key={item.href}
                             custom={index}
-                            initial="hidden"
-                            animate="visible"
-                            variants={itemVariants}
-                            whileHover="hover"
+                            initial={!hasAnimatedRef.current ? { x: -20, opacity: 0 } : false}
+                            animate={controls}
+                            variants={{
+                                visible: {
+                                    x: 0,
+                                    opacity: 1,
+                                    transition: {
+                                        delay: index * 0.1,
+                                        duration: 0.3,
+                                        ease: "easeOut"
+                                    }
+                                }
+                            }}
+                            whileHover={{
+                                x: 5,
+                                transition: {
+                                    duration: 0.2
+                                }
+                            }}
                             className="mb-1"
                         >
                             <Link
                                 href={item.href}
                                 className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
-                                    ? 'bg-primary text-white'
-                                    : 'text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/20'
+                                    ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground'
+                                    : 'text-foreground hover:bg-primary/10 dark:hover:bg-primary/20'
                                     } ${isCollapsed ? 'justify-center' : ''}`}
                             >
-                                <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-white' : ''}`} />
+                                <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-primary dark:text-primary-foreground' : ''}`} />
                                 {!isCollapsed && (
                                     <span className={`${isActive ? 'font-medium' : ''}`}>{item.title}</span>
-                                )}
-                                {!isCollapsed && item.badge && (
-                                    <span className="ml-auto bg-primary/20 text-primary text-xs py-0.5 px-1.5 rounded">
-                                        {item.badge}
-                                    </span>
                                 )}
                             </Link>
                         </motion.div>
@@ -233,18 +200,20 @@ export function AppSidebar() {
     const SettingsNav = () => {
         return (
             <nav className="space-y-1 px-3">
-                {settingsNavItems.map((item, index) => {
+                {settingsNavItems.map((item) => {
                     const isActive = url.startsWith(item.href);
+                    const Icon = item.icon;
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
+                            {...(item.title === 'Logout' ? { method: 'post' } : {})}
                             className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
-                                ? 'bg-primary text-white'
-                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground'
+                                : 'text-foreground hover:bg-primary/10 dark:hover:bg-primary/20'
                                 } ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-white' : ''}`} />
+                            <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-primary dark:text-primary-foreground' : ''}`} />
                             {!isCollapsed && (
                                 <span className={`${isActive ? 'font-medium' : ''}`}>{item.title}</span>
                             )}
@@ -259,9 +228,8 @@ export function AppSidebar() {
         <motion.aside
             className={`fixed inset-y-0 left-0 z-20 flex flex-col bg-white/80 dark:bg-gray-900/80 shadow-sm backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
                 }`}
-            variants={sidebarVariants}
-            initial={shouldAnimate ? "hidden" : "visible"}
-            animate="visible"
+            initial={!hasAnimatedRef.current ? { x: -20, opacity: 0 } : false}
+            animate={controls}
         >
             <div className="flex items-center justify-between p-4">
                 <div ref={logoRef} className={`flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`}>

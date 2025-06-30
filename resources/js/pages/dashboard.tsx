@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Calendar, GitBranch, Bell, Users, BookOpen, Plus, FileText, Briefcase, Settings, TrendingUp, Lightbulb, CheckSquare } from 'lucide-react';
+import { Calendar, GitBranch, Bell, Users, BookOpen, Plus, FileText, Briefcase, Lightbulb, CheckSquare, User, LogOut } from 'lucide-react';
 import { Card3D } from '@/components/ui/card-3d';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { motion } from 'framer-motion';
@@ -74,9 +74,9 @@ function AIUsageStats({ promptsRemaining, totalPrompts, isPaidUser }: { promptsR
     else if (usagePercentage >= 40) status = 'medium';
 
     const statusColors = {
-        low: 'bg-green-500',
+        low: 'bg-primary',
         medium: 'bg-amber-500',
-        high: 'bg-red-500'
+        high: 'bg-destructive'
     };
 
     // Format display text
@@ -87,14 +87,17 @@ function AIUsageStats({ promptsRemaining, totalPrompts, isPaidUser }: { promptsR
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI Prompts Used</h3>
+                <div className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-foreground" />
+                    <h3 className="text-lg font-semibold text-foreground">AI Prompts Usage</h3>
+                </div>
                 <Badge variant={promptsRemaining < 3 ? "destructive" : "outline"}>
-                    {promptsRemaining} remaining
+                    {promptsRemaining} left
                 </Badge>
             </div>
 
             <div className="space-y-2">
-                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
                     <div
                         className={`h-full w-full flex-1 transition-all ${statusColors[status]}`}
                         style={{ transform: `translateX(-${100 - usagePercentage}%)` }}
@@ -102,13 +105,13 @@ function AIUsageStats({ promptsRemaining, totalPrompts, isPaidUser }: { promptsR
                 </div>
 
                 <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {usageDisplay}
+                    <span className="text-sm font-medium text-muted-foreground">
+                        {usageDisplay} used
                     </span>
 
                     <Link
                         href="/pricing"
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                        className="text-sm text-primary hover:text-primary/90 hover:underline flex items-center gap-1"
                     >
                         <Lightbulb className="h-3.5 w-3.5" />
                         <span>Get more</span>
@@ -116,7 +119,7 @@ function AIUsageStats({ promptsRemaining, totalPrompts, isPaidUser }: { promptsR
                 </div>
 
                 {promptsRemaining < 5 && (
-                    <div className="text-xs font-medium text-red-500 dark:text-red-400">
+                    <div className="text-xs font-medium text-destructive">
                         {promptsRemaining === 0 ? 'No prompts left!' : 'Running low on prompts!'}
                     </div>
                 )}
@@ -167,10 +170,10 @@ export default function Dashboard(props: Props) {
                     >
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                             <div>
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                <h1 className="text-2xl font-bold text-foreground">
                                     Welcome back, {auth.user.name}!
                                 </h1>
-                                <p className="text-base text-gray-600 dark:text-gray-300">
+                                <p className="text-base text-muted-foreground">
                                     Here's what's happening in your workspace today
                                 </p>
                             </div>
@@ -216,16 +219,18 @@ export default function Dashboard(props: Props) {
                                     <Lightbulb className="w-5 h-5 text-primary dark:text-primary-300" />
                                 </div>
                             </div>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                                {auth.user.is_paid_user ? auth.user.total_prompts_purchased : 10}
-                            </p>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                                {auth.user.is_paid_user ? 'Purchased prompts' : 'Free trial prompts'}
-                            </p>
-                            <div className="mt-4">
-                                <Link href="/ai-tasks" className="text-primary dark:text-primary-300 text-sm font-medium hover:underline">
-                                    Generate with AI →
-                                </Link>
+                            <div>
+                                <p className="text-3xl font-bold text-foreground">
+                                    {auth.user.is_paid_user ? auth.user.total_prompts_purchased : auth.user.ai_prompts_remaining}
+                                </p>
+                                <p className="text-muted-foreground text-sm mt-1">
+                                    {auth.user.is_paid_user ? 'Total purchased prompts' : 'Free trial prompts remaining'}
+                                </p>
+                                <div className="mt-4">
+                                    <Link href="/ai-tasks" className="text-primary hover:text-primary/90 text-sm font-medium hover:underline">
+                                        Generate with AI →
+                                    </Link>
+                                </div>
                             </div>
                         </Card3D>
                     </motion.div>
@@ -315,23 +320,23 @@ export default function Dashboard(props: Props) {
                             <EnhancedButton
                                 variant="outline"
                                 className="flex flex-col items-center justify-center p-4 h-28"
-                                icon={<TrendingUp className="w-8 h-8 mb-2" />}
+                                icon={<User className="w-8 h-8 mb-2" />}
                                 iconPosition="top"
                             >
-                                <Link href="/ai-tasks" className="text-center">
-                                    <span className="block">AI</span>
-                                    <span className="block">Tasks</span>
+                                <Link href={route('profile.edit')} className="text-center">
+                                    <span className="block">My</span>
+                                    <span className="block">Profile</span>
                                 </Link>
                             </EnhancedButton>
                             <EnhancedButton
                                 variant="outline"
                                 className="flex flex-col items-center justify-center p-4 h-28"
-                                icon={<Settings className="w-8 h-8 mb-2" />}
+                                icon={<LogOut className="w-8 h-8 mb-2" />}
                                 iconPosition="top"
                             >
-                                <Link href="/settings" className="text-center">
-                                    <span className="block">Account</span>
-                                    <span className="block">Settings</span>
+                                <Link href={route('logout')} method="post" className="text-center">
+                                    <span className="block">Log</span>
+                                    <span className="block">Out</span>
                                 </Link>
                             </EnhancedButton>
                         </div>

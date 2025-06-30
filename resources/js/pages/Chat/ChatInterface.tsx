@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChatHeader } from '@/components/Chat/chat-header';
 import { ChatInput } from '@/components/Chat/chat-input';
 import { ChatList, Message as ChatListMessage } from '@/components/Chat/chat-list';
 import { ChatSidebar } from '@/components/Chat/chat-sidebar';
 import { useToast } from '@/components/ui/use-toast';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, X, UserPlus, Users, Info, MessageSquare } from 'lucide-react';
+import { Search, X, UserPlus, Users, Info, MessageSquare, Plus } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
-import { Plus } from 'lucide-react';
 import { containerVariants, itemVariants } from '@/lib/theme-constants';
+import { cn } from '@/lib/utils';
 
 // Enhanced animation variants
 const messageVariants = {
@@ -70,6 +70,43 @@ interface ChatInterfaceProps {
     currentUser: User;
 }
 
+interface MessageData {
+    id?: number;
+    content?: string;
+    message?: string;
+    sender_id: number;
+    receiver_id?: number;
+    group_id?: number;
+    created_at?: string;
+    user?: User;
+}
+
+interface ChatData {
+    id: number;
+    user: {
+        id: number;
+        name: string;
+        avatar?: string;
+        status?: string;
+    };
+    lastMessage?: {
+        content: string;
+        created_at: string;
+    };
+    unreadCount?: number;
+}
+
+interface GroupData {
+    id: number;
+    name: string;
+    avatar?: string;
+    lastMessage?: {
+        content: string;
+        created_at: string;
+    };
+    unreadCount?: number;
+}
+
 export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     // State for chats and messages
     const [chats, setChats] = useState<Chat[]>([]);
@@ -111,7 +148,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         const channel = window.Echo.channel('chat');
 
         // Handle new messages with proper filtering
-        channel.listen('.message.new', (data: any) => {
+        channel.listen('.message.new', (data: MessageData) => {
             console.log('New message received:', data);
 
             // Only process the message if it's relevant to the current chat
@@ -125,7 +162,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                 // Format the message
                 const formattedMessage: Message = {
                     id: data.id || Date.now(),
-                    content: data.content || data.message,
+                    content: data.content || data.message || '',
                     sender_id: data.sender_id,
                     receiver_id: data.receiver_id,
                     group_id: data.group_id,
@@ -138,7 +175,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                 setMessages(prevMessages => [...prevMessages, formattedMessage]);
 
                 // Mark as read if it's a received message
-                if (data.sender_id !== currentUser.id) {
+                if (data.sender_id !== currentUser.id && data.id) {
                     markMessageAsRead(data.id, selectedChat);
                 }
             } else {
@@ -157,8 +194,8 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         try {
             setIsLoading(true);
             // Fetch direct message conversations
-            const directResponse = await axios.get('/api/direct-messages');
-            const directChats = directResponse.data.conversations.map((convo: any) => ({
+            const directResponse = await axios.get<{ conversations: ChatData[] }>('/api/direct-messages');
+            const directChats = directResponse.data.conversations.map((convo) => ({
                 id: convo.user.id,
                 type: 'direct' as const,
                 name: convo.user.name,
@@ -166,21 +203,21 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                 status: convo.user.status,
                 lastMessage: convo.lastMessage ? {
                     content: convo.lastMessage.content,
-                    timestamp: convo.lastMessage.created_at || convo.lastMessage.timestamp
+                    timestamp: convo.lastMessage.created_at
                 } : undefined,
                 unreadCount: convo.unreadCount || 0
             }));
 
             // Fetch group chats
-            const groupResponse = await axios.get('/api/chat/groups');
-            const groupChats = groupResponse.data.map((group: any) => ({
+            const groupResponse = await axios.get<GroupData[]>('/api/chat/groups');
+            const groupChats = groupResponse.data.map((group) => ({
                 id: group.id,
                 type: 'group' as const,
                 name: group.name,
                 avatar: group.avatar,
                 lastMessage: group.lastMessage ? {
                     content: group.lastMessage.content,
-                    timestamp: group.lastMessage.created_at || group.lastMessage.timestamp
+                    timestamp: group.lastMessage.created_at
                 } : undefined,
                 unreadCount: group.unreadCount || 0
             }));
@@ -201,12 +238,12 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
             }
         } catch (error) {
             console.error('Error fetching chats:', error);
-            setIsLoading(false);
             toast({
                 title: 'Error',
                 description: 'Failed to load chats. Please try again.',
-                variant: 'destructive',
+                variant: 'destructive'
             });
+            setIsLoading(false);
         }
     };
 
@@ -579,136 +616,142 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         }
     };
 
-    // Render chat UI with proper mobile responsiveness
     return (
-        <motion.div
-            className="flex h-full overflow-hidden"
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-        >
-            {/* Chat Sidebar (hidden on mobile when chat is selected) */}
-            <motion.div
-                className={`
-                    w-full md:w-80 flex-shrink-0 border-r dark:border-gray-700
-                    ${selectedChat ? 'hidden md:block' : 'block'}
-                `}
-                variants={itemVariants}
-            >
-                <ChatSidebar
-                    chats={chats}
-                    selectedChatId={selectedChat?.id}
-                    onChatSelect={setSelectedChat}
-                    onNewChat={() => setShowNewChatModal(true)}
-                    onNewGroup={() => setShowNewGroupModal(true)}
-                    onSettingsClick={() => { }}
-                    currentUserId={currentUser.id}
-                />
-            </motion.div>
+        <div className="flex h-[calc(100vh-7rem)] bg-background/95 dark:bg-gray-900/95">
+            {/* Chat Sidebar */}
+            <div className="w-80 flex-shrink-0 border-r border-border bg-card">
+                <div className="h-full flex flex-col">
+                    {/* Search and New Chat */}
+                    <div className="p-4 border-b border-border">
+                        <div className="flex items-center gap-2">
+                            <Input
+                                placeholder="Search chats..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1"
+                            />
+                            <EnhancedButton
+                                variant="outline"
+                                onClick={() => setShowNewChatModal(true)}
+                                className="h-10 w-10 p-0"
+                            >
+                                <Plus className="h-4 w-4" />
+                            </EnhancedButton>
+                        </div>
+                    </div>
 
-            {/* Main Chat Area */}
-            <motion.div
-                className={`
-                    flex-1 flex flex-col h-full
-                    ${selectedChat ? 'block' : 'hidden md:block'}
-                `}
-                variants={itemVariants}
-            >
+                    {/* Chats List */}
+                    <ScrollArea className="flex-1 p-2">
+                        {isLoading ? (
+                            <div className="flex justify-center p-4">
+                                <div className="animate-pulse flex space-x-4">
+                                    <div className="h-3 w-3 bg-muted-foreground/20 rounded-full"></div>
+                                    <div className="h-3 w-3 bg-muted-foreground/20 rounded-full"></div>
+                                    <div className="h-3 w-3 bg-muted-foreground/20 rounded-full"></div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                {chats.map((chat) => (
+                                    <button
+                                        key={`${chat.type}-${chat.id}`}
+                                        onClick={() => setSelectedChat(chat)}
+                                        className={cn(
+                                            "w-full p-3 rounded-lg flex items-center gap-3 transition-colors",
+                                            selectedChat?.id === chat.id
+                                                ? "bg-primary/10 hover:bg-primary/15"
+                                                : "hover:bg-muted/50"
+                                        )}
+                                    >
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage src={chat.avatar} />
+                                            <AvatarFallback>{chat.name[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-medium truncate">{chat.name}</span>
+                                                {chat.lastMessage && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {new Date(chat.lastMessage.timestamp).toLocaleTimeString([], {
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {chat.lastMessage && (
+                                                <p className="text-sm text-muted-foreground truncate">
+                                                    {chat.lastMessage.content}
+                                                </p>
+                                            )}
+                                        </div>
+                                        {chat.unreadCount && chat.unreadCount > 0 && (
+                                            <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                                                {chat.unreadCount}
+                                            </span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </ScrollArea>
+                </div>
+            </div>
+
+            {/* Chat Main Area */}
+            <div className="flex-1 flex flex-col h-full min-w-0">
                 {selectedChat ? (
                     <>
-                        {/* Chat Header */}
-                        <ChatHeader
-                            type={selectedChat.type}
-                            user={selectedChat.type === 'direct' ? {
-                                id: selectedChat.id,
-                                name: selectedChat.name,
-                                avatar: selectedChat.avatar,
-                                status: selectedChat.status
-                            } : undefined}
-                            group={selectedChat.type === 'group' ? {
-                                id: selectedChat.id,
-                                name: selectedChat.name,
-                                avatar: selectedChat.avatar,
-                                memberCount: selectedChat.participants?.length
-                            } : undefined}
-                            onBackClick={() => setSelectedChat(null)}
-                            onInfoClick={() => { }}
-                            onSearchClick={() => { }}
-                            isMobile={window.innerWidth < 768}
-                        />
-
-                        {/* Messages */}
-                        <motion.div
-                            className="flex-1 overflow-hidden h-full"
-                            variants={itemVariants}
-                        >
-                            <AnimatePresence>
-                                <ChatList
-                                    messages={messages}
-                                    currentUserId={currentUser.id}
-                                    isLoading={isLoadingMessages}
-                                    onMessageDelete={handleDeleteMessage}
-                                    onMessageReply={() => { }}
-                                    onMessageReaction={handleMessageReaction}
-                                    onMessageForward={() => { }}
-                                    conversationType={selectedChat.type}
-                                />
-                            </AnimatePresence>
-                        </motion.div>
-
-                        {/* Chat Input */}
-                        <motion.div variants={itemVariants}>
+                        <div className="p-4 border-b border-border/10 dark:border-gray-800 bg-background/95 dark:bg-gray-900/90">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={selectedChat.avatar} />
+                                    <AvatarFallback>{selectedChat.name[0]}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <h2 className="font-semibold text-foreground">{selectedChat.name}</h2>
+                                    <p className="text-xs text-muted-foreground">
+                                        {selectedChat.status || (selectedChat.type === 'group' ?
+                                            `${selectedChat.participants?.length || 0} members` : 'Offline')}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <ChatList
+                                messages={messages}
+                                currentUserId={currentUser.id}
+                                isLoading={isLoadingMessages}
+                                onMessageDelete={handleDeleteMessage}
+                                onMessageReaction={handleMessageReaction}
+                                conversationType={selectedChat.type}
+                            />
+                        </div>
+                        <div className="p-4 bg-background/95 dark:bg-gray-900/90 border-t border-border/10 dark:border-gray-800">
                             <ChatInput
                                 onSendMessage={sendMessage}
                                 onTyping={() => { }}
-                                conversationId={selectedChat.id}
+                                isDisabled={false}
+                                placeholder="Type a message..."
                             />
-                        </motion.div>
+                        </div>
                     </>
                 ) : (
-                    <motion.div
-                        className="flex items-center justify-center h-full"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                    >
-                        <GlassContainer className="max-w-md p-8 text-center">
-                            <motion.div
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{
-                                    type: "spring",
-                                    stiffness: 300,
-                                    damping: 25,
-                                    delay: 0.3
-                                }}
-                            >
-                                <div className="mb-6">
-                                    <div className="w-20 h-20 mx-auto bg-primary-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                                        <MessageSquare className="h-10 w-10 text-primary-500 dark:text-neon-green" />
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-semibold mb-2">
-                                    Select a conversation
-                                </h3>
-                                <p className="text-gray-500 dark:text-gray-400 mb-6">
-                                    Choose an existing conversation or start a new one
-                                </p>
-                                <EnhancedButton
-                                    onClick={() => setShowNewChatModal(true)}
-                                    icon={<UserPlus className="h-5 w-5" />}
-                                >
-                                    New Chat
-                                </EnhancedButton>
-                            </motion.div>
-                        </GlassContainer>
-                    </motion.div>
+                    <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center">
+                            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                            <h3 className="text-lg font-medium mb-2">No chat selected</h3>
+                            <p className="text-muted-foreground">
+                                Select a chat from the sidebar or start a new conversation
+                            </p>
+                        </div>
+                    </div>
                 )}
-            </motion.div>
+            </div>
 
             {/* New Chat Modal */}
             <Dialog open={showNewChatModal} onOpenChange={setShowNewChatModal}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent>
                     <div className="space-y-4">
                         <div className="text-xl font-semibold">New Chat</div>
 
@@ -786,7 +829,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
             {/* New Group Modal */}
             <Dialog open={showNewGroupModal} onOpenChange={setShowNewGroupModal}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent>
                     <div className="space-y-4">
                         <div className="text-xl font-semibold">Create New Group</div>
 
@@ -898,6 +941,6 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                     </div>
                 </DialogContent>
             </Dialog>
-        </motion.div>
+        </div>
     );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Smile, Paperclip, Send, Mic, XCircle } from 'lucide-react';
+import { Smile, Paperclip, Send, Mic, XCircle, File as FileIcon } from 'lucide-react';
 import {
     Popover,
     PopoverContent,
@@ -12,13 +12,14 @@ import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
 
 interface ChatInputProps {
     onSendMessage: (message: string, attachments?: File[]) => void;
     onTyping?: () => void;
     isDisabled?: boolean;
     placeholder?: string;
-    conversationId?: number | string;
     replyingTo?: {
         id: number | string;
         content: string;
@@ -41,7 +42,6 @@ export function ChatInput({
     onTyping,
     isDisabled = false,
     placeholder = "Type a message...",
-    conversationId,
     replyingTo = null,
     onCancelReply,
 }: ChatInputProps) {
@@ -61,39 +61,26 @@ export function ChatInput({
         }
     }, [message]);
 
-    const handleSend = () => {
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
         if (message.trim() || attachments.length > 0) {
             onSendMessage(message, attachments);
             setMessage('');
             setAttachments([]);
-
-            // Reset textarea height
-            if (textareaRef.current) {
-                textareaRef.current.style.height = 'auto';
-            }
         }
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            handleSubmit(e);
         }
     };
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const fileList = Array.from(e.target.files);
-            setAttachments(prev => [...prev, ...fileList]);
+            setAttachments(Array.from(e.target.files));
         }
-    };
-
-    const removeAttachment = (index: number) => {
-        setAttachments(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const triggerFileInput = () => {
-        fileInputRef.current?.click();
     };
 
     const handleEmojiSelect = (emoji: EmojiObject) => {
@@ -128,31 +115,33 @@ export function ChatInput({
     return (
         <Card className="p-3 m-2 mt-0 border-t-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             {/* Reply Banner */}
-            {replyingTo && (
-                <motion.div
-                    className="flex items-center justify-between bg-muted/50 dark:bg-muted/20 rounded-lg p-2 mb-3"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                >
-                    <div className="flex flex-col">
-                        <span className="text-xs text-primary font-medium">
-                            Replying to {replyingTo.sender || 'message'}
-                        </span>
-                        <span className="text-sm text-foreground/80 truncate max-w-[250px]">
-                            {replyingTo.content}
-                        </span>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={onCancelReply}
-                        className="text-muted-foreground hover:text-foreground"
+            <AnimatePresence>
+                {replyingTo && (
+                    <motion.div
+                        className="flex items-center justify-between bg-muted/50 dark:bg-muted/20 rounded-lg p-2 mb-3"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
                     >
-                        <XCircle className="h-5 w-5" />
-                    </Button>
-                </motion.div>
-            )}
+                        <div className="flex flex-col">
+                            <span className="text-xs text-primary font-medium">
+                                Replying to {replyingTo.sender || 'message'}
+                            </span>
+                            <span className="text-sm text-foreground/80 truncate max-w-[250px]">
+                                {replyingTo.content}
+                            </span>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onCancelReply}
+                            className="text-muted-foreground hover:text-foreground"
+                        >
+                            <XCircle className="h-5 w-5" />
+                        </Button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Attachments Preview */}
             <AnimatePresence>
@@ -173,7 +162,7 @@ export function ChatInput({
                                 exit={{ scale: 0.8, opacity: 0 }}
                                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             >
-                                <div className="w-20 h-20 rounded-md border border-border flex items-center justify-center overflow-hidden bg-muted/30">
+                                <div className="w-20 h-20 rounded-lg border border-border flex items-center justify-center overflow-hidden bg-muted/30 hover:bg-muted/50 transition-colors">
                                     {file.type.startsWith('image/') ? (
                                         <img
                                             src={URL.createObjectURL(file)}
@@ -181,17 +170,20 @@ export function ChatInput({
                                             className="max-w-full max-h-full object-cover"
                                         />
                                     ) : (
-                                        <div className="text-xs text-center p-1 text-muted-foreground">
-                                            {file.name.substring(0, 15)}
-                                            {file.name.length > 15 ? '...' : ''}
+                                        <div className="flex flex-col items-center gap-1 p-2">
+                                            <FileIcon className="h-8 w-8 text-muted-foreground" />
+                                            <div className="text-xs text-center text-muted-foreground">
+                                                {file.name.substring(0, 15)}
+                                                {file.name.length > 15 ? '...' : ''}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                                 <Button
                                     variant="destructive"
                                     size="icon"
-                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-80 hover:opacity-100"
-                                    onClick={() => removeAttachment(index)}
+                                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
                                 >
                                     <XCircle className="h-4 w-4" />
                                 </Button>
@@ -202,96 +194,60 @@ export function ChatInput({
             </AnimatePresence>
 
             {/* Input Area */}
-            <div className="flex items-start gap-2">
-                <div className="flex-1 flex items-start gap-2 rounded-full bg-muted/50 dark:bg-muted/20 backdrop-blur-sm px-4 py-2 border border-border">
-                    {/* Emoji Picker */}
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-full self-end flex-shrink-0 text-muted-foreground hover:text-foreground"
-                            >
-                                <Smile className="h-5 w-5" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent
-                            side="top"
-                            align="start"
-                            className="w-auto p-0 border-none shadow-lg mb-1"
-                        >
-                            <div className="rounded-lg overflow-hidden border border-border bg-popover">
-                                <Picker
-                                    data={data}
-                                    onEmojiSelect={handleEmojiSelect}
-                                    previewPosition="none"
-                                    theme={document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
-                                />
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-
-                    {/* Attachment Button */}
-                    <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        multiple
-                    />
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full self-end flex-shrink-0 text-muted-foreground hover:text-foreground"
-                        onClick={triggerFileInput}
-                    >
-                        <Paperclip className="h-5 w-5" />
-                    </Button>
-
-                    {/* Message Input */}
-                    <Textarea
-                        ref={textareaRef}
-                        value={message}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        placeholder={placeholder}
-                        className="flex-1 border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-foreground placeholder:text-muted-foreground min-h-[36px] resize-none py-2 overflow-auto"
-                        disabled={isDisabled}
-                        data-conversation-id={conversationId}
-                        rows={1}
-                    />
-
-                    {/* Voice Message Button */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 rounded-full self-end flex-shrink-0 text-muted-foreground hover:text-foreground"
-                    >
-                        <Mic className="h-5 w-5" />
-                    </Button>
-                </div>
-
-                {/* Send Button */}
-                <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="self-end"
+            <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => fileInputRef.current?.click()}
                 >
-                    <Button
-                        onClick={handleSend}
-                        size="icon"
+                    <Paperclip className="h-5 w-5" />
+                </Button>
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileChange}
+                    multiple
+                />
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                >
+                    <Smile className="h-5 w-5" />
+                </Button>
+                <div className="flex-1">
+                    <Input
+                        value={message}
+                        onChange={(e) => {
+                            setMessage(e.target.value);
+                            handleTyping();
+                        }}
+                        onKeyPress={handleKeyPress}
+                        placeholder={placeholder}
+                        disabled={isDisabled}
                         className={cn(
-                            "h-10 w-10 rounded-full",
-                            "bg-primary hover:bg-primary/90",
-                            "dark:bg-primary dark:hover:bg-primary/90",
-                            "transition-colors duration-200"
+                            "bg-muted/50 border-0 focus-visible:ring-0 text-base py-6",
+                            "placeholder:text-muted-foreground/70"
                         )}
-                        disabled={isDisabled || (!message.trim() && attachments.length === 0)}
-                    >
-                        <Send className="h-5 w-5 text-primary-foreground" />
-                    </Button>
-                </motion.div>
-            </div>
+                    />
+                </div>
+                <Button
+                    type="submit"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                        "text-muted-foreground hover:text-foreground",
+                        (message.trim() || attachments.length > 0) && "text-primary hover:text-primary"
+                    )}
+                    disabled={isDisabled}
+                >
+                    <Send className="h-5 w-5" />
+                </Button>
+            </form>
         </Card>
     );
 }

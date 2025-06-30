@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { motion, useAnimation } from 'framer-motion';
 import { type NavItem, PageProps } from '@/types';
@@ -20,6 +20,7 @@ import {
     ChevronRight,
     Sparkles,
     LogOut,
+    Trello,
     LucideIcon
 } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -50,6 +51,11 @@ const mainNavItems: NavItemWithIcon[] = [
         title: 'Tasks',
         href: '/tasks',
         icon: CheckSquare,
+    },
+    {
+        title: 'Kanban',
+        href: '/kanban',
+        icon: Trello,
     },
     {
         title: 'Calendar',
@@ -112,12 +118,7 @@ export function AppSidebar() {
     const hasAnimatedRef = useRef(false);
     const prevUrlRef = useRef(url);
     const logoRef = useRef<HTMLDivElement>(null);
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('app_sidebar_collapsed') === 'true';
-        }
-        return false;
-    });
+    const [isCollapsed, setIsCollapsed] = useState(false); // Default to expanded
 
     // Apply magnetic effect to logo
     useMagneticHover(logoRef, 0.3);
@@ -137,11 +138,6 @@ export function AppSidebar() {
 
         prevUrlRef.current = url;
     }, [url, controls]);
-
-    // Save collapsed state to localStorage
-    useEffect(() => {
-        localStorage.setItem('app_sidebar_collapsed', isCollapsed.toString());
-    }, [isCollapsed]);
 
     const toggleCollapse = () => {
         setIsCollapsed(prev => !prev);
@@ -225,46 +221,44 @@ export function AppSidebar() {
     };
 
     return (
-        <motion.aside
-            className={`fixed inset-y-0 left-0 z-20 flex flex-col bg-white/80 dark:bg-gray-900/80 shadow-sm backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
-                }`}
-            initial={!hasAnimatedRef.current ? { x: -20, opacity: 0 } : false}
-            animate={controls}
-        >
-            <div className="flex items-center justify-between p-4">
-                <div ref={logoRef} className={`flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`}>
+        <aside className={`bg-card border-r border-border transition-all duration-300 flex flex-col ${isCollapsed ? 'w-[70px]' : 'w-[240px]'}`}>
+            <div className="flex items-center justify-between p-4 border-b border-border">
+                <div ref={logoRef} className={`transition-opacity duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
                     <AppLogo />
                 </div>
-                <EnhancedButton
+                <button
                     onClick={toggleCollapse}
-                    variant="ghost"
-                    size="sm"
-                    className={`${isCollapsed ? 'absolute -right-3 top-5 bg-white dark:bg-gray-800 rounded-full shadow-sm' : ''}`}
+                    className="p-2 rounded-lg hover:bg-accent transition-colors"
                 >
-                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-                </EnhancedButton>
+                    {isCollapsed ? (
+                        <ChevronRight className="h-5 w-5" />
+                    ) : (
+                        <ChevronLeft className="h-5 w-5" />
+                    )}
+                </button>
             </div>
 
-            {/* AI Prompts Buy Button */}
-            {!isCollapsed && (
-                <div className="px-4 mb-2">
-                    <Link
-                        href="/pricing"
-                        className="flex items-center justify-center py-1.5 px-2 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                    >
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Buy AI Prompts
-                    </Link>
-                </div>
-            )}
-
             <div className="flex-1 overflow-y-auto futuristic-scrollbar">
+                <div className="p-2">
+                    <EnhancedButton
+                        variant="primary"
+                        size="lg"
+                        className="w-full justify-center"
+                        icon={<Sparkles className="h-5 w-5" />}
+                        iconPosition={isCollapsed ? "top" : "left"}
+                    >
+                        <Link href="/pricing" className={`text-white dark:text-black ${isCollapsed ? 'hidden' : ''}`}>
+                            Buy AI Prompts
+                        </Link>
+                    </EnhancedButton>
+                </div>
+
                 <AnimatedNavMain />
             </div>
 
-            <div className="p-3">
+            <div className="border-t border-border p-2">
                 <SettingsNav />
             </div>
-        </motion.aside>
+        </aside>
     );
 }

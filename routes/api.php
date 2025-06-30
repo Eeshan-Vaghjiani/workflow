@@ -25,6 +25,9 @@ use App\Http\Controllers\CalendarController as CalendarControllerGroup;
 use App\Http\Controllers\MpesaController;
 use App\Http\Controllers\API\PricingController;
 use App\Http\Controllers\API\PromptController;
+use App\Http\Controllers\API\KanbanBoardController;
+use App\Http\Controllers\API\KanbanColumnController;
+use App\Http\Controllers\API\KanbanTaskController;
 
 /*
 |--------------------------------------------------------------------------
@@ -192,6 +195,48 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Calendar task date updates
     Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates']);
+
+    // Kanban Board Routes
+    Route::middleware('auth:sanctum')->prefix('kanban')->group(function () {
+        // Board Management
+        Route::get('/boards', [KanbanBoardController::class, 'index']);
+        Route::post('/boards', [KanbanBoardController::class, 'store']);
+        Route::get('/boards/{board}', [KanbanBoardController::class, 'show']);
+        Route::put('/boards/{board}', [KanbanBoardController::class, 'update']);
+        Route::delete('/boards/{board}', [KanbanBoardController::class, 'destroy']);
+
+        // Column Management
+        Route::post('/columns', [KanbanColumnController::class, 'store']);
+        Route::put('/columns/{column}', [KanbanColumnController::class, 'update']);
+        Route::delete('/columns/{column}', [KanbanColumnController::class, 'destroy']);
+        Route::put('/columns/reorder', [KanbanColumnController::class, 'reorder']);
+
+        // Task Management
+        Route::post('/tasks', [KanbanTaskController::class, 'store']);
+        Route::put('/tasks/{task}', [KanbanTaskController::class, 'update']);
+        Route::delete('/tasks/{task}', [KanbanTaskController::class, 'destroy']);
+        Route::put('/tasks/move', [KanbanTaskController::class, 'move']);
+        Route::put('/tasks/reorder', [KanbanTaskController::class, 'reorder']);
+        // Board Management
+        Route::get('/boards', [KanbanBoardController::class, 'index']);
+        Route::post('/boards', [KanbanBoardController::class, 'store']);
+        Route::get('/boards/{board}', [KanbanBoardController::class, 'show']);
+        Route::put('/boards/{board}', [KanbanBoardController::class, 'update']);
+        Route::delete('/boards/{board}', [KanbanBoardController::class, 'destroy']);
+
+        // Column Management
+        Route::post('/columns', [KanbanColumnController::class, 'store']);
+        Route::put('/columns/{column}', [KanbanColumnController::class, 'update']);
+        Route::delete('/columns/{column}', [KanbanColumnController::class, 'destroy']);
+        Route::put('/columns/reorder', [KanbanColumnController::class, 'reorder']);
+
+        // Task Management
+        Route::post('/tasks', [KanbanTaskController::class, 'store']);
+        Route::put('/tasks/{task}', [KanbanTaskController::class, 'update']);
+        Route::delete('/tasks/{task}', [KanbanTaskController::class, 'destroy']);
+        Route::put('/tasks/move', [KanbanTaskController::class, 'move']);
+        Route::put('/tasks/reorder', [KanbanTaskController::class, 'reorder']);
+    });
 });
 
 // Chat-specific API routes using web middleware for session auth
@@ -672,7 +717,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::delete('/api/web/study-tasks/{task}', [StudyPlannerController::class, 'deleteTask']);
 });
 
-// Pomodoro Timer API Routes - main routes
+// Pomodoro Timer API Routes
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/web/pomodoro/settings', [\App\Http\Controllers\PomodoroController::class, 'updateSettings']);
     Route::get('/web/pomodoro/settings/{userId?}', [\App\Http\Controllers\PomodoroController::class, 'getUserSettings']);

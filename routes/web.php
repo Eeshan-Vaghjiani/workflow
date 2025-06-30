@@ -1052,3 +1052,20 @@ Route::middleware('web')->group(function () {
             Route::get('/security', [App\Http\Controllers\AdminDashboardController::class, 'security'])->name('security.index');
         });
 });
+
+/*
+|--------------------------------------------------------------------------
+| Kanban Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])->group(function () {
+    Route::get('/kanban', function () {
+        return Inertia::render('Kanban/Index');
+    })->name('kanban');
+
+    Route::get('/kanban/{board}', function ($board) {
+        return Inertia::render('Kanban/Index', [
+            'initialBoardId' => $board
+        ]);
+    })->name('kanban.board');
+});

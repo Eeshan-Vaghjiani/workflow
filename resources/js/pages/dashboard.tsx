@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { Calendar, GitBranch, Bell, Users, BookOpen, Plus, FileText, Briefcase, Lightbulb, CheckSquare, User, LogOut } from 'lucide-react';
+import { Calendar, GitBranch, Bell, Users, BookOpen, Plus, FileText, Briefcase, Lightbulb, CheckSquare, User, LogOut, Trello } from 'lucide-react';
 import { Card3D } from '@/components/ui/card-3d';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { motion } from 'framer-motion';
@@ -315,6 +315,17 @@ export default function Dashboard(props: Props) {
                                 <Link href="/tasks/create" className="text-center">
                                     <span className="block">New</span>
                                     <span className="block">Task</span>
+                                </Link>
+                            </EnhancedButton>
+                            <EnhancedButton
+                                variant="outline"
+                                className="flex flex-col items-center justify-center p-4 h-28"
+                                icon={<Trello className="w-8 h-8 mb-2" />}
+                                iconPosition="top"
+                            >
+                                <Link href="/kanban" className="text-center">
+                                    <span className="block">Kanban</span>
+                                    <span className="block">Boards</span>
                                 </Link>
                             </EnhancedButton>
                             <EnhancedButton

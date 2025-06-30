@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AIPrompt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Config;
 
 class AIService
 {
@@ -19,19 +20,23 @@ class AIService
         'meta-llama/llama-3-8b-instruct',
         'anthropic/claude-3-haiku'
     ];
+    protected $lastWorkingModel = null;
 
     public function __construct()
     {
-        $this->apiKey = env('OPENROUTER_API_KEY');
+        // Priority: Direct env variables, then config values
+        $this->apiKey = env('OPENROUTER_API_KEY') ?: Config::get('openrouter.api_key');
 
-        if (empty($this->apiKey)) {
+        if (empty($this->apiKey) || $this->apiKey === 'sk-or-v1-1234567890abcdef1234567890abcdef') {
             Log::warning('OpenRouter API key not set. Service will not function properly.');
         }
 
         $this->baseUrl = 'https://openrouter.ai/api/v1';
         // Will be determined dynamically when needed
-        $this->model = env('OPENROUTER_MODEL', '');
-        $this->verifySSL = env('OPENROUTER_VERIFY_SSL', false);
+        $this->model = env('OPENROUTER_MODEL') ?: Config::get('openrouter.model', '');
+        $this->verifySSL = env('OPENROUTER_VERIFY_SSL') !== null
+            ? (bool)env('OPENROUTER_VERIFY_SSL')
+            : Config::get('openrouter.verify_ssl', false);
 
         // Log initialization (without exposing API key)
         Log::info('AIService initialized', [
@@ -44,9 +49,20 @@ class AIService
      */
     public function getWorkingModel()
     {
-        // If model is already set and not empty, return it
+        // If we already found a working model in this session, return it
+        if ($this->lastWorkingModel) {
+            Log::info('Using previously working model: ' . $this->lastWorkingModel);
+            return $this->lastWorkingModel;
+        }
+
+        // If model is already set from environment and not empty, try that first
         if (!empty($this->model)) {
-            return $this->model;
+            // Verify if this model exists in our preferred models
+            if (in_array($this->model, $this->availableModels)) {
+                Log::info('Using model from environment: ' . $this->model);
+                $this->lastWorkingModel = $this->model;
+                return $this->model;
+            }
         }
 
         // Check available models from OpenRouter
@@ -66,28 +82,45 @@ class AIService
                 $models = $response->json('data', []);
                 $availableModelIds = collect($models)->pluck('id')->toArray();
 
+                Log::info('Available models from OpenRouter: ' . implode(', ', $availableModelIds));
+
                 // Find the first model from our list that's available
                 foreach ($this->availableModels as $modelId) {
                     if (in_array($modelId, $availableModelIds)) {
-                        Log::info('Using OpenRouter model: ' . $modelId);
-                        $this->model = $modelId;
+                        Log::info('Found working model: ' . $modelId);
+                        $this->lastWorkingModel = $modelId;
                         return $modelId;
                     }
                 }
+            } else {
+                Log::error('Error fetching available models: ' . $response->status());
             }
         } catch (\Exception $e) {
             Log::error('Error checking available models: ' . $e->getMessage());
         }
 
         // Fallback to a default model if none available
-        $this->model = $this->availableModels[0];
-        Log::info('Falling back to default model: ' . $this->model);
-        return $this->model;
+        $fallbackModel = $this->availableModels[0];
+        Log::info('Falling back to default model: ' . $fallbackModel);
+        $this->lastWorkingModel = $fallbackModel;
+        return $fallbackModel;
     }
 
     public function processTaskPrompt(string $prompt, int $userId, int $groupId): array
     {
         try {
+            // Check if API key is missing
+            if (empty($this->apiKey) || $this->apiKey === 'sk-or-v1-1234567890abcdef1234567890abcdef') {
+                Log::error('OpenRouter API key is missing');
+                return [
+                    'success' => false,
+                    'error' => 'API configuration error: Please configure the OpenRouter API key.',
+                    'debug' => [
+                        'message' => 'OPENROUTER_API_KEY is not set or is using the default placeholder value'
+                    ]
+                ];
+            }
+
             // Check if the user has prompts remaining
             $user = \App\Models\User::find($userId);
             if (!$user) {
@@ -170,8 +203,11 @@ class AIService
             - All task start dates must be today or in the future, never in the past
             - All task end dates must be before or on the assignment due date
             - For simple tasks (1-3 effort hours), end dates should be within 1-3 days of start date
+
             - For medium tasks (4-8 effort hours), end dates should be within 3-7 days of start date
+
             - For complex tasks (9-20 effort hours), end dates should be within 7-14 days of start date
+
 
             The JSON structure must be:
             {
@@ -197,6 +233,7 @@ class AIService
 
             When determining effort hours and importance, consider:
             - Effort hours: Realistic estimate of how many hours it would take to complete the task (1-20)
+
               - Simple tasks: 1-3 hours
               - Medium tasks: 4-8 hours
               - Complex tasks: 9-20 hours
@@ -215,15 +252,15 @@ class AIService
 
             Always use the YYYY-MM-DD format for dates. Your ENTIRE response must be parseable as JSON.";
 
-            // Get a working model
             $modelToUse = $this->getWorkingModel();
 
-            // DEBUG: Log the final prompt before sending to OpenRouter
-            Log::info('DEBUG: Final prompt being sent to OpenRouter:', [
+            $data = [
                 'model' => $modelToUse,
                 'system_message' => $systemMessage,
-                'user_prompt' => $prompt
-            ]);
+                'user_prompt' => $prompt,
+            ];
+
+            Log::info('DEBUG: Final prompt being sent to OpenRouter:', $data);
 
             Log::info('Making OpenRouter API request', [
                 'model' => $modelToUse,
@@ -231,154 +268,95 @@ class AIService
                 'prompt_length' => strlen($prompt),
             ]);
 
-            // Create a record in the AI prompts table
-            $aiPrompt = AIPrompt::create([
-                'user_id' => $userId,
-                'group_id' => $groupId,
-                'prompt' => $prompt,
-                'model_used' => $modelToUse,
-                'endpoint' => 'processTaskPrompt',
-                'success' => false,  // Will update after successful response
-                'metadata' => [
-                    'request_start_time' => $startTime
-                ]
+            // Make API call to OpenRouter
+            $response = $http->post($this->baseUrl . '/chat/completions', [
+                'model' => $modelToUse,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemMessage],
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'temperature' => 0.1,
+                'response_format' => ["type" => "json_object"],
             ]);
 
-            try {
-                $response = $http->post($this->baseUrl . '/chat/completions', [
-                    'model' => $modelToUse,
-                    'messages' => [
-                        ['role' => 'system', 'content' => $systemMessage],
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'temperature' => 0.1,
-                    'response_format' => ["type" => "json_object"],
-                ]);
+            Log::info('DEBUG: OpenRouter response status:', ['status' => $response->status()]);
 
-                // Calculate response time
-                $endTime = microtime(true);
-                $responseTime = round(($endTime - $startTime) * 1000); // in milliseconds
+            if ($response->successful()) {
+                // Log raw response for debugging
+                Log::info('DEBUG: Raw OpenRouter response body:', ['raw_response' => $response->body()]);
 
-                // DEBUG: Log the response status and raw response body
-                Log::info('DEBUG: OpenRouter response status:', [
-                    'status' => $response->status()
-                ]);
+                // Get the content from the API response
+                $content = $response->json('choices.0.message.content');
 
-                // Get and log the raw response body
-                $rawResponseText = $response->body();
-                Log::info('DEBUG: Raw OpenRouter response body:', [
-                    'raw_response' => $rawResponseText
-                ]);
-
-                if ($response->failed()) {
-                    Log::error('OpenRouter API request failed', [
+                if ($content === null) {
+                    Log::error('OpenRouter API returned null content', [
                         'status' => $response->status(),
-                        'reason' => $response->reason(),
-                        'body' => $rawResponseText,
-                        'response_time_ms' => $responseTime
+                        'body' => $response->body()
                     ]);
-
-                    // Update the AI prompt record with failure details
-                    $aiPrompt->update([
-                        'response' => $rawResponseText,
-                        'response_time_ms' => $responseTime,
-                        'metadata' => [
-                            'status' => $response->status(),
-                            'reason' => $response->reason(),
-                            'response_time_ms' => $responseTime
-                        ]
-                    ]);
-
-                    return ['error' => 'OpenRouter API request failed: ' . $response->reason()];
+                    return [
+                        'success' => false,
+                        'error' => 'API returned invalid response format'
+                    ];
                 }
 
-                // Now try to parse the text as JSON
-                $data = json_decode($rawResponseText, true);
+                Log::info('Raw AI content', ['content' => $content]);
 
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    Log::error('DEBUG: Error parsing OpenRouter response as JSON:', [
-                        'error' => json_last_error_msg(),
-                        'raw_response' => $rawResponseText
-                    ]);
-                    return ['error' => 'Failed to parse OpenRouter response: ' . json_last_error_msg()];
+                // Process into valid JSON
+                $processedJson = $this->robustJsonDecode($content);
+
+                if ($processedJson === null) {
+                    // Consume prompt usage - we got a response even if it failed to parse
+                    try {
+                        $promptService->usePrompt($user, 'task_creation', 1);
+                    } catch (\Exception $e) {
+                        Log::error('Error in usePrompt: ' . $e->getMessage());
+                    }
+
+                    return [
+                        'success' => false,
+                        'error' => 'Could not process the AI response into valid JSON. Please try again.',
+                        'raw_content' => $content
+                    ];
                 }
 
-            } catch (\Exception $e) {
-                Log::error('DEBUG: An error occurred during the OpenRouter call or JSON parsing:', [
-                    'error' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString()
+                // Consume prompt usage after successful processing
+                try {
+                    $promptService->usePrompt($user, 'task_creation', 1);
+                } catch (\Exception $e) {
+                    Log::error('Error in usePrompt: ' . $e->getMessage());
+                    return [
+                        'success' => false,
+                        'error' => 'An error occurred while processing your request: ' . $e->getMessage()
+                    ];
+                }
+
+                // Calculate time taken for the request
+                $endTime = microtime(true);
+                $timeTaken = $endTime - $startTime;
+
+                return [
+                    'success' => true,
+                    'assignment' => $processedJson['assignment'] ?? null,
+                    'tasks' => $processedJson['tasks'] ?? [],
+                    'time_taken' => round($timeTaken, 2),
+                    'model_used' => $modelToUse
+                ];
+            } else {
+                Log::error('OpenRouter API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
                 ]);
 
                 return [
-                    'error' => 'OpenRouter API call failed: ' . $e->getMessage(),
-                    'debug' => [
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine()
-                    ]
+                    'success' => false,
+                    'error' => 'API call failed: ' . $response->status() . ' ' . $response->body()
                 ];
             }
-
-            if (!isset($data['choices'][0]['message']['content'])) {
-                Log::error('Invalid AI response', ['response' => $data]);
-
-                // Update the AI prompt record with failure details
-                $aiPrompt->update([
-                    'response' => json_encode($data),
-                    'metadata' => ['error' => 'Invalid AI response structure']
-                ]);
-
-                return ['error' => 'Invalid AI response: ' . json_encode($data)];
-            }
-
-            $rawContent = $data['choices'][0]['message']['content'];
-            Log::info('Raw AI content', ['content' => $rawContent]);
-
-            if (preg_match('/```(?:json)?(.*?)```/s', $rawContent, $matches)) {
-                $jsonContent = trim($matches[1]);
-                Log::info('Extracted JSON from code block', ['extracted' => $jsonContent]);
-            } else {
-                $jsonContent = $rawContent;
-            }
-
-            $content = $this->robustJsonDecode($jsonContent);
-
-            if ($content === null) {
-                Log::error('All JSON parsing attempts failed', [
-                    'raw_content' => $rawContent,
-                    'json_content' => $jsonContent
-                ]);
-
-                // Update the AI prompt record with failure details
-                $aiPrompt->update([
-                    'response' => $rawContent,
-                    'metadata' => ['error' => 'Failed to parse JSON response']
-                ]);
-
-                return ['error' => 'Failed to parse AI response: Syntax error'];
-            }
-
-            // Update the AI prompt record with success
-            $aiPrompt->update([
-                'response' => $rawContent,
-                'success' => true,
-                'response_time_ms' => $responseTime,
-                'metadata' => [
-                    'model' => $modelToUse,
-                    'parsed' => true,
-                    'response_time_ms' => $responseTime
-                ]
-            ]);
-
-            // After successful response processing, use a prompt
-            $promptService->usePrompt($user, 'task_creation');
-
-            return $content;
         } catch (\Exception $e) {
             Log::error('Error in processTaskPrompt: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
+
             return [
                 'success' => false,
                 'error' => 'An error occurred while processing your request: ' . $e->getMessage()
@@ -671,8 +649,19 @@ class AIService
         }
     }
 
-    protected function robustJsonDecode(string $json)
+    protected function robustJsonDecode($json)
     {
+        // Check if input is null or not a string
+        if ($json === null) {
+            Log::error('Null input passed to robustJsonDecode');
+            return null;
+        }
+
+        if (!is_string($json)) {
+            Log::error('Non-string input passed to robustJsonDecode', ['type' => gettype($json)]);
+            return null;
+        }
+
         // Try the original JSON string first
         $cleaned = trim($json);
         $decoded = json_decode($cleaned, true);

@@ -474,7 +474,7 @@ Create an Assignment Title, Introduction, Student Instructions, Task Breakdown, 
                                         ) : (
                                             <>
                                                 <Sparkles className="mr-2 h-4 w-4" />
-                                                <span>Submit</span>
+                                                <span>Generate</span>
                                                 <span className="ml-1 text-xs opacity-80">(Ctrl+Enter)</span>
                                             </>
                                         )}

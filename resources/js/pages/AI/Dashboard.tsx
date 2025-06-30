@@ -10,6 +10,9 @@ import { Card3D } from '@/components/ui/card-3d';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { containerVariants, itemVariants } from '@/lib/theme-constants';
+import { PromptCounter } from '@/components/pricing/PromptCounter';
+import { Link } from '@inertiajs/react';
+import { Lightbulb, Sparkles } from 'lucide-react';
 
 interface Group {
     id: number;
@@ -61,6 +64,13 @@ interface DashboardProps {
     groups: Group[];
     aiAssignments: AIAssignment[];
     aiPrompts: AIPrompt[];
+    auth: {
+        user: {
+            ai_prompts_remaining: number;
+            total_prompts_purchased: number;
+            is_paid_user: boolean;
+        }
+    };
 }
 
 // Helper function to format dates in DD/MM/YYYY format
@@ -72,7 +82,7 @@ const formatDate = (dateString: string): string => {
     }
 };
 
-export default function Dashboard({ aiAssignments, aiPrompts }: DashboardProps) {
+export default function Dashboard({ aiAssignments, aiPrompts, auth }: DashboardProps) {
     const [expandedPrompt, setExpandedPrompt] = useState<number | null>(null);
 
     const breadcrumbs = [
@@ -81,6 +91,10 @@ export default function Dashboard({ aiAssignments, aiPrompts }: DashboardProps) 
             href: '/ai-tasks',
         },
     ];
+
+    const promptsRemaining = auth.user.ai_prompts_remaining;
+    const totalPromptsPurchased = auth.user.total_prompts_purchased;
+    const isPaidUser = auth.user.is_paid_user;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -94,6 +108,37 @@ export default function Dashboard({ aiAssignments, aiPrompts }: DashboardProps) 
                 <motion.div variants={itemVariants}>
                     <Card3D className="p-6">
                         <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">AI Tasks Dashboard</h1>
+
+                        {/* AI Prompts Usage Section */}
+                        <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                            <div className="flex flex-col md:flex-row justify-between gap-4">
+                                <div className="flex-1">
+                                    <h2 className="text-xl font-semibold flex items-center gap-2 mb-2">
+                                        <Lightbulb className="h-5 w-5 text-primary" />
+                                        <span>AI Prompts Usage</span>
+                                    </h2>
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                                        {isPaidUser
+                                            ? `You have purchased ${totalPromptsPurchased} AI prompts and have ${promptsRemaining} remaining.`
+                                            : 'You are using the trial version with limited AI prompts.'}
+                                    </p>
+                                </div>
+                                <div className="w-full md:w-64">
+                                    <PromptCounter
+                                        promptsRemaining={promptsRemaining}
+                                        totalPurchased={totalPromptsPurchased}
+                                        isPaidUser={isPaidUser}
+                                    />
+                                    <Link
+                                        href="/pricing"
+                                        className="flex items-center justify-center w-full mt-2 py-2 px-3 text-sm bg-primary hover:bg-primary/90 text-white rounded-md transition-colors"
+                                    >
+                                        <Sparkles className="w-4 h-4 mr-2" />
+                                        Buy More AI Prompts
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
 
                         <Tabs defaultValue="assignments">
                             <TabsList className="mb-6">

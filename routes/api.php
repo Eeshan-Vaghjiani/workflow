@@ -551,55 +551,59 @@ Route::post('/chat-test', function(Illuminate\Http\Request $request) {
 });
 
 // Function to sanitize and validate dates in AI response
-function sanitizeAiResponseDates($response) {
-    if (isset($response['assignment'])) {
-        // Ensure dates are in correct format or set defaults
-        $now = now();
-        if (!isset($response['assignment']['due_date']) || !validateDate($response['assignment']['due_date'])) {
-            $response['assignment']['due_date'] = $now->addDays(14)->format('Y-m-d');
-        }
-        if (!isset($response['assignment']['start_date']) || !validateDate($response['assignment']['start_date'])) {
-            $response['assignment']['start_date'] = $now->format('Y-m-d');
-        }
-        if (!isset($response['assignment']['end_date']) || !validateDate($response['assignment']['end_date'])) {
-            $response['assignment']['end_date'] = $now->addDays(14)->format('Y-m-d');
-        }
-    }
-
-    if (isset($response['tasks']) && is_array($response['tasks'])) {
-        foreach ($response['tasks'] as $key => $task) {
+if (!function_exists('sanitizeAiResponseDates')) {
+    function sanitizeAiResponseDates($response) {
+        if (isset($response['assignment'])) {
+            // Ensure dates are in correct format or set defaults
             $now = now();
-
-            // Validate task has required fields
-            if (!isset($task['title']) || empty($task['title'])) {
-                $response['tasks'][$key]['title'] = 'Task ' . ($key + 1);
+            if (!isset($response['assignment']['due_date']) || !validateDate($response['assignment']['due_date'])) {
+                $response['assignment']['due_date'] = $now->addDays(14)->format('Y-m-d');
             }
-
-            // Sanitize dates
-            if (!isset($task['start_date']) || !validateDate($task['start_date'])) {
-                $response['tasks'][$key]['start_date'] = $now->format('Y-m-d');
+            if (!isset($response['assignment']['start_date']) || !validateDate($response['assignment']['start_date'])) {
+                $response['assignment']['start_date'] = $now->format('Y-m-d');
             }
-
-            if (!isset($task['end_date']) || !validateDate($task['end_date'])) {
-                $response['tasks'][$key]['end_date'] = $now->addDays(7)->format('Y-m-d');
-            }
-
-            // Sanitize priority
-            if (!isset($task['priority']) || !in_array($task['priority'], ['low', 'medium', 'high'])) {
-                $response['tasks'][$key]['priority'] = 'medium';
+            if (!isset($response['assignment']['end_date']) || !validateDate($response['assignment']['end_date'])) {
+                $response['assignment']['end_date'] = $now->addDays(14)->format('Y-m-d');
             }
         }
-    }
 
-    return $response;
+        if (isset($response['tasks']) && is_array($response['tasks'])) {
+            foreach ($response['tasks'] as $key => $task) {
+                $now = now();
+
+                // Validate task has required fields
+                if (!isset($task['title']) || empty($task['title'])) {
+                    $response['tasks'][$key]['title'] = 'Task ' . ($key + 1);
+                }
+
+                // Sanitize dates
+                if (!isset($task['start_date']) || !validateDate($task['start_date'])) {
+                    $response['tasks'][$key]['start_date'] = $now->format('Y-m-d');
+                }
+
+                if (!isset($task['end_date']) || !validateDate($task['end_date'])) {
+                    $response['tasks'][$key]['end_date'] = $now->addDays(7)->format('Y-m-d');
+                }
+
+                // Sanitize priority
+                if (!isset($task['priority']) || !in_array($task['priority'], ['low', 'medium', 'high'])) {
+                    $response['tasks'][$key]['priority'] = 'medium';
+                }
+            }
+        }
+
+        return $response;
+    }
 }
 
 // Helper function to validate a date string
-function validateDate($date, $format = 'Y-m-d') {
-    if (!is_string($date)) return false;
+if (!function_exists('validateDate')) {
+    function validateDate($date, $format = 'Y-m-d') {
+        if (!is_string($date)) return false;
 
-    $d = \DateTime::createFromFormat($format, $date);
-    return $d && $d->format($format) === $date;
+        $d = \DateTime::createFromFormat($format, $date);
+        return $d && $d->format($format) === $date;
+    }
 }
 
 // Dashboard chat routes

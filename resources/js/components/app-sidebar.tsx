@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { motion, Variants } from 'framer-motion';
 import { type NavItem, PageProps } from '@/types';
@@ -24,7 +24,6 @@ import {
 import AppLogo from './app-logo';
 import { useMagneticHover } from '@/hooks/use-animation';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
-import { PromptCounter } from '@/components/pricing/PromptCounter';
 
 // Animation variants for initial load only
 const sidebarVariants: Variants = {
@@ -170,12 +169,6 @@ export function AppSidebar() {
         return false;
     });
 
-    // Get user prompt data from auth props
-    const user = props.auth?.user as ExtendedUser;
-    const promptsRemaining = user?.ai_prompts_remaining || 0;
-    const isPaidUser = user?.is_paid_user || false;
-    const totalPromptsPurchased = user?.total_prompts_purchased || 0;
-
     // Apply magnetic effect to logo
     useMagneticHover(logoRef, 0.3);
 
@@ -195,61 +188,40 @@ export function AppSidebar() {
     }, [isCollapsed]);
 
     const toggleCollapse = () => {
-        setIsCollapsed(!isCollapsed);
+        setIsCollapsed(prev => !prev);
     };
 
-    // Custom NavMain component with animations
     const AnimatedNavMain = () => {
         return (
-            <nav className="mt-5 px-4 space-y-2">
+            <nav className="space-y-1 px-3">
                 {mainNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
-                    const IconComponent = item.icon;
-
                     return (
                         <motion.div
-                            key={item.title}
-                            variants={itemVariants}
-                            initial={shouldAnimate ? "hidden" : "visible"}
-                            animate="visible"
+                            key={item.href}
                             custom={index}
+                            initial="hidden"
+                            animate="visible"
+                            variants={itemVariants}
                             whileHover="hover"
+                            className="mb-1"
                         >
                             <Link
                                 href={item.href}
-                                className="block"
+                                className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-primary/10 dark:hover:bg-primary/20'
+                                    } ${isCollapsed ? 'justify-center' : ''}`}
                             >
-                                <motion.div
-                                    className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
-                                        ${isActive
-                                            ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-softBlue/30 dark:hover:bg-gray-800/30'
-                                        }`}
-                                >
-                                    <motion.div
-                                        whileHover={{ rotate: isActive ? 0 : 10 }}
-                                        className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
-                                    >
-                                        {IconComponent && <IconComponent />}
-                                    </motion.div>
-                                    {!isCollapsed && <span>{item.title}</span>}
-
-                                    {/* Animated indicator for active item */}
-                                    {isActive && !isCollapsed && (
-                                        <motion.div
-                                            className="ml-auto h-2 w-2 rounded-full bg-primary-500 dark:bg-neon-green"
-                                            animate={{
-                                                scale: [1, 1.2, 1],
-                                                opacity: [0.7, 1, 0.7]
-                                            }}
-                                            transition={{
-                                                duration: 2,
-                                                repeat: Infinity,
-                                                repeatType: "loop"
-                                            }}
-                                        />
-                                    )}
-                                </motion.div>
+                                <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-white' : ''}`} />
+                                {!isCollapsed && (
+                                    <span className={`${isActive ? 'font-medium' : ''}`}>{item.title}</span>
+                                )}
+                                {!isCollapsed && item.badge && (
+                                    <span className="ml-auto bg-primary/20 text-primary text-xs py-0.5 px-1.5 rounded">
+                                        {item.badge}
+                                    </span>
+                                )}
                             </Link>
                         </motion.div>
                     );
@@ -258,65 +230,25 @@ export function AppSidebar() {
         );
     };
 
-    // Settings navigation component with animations
     const SettingsNav = () => {
         return (
-            <nav className="px-4 space-y-2 mb-4">
-                {!isCollapsed && (
-                    <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        User
-                    </h3>
-                )}
+            <nav className="space-y-1 px-3">
                 {settingsNavItems.map((item, index) => {
                     const isActive = url.startsWith(item.href);
-                    const IconComponent = item.icon;
-
                     return (
-                        <motion.div
-                            key={item.title}
-                            variants={itemVariants}
-                            initial={shouldAnimate ? "hidden" : "visible"}
-                            animate="visible"
-                            custom={index}
-                            whileHover="hover"
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
+                                ? 'bg-primary text-white'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                                } ${isCollapsed ? 'justify-center' : ''}`}
                         >
-                            <Link
-                                href={item.href}
-                                className="block"
-                            >
-                                <motion.div
-                                    className={`flex items-center ${isCollapsed ? "justify-center" : ""} px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200
-                                        ${isActive
-                                            ? 'bg-softBlue/60 dark:bg-gray-800/50 text-primary-500 dark:text-neon-green shadow-sm backdrop-blur-sm'
-                                            : 'text-gray-700 dark:text-gray-300 hover:bg-softBlue/30 dark:hover:bg-gray-800/30'
-                                        }`}
-                                >
-                                    <motion.div
-                                        whileHover={{ rotate: isActive ? 0 : 10 }}
-                                        className={`${isCollapsed ? "" : "mr-3"} h-5 w-5 flex-shrink-0 ${isActive ? 'text-primary-500 dark:text-neon-green' : ''}`}
-                                    >
-                                        {IconComponent && <IconComponent />}
-                                    </motion.div>
-                                    {!isCollapsed && <span>{item.title}</span>}
-
-                                    {/* Animated indicator for active item */}
-                                    {isActive && !isCollapsed && (
-                                        <motion.div
-                                            className="ml-auto h-2 w-2 rounded-full bg-primary-500 dark:bg-neon-green"
-                                            animate={{
-                                                scale: [1, 1.2, 1],
-                                                opacity: [0.7, 1, 0.7]
-                                            }}
-                                            transition={{
-                                                duration: 2,
-                                                repeat: Infinity,
-                                                repeatType: "loop"
-                                            }}
-                                        />
-                                    )}
-                                </motion.div>
-                            </Link>
-                        </motion.div>
+                            <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'} ${isActive ? 'text-white' : ''}`} />
+                            {!isCollapsed && (
+                                <span className={`${isActive ? 'font-medium' : ''}`}>{item.title}</span>
+                            )}
+                        </Link>
                     );
                 })}
             </nav>
@@ -345,17 +277,12 @@ export function AppSidebar() {
                 </EnhancedButton>
             </div>
 
-            {/* AI Prompts Counter */}
+            {/* AI Prompts Buy Button */}
             {!isCollapsed && (
                 <div className="px-4 mb-2">
-                    <PromptCounter
-                        promptsRemaining={promptsRemaining}
-                        totalPurchased={totalPromptsPurchased}
-                        isPaidUser={isPaidUser}
-                    />
                     <Link
                         href="/pricing"
-                        className="flex items-center justify-center mt-2 py-1.5 px-2 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                        className="flex items-center justify-center py-1.5 px-2 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
                     >
                         <Sparkles className="w-3 h-3 mr-1" />
                         Buy AI Prompts
@@ -367,7 +294,7 @@ export function AppSidebar() {
                 <AnimatedNavMain />
             </div>
 
-            <div className="mt-auto">
+            <div className="p-3">
                 <SettingsNav />
             </div>
         </motion.aside>

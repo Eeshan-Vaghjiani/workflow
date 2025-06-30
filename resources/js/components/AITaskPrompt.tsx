@@ -10,21 +10,7 @@ interface AITaskPromptProps {
     onTasksCreated?: (data: unknown) => void;
 }
 
-// Define error response type for better type safety
-interface ErrorResponse {
-    response?: {
-        data?: {
-            error?: string;
-            message?: string;
-            details?: Record<string, unknown>;
-            [key: string]: unknown;
-        };
-        status?: number;
-    };
-    request?: unknown;
-    message?: string;
-    [key: string]: unknown;
-}
+
 
 export default function AITaskPrompt({ groupId, onTasksCreated }: AITaskPromptProps) {
     const [prompt, setPrompt] = useState('');
@@ -32,6 +18,14 @@ export default function AITaskPrompt({ groupId, onTasksCreated }: AITaskPromptPr
     const [error, setError] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const [debugInfo, setDebugInfo] = useState<string | null>(null);
+
+    // Handle keyboard shortcut for submission
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            handleSubmit(e as unknown as React.FormEvent);
+        }
+    };
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -66,81 +60,60 @@ export default function AITaskPrompt({ groupId, onTasksCreated }: AITaskPromptPr
             if (onTasksCreated) {
                 onTasksCreated(response.data);
             }
-        } catch (err: unknown) {
+        } catch (error) {
+            console.error('Error generating AI tasks:', error);
             setIsLoading(false);
-            console.error('Error details:', err);
 
-            // Cast to our defined error type
-            const error = err as ErrorResponse;
-
-            // Set more detailed error information
-            if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                setError(`Server error: ${error.response.status} - ${error.response?.data?.error || error.response?.data?.message || 'Unknown error'}`);
-                setDebugInfo(JSON.stringify(error.response.data, null, 2));
-
-                if (error.response.status === 401) {
-                    setError('Authentication error: You are not logged in or your session has expired. Please refresh the page and try again.');
-
-                    // Additional debug info for auth issues
-                    try {
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                        setDebugInfo(JSON.stringify({
-                            ...error.response.data,
-                            debug: {
-                                csrf_token_exists: !!csrfToken,
-                                csrf_token_length: csrfToken ? csrfToken.length : 0
-                            }
-                        }, null, 2));
-                    } catch (debugErr) {
-                        console.error('Debug error:', debugErr);
+            // Handle different types of errors
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    // Server responded with an error status
+                    if (error.response.status === 403 && error.response.data?.redirect) {
+                        // Redirect to pricing page if out of prompts
+                        window.location.href = error.response.data.redirect;
+                        return;
                     }
+
+                    if (error.response.data?.error) {
+                        setError(error.response.data.error);
+                        if (error.response.data?.debug) {
+                            setDebugInfo(JSON.stringify(error.response.data.debug, null, 2));
+                        }
+                    } else {
+                        setError(`Server error: ${error.response.status}`);
+                    }
+                } else if (error.request) {
+                    // Request made but no response received
+                    setError('No response from server. Please check your connection and try again.');
+                } else {
+                    // Error setting up the request
+                    setError('Failed to make request.');
                 }
-            } else if (error.request) {
-                // The request was made but no response was received
-                setError('Network error: No response received from server. Please check your internet connection.');
             } else {
-                // Something happened in setting up the request that triggered an Error
-                setError(`Error: ${error.message}`);
+                // Non-Axios error
+                setError('An unknown error occurred.');
             }
         }
     }
 
-    // Function to check authentication status
-    async function checkAuth() {
-        try {
-            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const response = await axios.get('/api/user', {
-                headers: {
-                    'X-CSRF-TOKEN': token // Add explicit header
-                }
-            });
-            setDebugInfo(`Authentication successful: ${JSON.stringify(response.data, null, 2)}`);
-        } catch (err: unknown) {
-            const error = err as ErrorResponse;
-            setDebugInfo(`Authentication error: ${error.response?.status} - ${error.response?.data?.message || 'Unknown error'}`);
-        }
-    }
+
 
     return (
-        <Card3D className="p-4 mb-6">
-            <motion.div
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={() => setIsExpanded(prev => !prev)}
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+        <Card3D className="mb-6">
+            <div
+                className="p-4 flex items-center gap-3 cursor-pointer"
+                onClick={() => setIsExpanded(!isExpanded)}
             >
-                <MessageSquareCode className="w-5 h-5 text-primary-500 dark:text-primary-400" />
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {isExpanded ? "Hide AI Task Creator" : "Use AI to Create Tasks"}
+                <MessageSquareCode className="h-5 w-5 text-blue-500" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                    {isExpanded ? "Hide AI Task Generator" : "Generate Tasks with AI"}
                 </h3>
-            </motion.div>
+            </div>
 
             <AnimatePresence>
                 {isExpanded && (
                     <motion.div
-                        className="mt-4"
+                        className="mt-4 px-4 pb-4"
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
@@ -155,59 +128,49 @@ export default function AITaskPrompt({ groupId, onTasksCreated }: AITaskPromptPr
                                 <textarea
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
+                                    onKeyDown={handleKeyDown}
                                     className="w-full px-3 py-2 border rounded-md shadow-sm focus:ring focus:ring-opacity-50 border-gray-300 focus:ring-primary-200 focus:border-primary-500 dark:bg-neutral-900/80 dark:border-neutral-700 dark:text-white"
                                     rows={4}
                                     placeholder="Example: Create a website development project for our client XYZ Company. The project needs UI design by Alice due next Friday, backend development by Bob with high priority due in 2 weeks, and deployment by Charlie with medium priority due by the end of the month."
+                                    disabled={isLoading}
                                     required
                                 />
+                                <div className="flex justify-between mt-2">
+                                    <div></div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Press <kbd className="px-1 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl+Enter</kbd> to generate
+                                    </p>
+                                </div>
                             </div>
 
-                            <AnimatePresence>
-                                {error && (
-                                    <motion.div
-                                        className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md text-sm flex gap-2 items-start"
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                    >
-                                        <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="font-medium">{error}</p>
-                                            {debugInfo && (
-                                                <details className="mt-2">
-                                                    <summary className="cursor-pointer hover:text-red-600">Show technical details</summary>
-                                                    <pre className="mt-2 whitespace-pre-wrap text-xs bg-white dark:bg-black/50 bg-opacity-50 p-2 rounded">
-                                                        {debugInfo}
-                                                    </pre>
-                                                </details>
-                                            )}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                            {error && (
+                                <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md">
+                                    <div className="flex items-center text-red-700 dark:text-red-400 mb-1">
+                                        <AlertCircle className="h-4 w-4 mr-2" />
+                                        <p className="text-sm font-medium">{error}</p>
+                                    </div>
+                                    {debugInfo && (
+                                        <pre className="mt-2 text-xs overflow-auto p-2 bg-red-50 dark:bg-red-900/50 rounded text-red-800 dark:text-red-300">
+                                            {debugInfo}
+                                        </pre>
+                                    )}
+                                </div>
+                            )}
 
-                            <div className="flex justify-between">
-                                <EnhancedButton
-                                    type="button"
-                                    onClick={checkAuth}
-                                    variant="outline"
-                                    size="sm"
-                                    magnetic={true}
-                                >
-                                    Check Auth Status
-                                </EnhancedButton>
-
+                            <div className="flex justify-end">
                                 <EnhancedButton
                                     type="submit"
-                                    disabled={isLoading}
-                                    variant="primary"
-                                    size="sm"
-                                    magnetic={true}
-                                    className={isLoading ? 'opacity-80' : ''}
-                                    icon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : undefined}
-                                    iconPosition={isLoading ? "left" : undefined}
+                                    disabled={isLoading || !prompt.trim()}
+                                    className="w-auto"
                                 >
-                                    {isLoading ? 'Processing...' : 'Generate Tasks with AI'}
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>Generate Tasks (Ctrl + Enter)</>
+                                    )}
                                 </EnhancedButton>
                             </div>
                         </form>

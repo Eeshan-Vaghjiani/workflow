@@ -35,6 +35,7 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
     disabled = false,
     className = '',
     children,
+    onClick,
     ...props
 }) => {
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -44,6 +45,22 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
         buttonRef,
         magneticEnabled ? magneticStrength : 0
     );
+
+    // Handle click for link children
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+        // If this component has its own onClick handler, call it
+        if (onClick) {
+            onClick(e);
+            return;
+        }
+
+        // Find any link element inside and programmatically click it
+        const linkElement = buttonRef.current?.querySelector('a');
+        if (linkElement && !e.defaultPrevented) {
+            e.preventDefault();
+            linkElement.click();
+        }
+    };
 
     // Base classes for button
     const baseClasses = 'relative inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
@@ -75,6 +92,20 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
     // Construct final className
     const buttonClasses = `${baseClasses} ${sizeClasses} ${variantClasses} ${disabledClasses} ${widthClass} ${className}`;
 
+    // Get glow color based on variant
+    const getGlowColor = () => {
+        switch (variant) {
+            case 'primary':
+                return 'from-[#00887A] to-[#00B397]';
+            case 'secondary':
+                return 'from-[#77A6F7] to-[#6495E6]';
+            case 'danger':
+                return 'from-red-500 to-red-700';
+            default:
+                return 'from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800';
+        }
+    };
+
     return (
         <motion.button
             ref={buttonRef}
@@ -83,6 +114,7 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
             initial={{ scale: 1 }}
             whileHover={!disabled && !loading ? { scale: 1.03 } : {}}
             whileTap={!disabled && !loading ? { scale: 0.97 } : {}}
+            onClick={handleClick}
             {...props}
         >
             <AnimatePresence initial={false}>
@@ -135,10 +167,10 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
                 <span className="ml-2">{icon}</span>
             )}
 
-            {/* Animated glow effect when hovered, visible in dark mode */}
+            {/* Animated glow effect when hovered - using theme colors instead of rainbow */}
             {isHovered && !disabled && !loading && (
                 <motion.div
-                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#FF006E] opacity-30 dark:opacity-20 blur-sm"
+                    className={`absolute inset-0 rounded-lg bg-gradient-to-r ${getGlowColor()} opacity-30 dark:opacity-20 blur-sm`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: variant === 'ghost' || variant === 'outline' ? 0.2 : 0.1 }}
                     exit={{ opacity: 0 }}

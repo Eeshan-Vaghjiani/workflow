@@ -1,5 +1,5 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { motion, useAnimation } from 'framer-motion';
 import { type NavItem, PageProps } from '@/types';
 import {
@@ -25,10 +25,10 @@ import {
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { useMagneticHover } from '@/hooks/use-animation';
-import { EnhancedButton } from '@/components/ui/enhanced-button';
 
 interface NavItemWithIcon extends NavItem {
     icon: LucideIcon;
+    method?: string;
 }
 
 const mainNavItems: NavItemWithIcon[] = [
@@ -109,6 +109,7 @@ const settingsNavItems: NavItemWithIcon[] = [
         title: 'Logout',
         href: route('logout'),
         icon: LogOut,
+        method: 'post'
     }
 ];
 
@@ -143,11 +144,39 @@ export function AppSidebar() {
         setIsCollapsed(prev => !prev);
     };
 
+    // More precise active route check
+    const isActiveRoute = (itemHref: string) => {
+        // Special case for dashboard to prevent matching with '/dashboard/gantt'
+        if (itemHref === '/dashboard' && url === '/dashboard') {
+            return true;
+        }
+
+        // Handle exact matches
+        if (url === itemHref) {
+            return true;
+        }
+
+        // For other nested routes, check if they start with the itemHref
+        // but make sure we're not matching partial segments
+        if (itemHref !== '/dashboard' && url.startsWith(itemHref)) {
+            // Check if the next character after the href is a slash or nothing
+            const nextChar = url.charAt(itemHref.length);
+            return nextChar === '' || nextChar === '/';
+        }
+
+        return false;
+    };
+
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        router.post(route('logout'));
+    };
+
     const AnimatedNavMain = () => {
         return (
             <nav className="space-y-1 px-3">
                 {mainNavItems.map((item, index) => {
-                    const isActive = url.startsWith(item.href);
+                    const isActive = isActiveRoute(item.href);
                     const Icon = item.icon;
                     return (
                         <motion.div
@@ -160,8 +189,8 @@ export function AppSidebar() {
                                     x: 0,
                                     opacity: 1,
                                     transition: {
-                                        delay: index * 0.1,
-                                        duration: 0.3,
+                                        delay: index * 0.05, // Reduced delay to prevent long animations
+                                        duration: 0.2,
                                         ease: "easeOut"
                                     }
                                 }
@@ -197,13 +226,28 @@ export function AppSidebar() {
         return (
             <nav className="space-y-1 px-3">
                 {settingsNavItems.map((item) => {
-                    const isActive = url.startsWith(item.href);
+                    const isActive = isActiveRoute(item.href);
                     const Icon = item.icon;
+
+                    if (item.title === 'Logout') {
+                        return (
+                            <button
+                                key={item.href}
+                                onClick={handleLogout}
+                                className={`flex items-center w-full px-3 py-2 rounded-md transition-colors text-foreground hover:bg-primary/10 dark:hover:bg-primary/20 ${isCollapsed ? 'justify-center' : ''}`}
+                            >
+                                <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'}`} />
+                                {!isCollapsed && (
+                                    <span>{item.title}</span>
+                                )}
+                            </button>
+                        );
+                    }
+
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            {...(item.title === 'Logout' ? { method: 'post' } : {})}
                             className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
                                 ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground'
                                 : 'text-foreground hover:bg-primary/10 dark:hover:bg-primary/20'
@@ -240,17 +284,22 @@ export function AppSidebar() {
 
             <div className="flex-1 overflow-y-auto futuristic-scrollbar">
                 <div className="p-2">
-                    <EnhancedButton
-                        variant="primary"
-                        size="lg"
-                        className="w-full justify-center"
-                        icon={<Sparkles className="h-5 w-5" />}
-                        iconPosition={isCollapsed ? "top" : "left"}
-                    >
-                        <Link href="/pricing" className={`text-white dark:text-black ${isCollapsed ? 'hidden' : ''}`}>
-                            Buy AI Prompts
+                    {isCollapsed ? (
+                        <button
+                            onClick={() => router.visit('/pricing')}
+                            className="w-full p-2 flex flex-col items-center justify-center bg-primary text-white dark:text-black rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <Sparkles className="h-5 w-5" />
+                        </button>
+                    ) : (
+                        <Link
+                            href="/pricing"
+                            className="w-full p-2 flex items-center justify-center bg-primary text-white dark:text-black rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <Sparkles className="h-5 w-5 mr-2" />
+                            <span>Buy AI Prompts</span>
                         </Link>
-                    </EnhancedButton>
+                    )}
                 </div>
 
                 <AnimatedNavMain />

@@ -19,12 +19,26 @@ use Illuminate\Support\Str;
 
 // WorkOS AuthKit routes
 Route::get('login', function (AuthKitLoginRequest $request) {
+    // Store the redirect URL in the session if provided
+    if (request()->has('redirect')) {
+        session(['auth_redirect' => request()->input('redirect')]);
+    }
+
     // Just return the redirect without trying to set the URI
     return $request->redirect();
 })->middleware(['guest'])->name('login');
 
 Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
-    return tap(to_route('auth.success'), fn () => $request->authenticate(
+    // Get the stored redirect URL from the session
+    $redirect = session('auth_redirect');
+
+    // Clear the session variable
+    session()->forget('auth_redirect');
+
+    // Redirect to the stored URL or to the dashboard
+    $redirectRoute = $redirect ? redirect($redirect) : to_route('auth.success');
+
+    return tap($redirectRoute, fn () => $request->authenticate(
         function ($workosId) {
             // First try to find user by WorkOS ID
             $existingUser = AppUser::where('workos_id', $workosId)->first();

@@ -37,10 +37,24 @@ class MpesaController extends Controller
     /**
      * Display the payment configuration
      */
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json([
-            'amount' => 1000, // Fixed amount for Pro Membership
+        // Get amount from request, default to 1000 if not provided
+        $amount = $request->input('amount', 1000);
+        $plan = $request->input('plan', 'student_pro');
+
+        // Ensure amount is valid (either 1000 or 3000)
+        if (!in_array($amount, [1000, 3000])) {
+            $amount = 1000; // Default to 1000 if invalid
+        }
+
+        // Get the prompt count based on the amount
+        $promptCount = $amount == 1000 ? 150 : 500;
+
+        return view('mpesa.index', [
+            'amount' => $amount,
+            'plan' => $plan,
+            'promptCount' => $promptCount,
             'logoUrl' => asset('images/mpesa-logo.png')
         ]);
     }
@@ -90,9 +104,19 @@ class MpesaController extends Controller
         try {
             // Validate input
             $validated = $request->validate([
-                'phoneNumber' => 'required|regex:/^254[0-9]{9}$/',
+                'phone' => 'required|regex:/^254[0-9]{9}$/',
                 'amount' => 'required|numeric|min:100', // Minimum 100 KES
+                'plan' => 'nullable|string',
+                'prompt_count' => 'nullable|numeric'
             ]);
+
+            // Get prompt count from request or default based on amount
+            $promptCount = $request->input('prompt_count', 0);
+            if (!$promptCount || !is_numeric($promptCount)) {
+                $promptCount = (int)$validated['amount'] == 1000 ? 150 : 500;
+            } else {
+                $promptCount = (int)$promptCount;
+            }
 
             // For testing, we'll use a fixed reference
             $accountReference = 'Pro Membership';
@@ -124,9 +148,9 @@ class MpesaController extends Controller
                 'Timestamp' => $timestamp,
                 'TransactionType' => 'CustomerPayBillOnline',
                 'Amount' => (int)round($validated['amount']), // M-Pesa requires integer amounts
-                'PartyA' => $validated['phoneNumber'],
+                'PartyA' => $validated['phone'],
                 'PartyB' => $this->shortcode,
-                'PhoneNumber' => $validated['phoneNumber'],
+                'PhoneNumber' => $validated['phone'],
                 'CallBackURL' => $this->callbackUrl,
                 'AccountReference' => $accountReference,
                 'TransactionDesc' => $this->transactionDesc,
@@ -162,11 +186,13 @@ class MpesaController extends Controller
                 // Create a transaction record
                 MpesaTransaction::create([
                     'user_id' => $userId,
-                    'phone_number' => $validated['phoneNumber'],
+                    'phone_number' => $validated['phone'],
                     'amount' => $validated['amount'],
                     'checkout_request_id' => $result['CheckoutRequestID'],
                     'merchant_request_id' => $result['MerchantRequestID'] ?? null,
                     'status' => 'pending',
+                    'plan' => $request->input('plan', 'student_pro'),
+                    'prompt_count' => $promptCount
                 ]);
 
                 return response()->json([
@@ -394,34 +420,51 @@ class MpesaController extends Controller
     }
 
     /**
-     * Update user's membership status
+     * Update user membership status after successful payment
      */
     private function updateMembershipStatus($userId)
     {
         try {
-            // Get the user
             $user = \App\Models\User::find($userId);
-
             if (!$user) {
-                Log::error('Failed to update membership status - User not found', ['userId' => $userId]);
-                return;
+                Log::error('User not found for membership update', ['user_id' => $userId]);
+                return false;
             }
 
-            // Update the user's membership status
-            $user->is_pro = true;
-            $user->pro_expires_at = Carbon::now()->addMonths(1); // Pro membership for 1 month
+            // Get the latest successful transaction for this user
+            $transaction = MpesaTransaction::where('user_id', $userId)
+                ->where('status', 'completed')
+                ->latest()
+                ->first();
+
+            if (!$transaction) {
+                Log::error('No completed transaction found for user', ['user_id' => $userId]);
+                return false;
+            }
+
+            // Get the prompt count from the transaction or use default based on amount
+            $promptCount = $transaction->prompt_count ?? ($transaction->amount == 1000 ? 150 : 500);
+
+            // Add the prompts to the user's account
+            $user->ai_prompts_remaining += $promptCount;
+            $user->total_prompts_purchased += $promptCount;
+            $user->is_paid_user = true;
+            $user->last_payment_date = now();
             $user->save();
 
-            Log::info('User upgraded to Pro membership', ['userId' => $userId]);
+            Log::info('User membership updated', [
+                'user_id' => $userId,
+                'prompts_added' => $promptCount,
+                'total_prompts' => $user->ai_prompts_remaining
+            ]);
 
-            // Notify the user
-            // You could send an email or push notification here
+            return true;
         } catch (\Exception $e) {
             Log::error('Error updating membership status: ' . $e->getMessage(), [
-                'userId' => $userId,
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'user_id' => $userId,
+                'error' => $e->getMessage()
             ]);
+            return false;
         }
     }
 }

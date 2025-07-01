@@ -24,6 +24,8 @@ class MpesaTransaction extends Model
         'result_desc',
         'status',
         'transaction_details',
+        'plan',
+        'prompt_count',
     ];
 
     protected $casts = [

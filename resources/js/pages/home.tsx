@@ -144,6 +144,8 @@ const HomePage = () => {
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
     const [cursorHover, setCursorHover] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Controls for animations
     const controls = useAnimation();
@@ -154,11 +156,8 @@ const HomePage = () => {
             try {
                 const response = await axios.get('/debug/auth-status');
                 setIsAuthenticated(response.data.authenticated);
-
-                // If user is authenticated, redirect to dashboard (both normal users and admins)
-                if (response.data.authenticated) {
-                    window.location.href = '/dashboard';
-                }
+                setIsAdmin(response.data.is_admin || false);
+                console.log('Auth status:', response.data);
             } catch (error) {
                 console.error('Error checking auth status:', error);
             }
@@ -246,77 +245,61 @@ const HomePage = () => {
 
     return (
         <>
-            <Head title="WorkFlow - Academic Collaboration Platform">
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-            </Head>
-
-            <div className="min-h-screen font-['Inter'] bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-                {/* Navigation */}
-                <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 shadow-sm">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between h-16">
-                            <div className="flex items-center">
-                                <Link href="/" className="flex items-center space-x-2">
-                                    <img src="/logo.png" alt="Workflow" className="h-9 w-auto" />
-                                    <span className="text-xl font-bold text-gray-900 dark:text-white">WorkFlow</span>
+            <Head title="Welcome" />
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                {/* Header */}
+                <header className="fixed w-full top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+                    <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center h-16">
+                            {/* Logo */}
+                            <div className="flex-shrink-0">
+                                <Link href="/" className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Workflow
                                 </Link>
                             </div>
+
+                            {/* Navigation Links - Desktop */}
                             <div className="hidden md:flex items-center space-x-8">
-                                <button
-                                    onClick={() => scrollToSection(featuresRef)}
-                                    className="text-gray-700 dark:text-gray-300 hover:text-[#00887A] dark:hover:text-[#00ccb4] transition-colors"
-                                >
+                                <button onClick={() => scrollToSection(featuresRef)} className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                                     Features
                                 </button>
-                                <button
-                                    onClick={() => scrollToSection(pricingRef)}
-                                    className="text-gray-700 dark:text-gray-300 hover:text-[#00887A] dark:hover:text-[#00ccb4] transition-colors"
-                                >
+                                <button onClick={() => scrollToSection(pricingRef)} className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                                     Pricing
                                 </button>
-                                <button
-                                    onClick={() => scrollToSection(contactRef)}
-                                    className="text-gray-700 dark:text-gray-300 hover:text-[#00887A] dark:hover:text-[#00ccb4] transition-colors"
-                                >
+                                <button onClick={() => scrollToSection(contactRef)} className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                                     Contact
                                 </button>
-
-                                {/* Check if user is authenticated */}
                                 {isAuthenticated ? (
-                                    <>
-                                        <Link href="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-[#00887A] dark:hover:text-[#00ccb4] transition-colors">
-                                            Dashboard
-                                        </Link>
-                                        <Link href="/admin" className="bg-[#00887A] text-white px-4 py-2 rounded-md hover:bg-[#007A6C] transition-colors">
-                                            Admin Panel
-                                        </Link>
-                                    </>
+                                    <Link
+                                        href={isAdmin ? "/admin" : "/dashboard"}
+                                        className="bg-[#00887A] hover:bg-[#007A6C] text-white px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        {isAdmin ? "Admin Dashboard" : "Dashboard"}
+                                    </Link>
                                 ) : (
-                                    <>
-                                        <Link href={route('login')} className="text-gray-700 dark:text-gray-300 hover:text-[#00887A] dark:hover:text-[#00ccb4] transition-colors">
-                                            Login
-                                        </Link>
-                                        <Link
-                                            href={route('register')}
-                                            className="bg-[#00887A] text-white px-4 py-2 rounded-md hover:bg-[#007A6C] transition-colors"
-                                        >
-                                            Register
-                                        </Link>
-                                    </>
+                                    <Link
+                                        href="/login"
+                                        className="bg-[#00887A] hover:bg-[#007A6C] text-white px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        Login
+                                    </Link>
                                 )}
                             </div>
+
+                            {/* Mobile menu */}
                             <div className="md:hidden flex items-center">
-                                <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                                <button
+                                    onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                                >
                                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                     </svg>
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </nav>
+                    </nav>
+                </header>
 
                 {/* Hero Section */}
                 <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900">
@@ -784,14 +767,16 @@ const HomePage = () => {
                                 price="KSh 1,000"
                                 description="Advanced tools for serious students."
                                 features={[
+                                    "150 AI Prompts",
                                     "Unlimited tasks & projects",
                                     "Full AI assistant access",
                                     "Gantt charts & timelines",
-                                    "Advanced analytics",
                                     "25 collaborators max"
                                 ]}
-                                ctaText="Try Pro Free"
-                                ctaLink={route('register')}
+                                ctaText="Get Student Pro"
+                                ctaLink={isAuthenticated
+                                    ? "/mpesa?amount=1000&plan=student_pro&prompt_count=150"
+                                    : "/login?redirect=/mpesa?amount=1000&plan=student_pro&prompt_count=150"}
                                 highlighted={true}
                                 delay={0.2}
                             />
@@ -800,14 +785,16 @@ const HomePage = () => {
                                 price="KSh 3,000"
                                 description="For research groups and academic teams."
                                 features={[
+                                    "500 AI Prompts",
                                     "Team workspaces",
                                     "Advanced permissions",
-                                    "Access for up to 5 people",
                                     "Priority support",
                                     "Unlimited collaborators"
                                 ]}
-                                ctaText="Contact Sales"
-                                ctaLink="/#contact"
+                                ctaText="Get Team Plan"
+                                ctaLink={isAuthenticated
+                                    ? "/mpesa?amount=3000&plan=academic_team&prompt_count=500"
+                                    : "/login?redirect=/mpesa?amount=3000&plan=academic_team&prompt_count=500"}
                                 delay={0.3}
                             />
                         </div>

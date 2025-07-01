@@ -1,30 +1,26 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AITaskController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DirectMessageController;
+use App\Http\Controllers\GroupAssignmentController;
+use App\Http\Controllers\GroupChatController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
-use App\Http\Controllers\GroupAssignmentController;
 use App\Http\Controllers\GroupTaskController;
-use App\Http\Controllers\GroupChatController;
-use App\Http\Controllers\DirectMessageController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MpesaController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\ChatController;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Broadcast;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
-use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
-use App\Http\Middleware\TwoFactorAuthenticationMiddleware;
-use App\Http\Controllers\CalendarController;
-use App\Http\Controllers\TaskController;
-use App\Http\Controllers\AssignmentController;
-use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
-use App\Http\Controllers\Settings\PasswordController;
-use App\Http\Controllers\Settings\TwoFactorAuthController;
 use App\Http\Controllers\PusherTestController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Broadcast;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +38,10 @@ Route::get('/csrf-refresh', function() {
 });
 
 Route::get('/', function () {
+    // Set cookie in the global cookie jar
+    Cookie::queue('stay_on_home', 'true', 60 * 24 * 30); // 30 days
+
+    // Render the home page
     return Inertia::render('home');
 })->name('home');
 
@@ -54,8 +54,35 @@ Route::post('/api/mpesa/callback', [App\Http\Controllers\MpesaController::class,
 // Add direct access to mpesa API route (no auth required)
 Route::get('/api/mpesa-public', [App\Http\Controllers\MpesaController::class, 'index'])->name('api.mpesa.public');
 
+// Add mpesa payment page (accessible without login)
+Route::get('/mpesa', [App\Http\Controllers\MpesaController::class, 'index'])->name('mpesa.index');
+Route::post('/mpesa/stk-push', [App\Http\Controllers\MpesaController::class, 'stkPush'])->name('mpesa.stk-push');
+Route::get('/mpesa/status/{checkoutRequestId}', [App\Http\Controllers\MpesaController::class, 'checkStatus'])->name('mpesa.check-status');
+
 // Add a direct route to the dashboard for WorkOS authentication callback
-Route::get('/auth-success', function () {
+Route::get('/auth-success', function (Request $request) {
+    // Always check for the stay_on_home cookie first
+    $stayHomeCookie = $request->cookie('stay_on_home');
+    if ($stayHomeCookie === 'true') {
+        // Log that we're respecting the cookie
+        \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to home due to stay_on_home cookie');
+        return redirect()->route('home', ['stay' => 'true']);
+    }
+
+    // Check if there's a redirect parameter
+    if ($request->has('redirect')) {
+        \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to custom URL: ' . $request->input('redirect'));
+        return redirect($request->input('redirect'));
+    }
+
+    // Check user role and redirect accordingly
+    $user = Auth::user();
+    if ($user && $user->is_admin) {
+        \Illuminate\Support\Facades\Log::info('Auth success: Redirecting admin user to admin dashboard');
+        return redirect()->route('admin.dashboard');
+    }
+
+    \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to regular dashboard');
     return redirect()->route('dashboard');
 })->name('auth.success');
 
@@ -70,11 +97,6 @@ Route::middleware([
     ValidateSessionWithWorkOS::class,
     'two_factor'
 ])->group(function () {
-    // Mpesa Payment Routes
-    Route::get('/mpesa', function(Request $request) {
-        return Inertia::render('MpesaPayment');
-    })->name('mpesa.index');
-
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/calendar', [DashboardController::class, 'calendar'])->name('dashboard.calendar');
@@ -584,9 +606,11 @@ Route::get('/debug/search-users', function(\Illuminate\Http\Request $request) {
 
 // Add a debug route for authentication status
 Route::get('/debug/auth-status', function () {
+    $user = Auth::user();
     return response()->json([
         'authenticated' => Auth::check(),
-        'user' => Auth::check() ? Auth::user() : null,
+        'is_admin' => $user ? $user->is_admin : false,
+        'user' => $user,
         'session' => Session::all(),
         'csrf' => [
             'token' => csrf_token(),

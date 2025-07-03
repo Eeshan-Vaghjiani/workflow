@@ -6,17 +6,33 @@ import {
     Search,
     Plus,
     Edit,
-    Trash,
-    MoreHorizontal,
     Download,
     Filter,
     ChevronDown,
-    ChevronUp,
     RefreshCw,
-    CheckCircle,
-    XCircle
+    Trash2
 } from 'lucide-react';
 import { Card3D } from '@/components/ui/card-3d';
+import { Button } from '@/components/ui/button';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 
 // Define interface for user data
 interface User {
@@ -27,6 +43,8 @@ interface User {
     created_at: string;
     last_login_at: string | null;
     groups_count: number;
+    role: 'ADMIN' | 'USER';
+    deleted: boolean;
 }
 
 interface UsersPageProps {
@@ -70,6 +88,15 @@ export default function UsersIndex({ users }: UsersPageProps) {
     const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
     const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
     const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+    const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+    const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        is_admin: false,
+    });
 
     // Handle sort
     const handleSort = (field: string) => {
@@ -128,6 +155,11 @@ export default function UsersIndex({ users }: UsersPageProps) {
         }
     };
 
+    // Export users as PDF
+    const exportUsersPDF = () => {
+        window.location.href = route('admin.users.export');
+    };
+
     // Export users as CSV
     const exportUsers = () => {
         const csvHeader = ['ID', 'Name', 'Email', 'Role', 'Created At', 'Last Login', 'Groups'];
@@ -170,6 +202,46 @@ export default function UsersIndex({ users }: UsersPageProps) {
                 ? aValue.localeCompare(bValue)
                 : bValue.localeCompare(aValue);
         });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.post('/admin/users', formData);
+        setIsAddUserOpen(false);
+        setFormData({ name: '', email: '', password: '', is_admin: false });
+    };
+
+    const handleUpdate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedUser) return;
+
+        router.put(`/admin/users/${selectedUser.id}`, formData);
+        setIsEditUserOpen(false);
+        setSelectedUser(null);
+        setFormData({ name: '', email: '', password: '', is_admin: false });
+    };
+
+    const handleDelete = (user: User) => {
+        if (confirm('Are you sure you want to delete this user?')) {
+            router.delete(`/admin/users/${user.id}`);
+        }
+    };
+
+    const handleRestore = (user: User) => {
+        if (confirm('Are you sure you want to restore this user?')) {
+            router.post(`/admin/users/${user.id}/restore`);
+        }
+    };
+
+    const openEditDialog = (user: User) => {
+        setSelectedUser(user);
+        setFormData({
+            name: user.name,
+            email: user.email,
+            password: '',
+            is_admin: user.role === 'ADMIN',
+        });
+        setIsEditUserOpen(true);
+    };
 
     return (
         <AdminLayout>
@@ -242,178 +314,69 @@ export default function UsersIndex({ users }: UsersPageProps) {
                 <motion.div variants={itemVariants}>
                     <Card3D className="bg-white dark:bg-gray-800 overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg">
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                <thead className="bg-gray-50 dark:bg-gray-900/50">
-                                    <tr>
-                                        <th scope="col" className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                            <div className="flex items-center">
-                                                <input
-                                                    id="checkbox-all"
-                                                    type="checkbox"
-                                                    className="w-4 h-4 text-[#00887A] bg-gray-100 border-gray-300 rounded focus:ring-[#00887A] dark:focus:ring-[#00ccb4] dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
-                                                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                                                    onChange={handleSelectAll}
-                                                />
-                                            </div>
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
-                                            onClick={() => handleSort('name')}
-                                        >
-                                            <div className="flex items-center">
-                                                Name
-                                                {sortField === 'name' && (
-                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
-                                            onClick={() => handleSort('email')}
-                                        >
-                                            <div className="flex items-center">
-                                                Email
-                                                {sortField === 'email' && (
-                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
-                                            onClick={() => handleSort('is_admin')}
-                                        >
-                                            <div className="flex items-center">
-                                                Role
-                                                {sortField === 'is_admin' && (
-                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
-                                            onClick={() => handleSort('created_at')}
-                                        >
-                                            <div className="flex items-center">
-                                                Created
-                                                {sortField === 'created_at' && (
-                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th
-                                            scope="col"
-                                            className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer"
-                                            onClick={() => handleSort('last_login_at')}
-                                        >
-                                            <div className="flex items-center">
-                                                Last Login
-                                                {sortField === 'last_login_at' && (
-                                                    sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                                                )}
-                                            </div>
-                                        </th>
-                                        <th scope="col" className="px-4 py-3.5 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Email</TableHead>
+                                        <TableHead>Role</TableHead>
+                                        <TableHead>Created</TableHead>
+                                        <TableHead>Last Login</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                     {filteredUsers.map((user) => (
-                                        <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                            <td className="px-4 py-3.5 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="w-4 h-4 text-[#00887A] bg-gray-100 border-gray-300 rounded focus:ring-[#00887A] dark:focus:ring-[#00ccb4] dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
-                                                        checked={selectedUsers.includes(user.id)}
-                                                        onChange={() => handleSelectUser(user.id)}
-                                                    />
+                                        <TableRow key={user.id}>
+                                            <TableCell>{user.name}</TableCell>
+                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
+                                                    {user.role}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                                            <TableCell>{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={user.deleted ? 'destructive' : 'default'}>
+                                                    {user.deleted ? 'Deleted' : 'Active'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    {!user.deleted ? (
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openEditDialog(user)}
+                                                            >
+                                                                <Edit className="w-4 h-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleDelete(user)}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleRestore(user)}
+                                                        >
+                                                            <RefreshCw className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-3.5 whitespace-nowrap">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</div>
-                                            </td>
-                                            <td className="px-4 py-3.5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600 dark:text-gray-300">{user.email}</div>
-                                            </td>
-                                            <td className="px-4 py-3.5 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.is_admin
-                                                    ? 'bg-[#D3E3FC] text-[#00887A] dark:bg-[#1e3a60] dark:text-[#00ccb4]'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                                    }`}>
-                                                    {user.is_admin ? 'ADMIN' : 'USER'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3.5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600 dark:text-gray-300">
-                                                    {new Date(user.created_at).toLocaleDateString()}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3.5 whitespace-nowrap">
-                                                <div className="text-sm text-gray-600 dark:text-gray-300">
-                                                    {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 relative">
-                                                <div className="flex items-center space-x-3">
-                                                    <button
-                                                        className="text-gray-600 dark:text-gray-400 hover:text-[#00887A] dark:hover:text-[#00ccb4]"
-                                                        onClick={() => router.visit(`/admin/users/${user.id}/edit`)}
-                                                    >
-                                                        <Edit className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        className={`hover:text-red-600 ${confirmDelete === user.id ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'}`}
-                                                        onClick={() => handleDeleteUser(user.id)}
-                                                    >
-                                                        <Trash className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => toggleDropdown(user.id)}
-                                                        className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none"
-                                                    >
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </button>
-                                                </div>
-
-                                                {dropdownOpen === user.id && (
-                                                    <div className="absolute right-0 z-10 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700">
-                                                        <ul className="py-1">
-                                                            <li>
-                                                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                                                    View Profile
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="#" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                                                    Reset Password
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="#" className="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                                                    Disable Account
-                                                                </a>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     ))}
-
-                                    {filteredUsers.length === 0 && (
-                                        <tr>
-                                            <td colSpan={7} className="px-4 py-8 text-sm text-center text-gray-500 dark:text-gray-400">
-                                                No users found matching your search criteria.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                </TableBody>
+                            </Table>
                         </div>
 
                         {/* Pagination */}
@@ -485,6 +448,111 @@ export default function UsersIndex({ users }: UsersPageProps) {
                     </Card3D>
                 </motion.div>
             </motion.div>
+
+            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                <DialogTrigger asChild>
+                    <Button className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add User
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New User</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <Label htmlFor="name">Name</Label>
+                            <Input
+                                id="name"
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="password">Password</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={formData.password}
+                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="is_admin"
+                                checked={formData.is_admin}
+                                onCheckedChange={(checked) =>
+                                    setFormData({ ...formData, is_admin: checked as boolean })
+                                }
+                            />
+                            <Label htmlFor="is_admin">Admin User</Label>
+                        </div>
+                        <Button type="submit" className="w-full">Add User</Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit User</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleUpdate} className="space-y-4">
+                        <div>
+                            <Label htmlFor="edit-name">Name</Label>
+                            <Input
+                                id="edit-name"
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-email">Email</Label>
+                            <Input
+                                id="edit-email"
+                                type="email"
+                                value={formData.email}
+                                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-password">Password (leave blank to keep current)</Label>
+                            <Input
+                                id="edit-password"
+                                type="password"
+                                value={formData.password}
+                                onChange={e => setFormData({ ...formData, password: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="edit-is_admin"
+                                checked={formData.is_admin}
+                                onCheckedChange={(checked) =>
+                                    setFormData({ ...formData, is_admin: checked as boolean })
+                                }
+                            />
+                            <Label htmlFor="edit-is_admin">Admin User</Label>
+                        </div>
+                        <Button type="submit" className="w-full">Update User</Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

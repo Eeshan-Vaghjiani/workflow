@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { motion, Transition, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +13,7 @@ interface GlassContainerProps {
     animate?: boolean;
 }
 
-export const GlassContainer: React.FC<GlassContainerProps> = ({
+export const GlassContainer = forwardRef<HTMLDivElement, GlassContainerProps>(({
     children,
     className = '',
     blurIntensity = 'md',
@@ -22,7 +22,7 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
     borderColor,
     hoverEffect = false,
     animate = false,
-}) => {
+}, ref) => {
     // Create blur class based on intensity
     const blurClass = {
         none: '',
@@ -80,6 +80,7 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
 
     return (
         <motion.div
+            ref={ref}
             className={containerClass}
             variants={animate ? entryVariants : (hoverEffect ? hoverVariants : undefined)}
             initial={animate ? "initial" : undefined}
@@ -90,4 +91,4 @@ export const GlassContainer: React.FC<GlassContainerProps> = ({
             {children}
         </motion.div>
     );
-};
+});

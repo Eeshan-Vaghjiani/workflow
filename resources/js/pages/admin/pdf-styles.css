@@ -1,0 +1,57 @@
+.pdf-export {
+    /* Base colors */
+    --primary-500: #3b82f6 !important;
+    --primary-600: #2563eb !important;
+    --neon-green: #4ade80 !important;
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+}
+
+.pdf-export * {
+    color-scheme: light !important;
+}
+
+/* Text colors */
+.pdf-export .text-gray-500,
+.pdf-export .dark\:text-gray-400 {
+    color: #6b7280 !important;
+}
+
+.pdf-export .text-gray-900,
+.pdf-export .dark\:text-white {
+    color: #1f2937 !important;
+}
+
+/* Background colors */
+.pdf-export .bg-softBlue,
+.pdf-export .dark\:bg-primary-600\/20 {
+    background-color: #dbeafe !important;
+}
+
+/* Glass container styles */
+.pdf-export .glass-container {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Status colors */
+.pdf-export .text-green-500 {
+    color: #22c55e !important;
+}
+
+.pdf-export .text-red-500 {
+    color: #ef4444 !important;
+}
+
+/* Button styles */
+.pdf-export button {
+    background-color: transparent !important;
+    color: #6b7280 !important;
+}
+
+/* Remove any backdrop filters */
+.pdf-export * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+} 

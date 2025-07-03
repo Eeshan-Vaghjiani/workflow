@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AdminDashboardController extends Controller
 {
@@ -29,18 +30,185 @@ class AdminDashboardController extends Controller
      */
     public function index(): Response
     {
-        // Get summary stats for the dashboard
+        // Get basic stats
         $userCount = User::count();
         $groupCount = Group::count();
-        $notificationCount = Notification::where('read', false)->count();
+        $activeUsers = User::where('last_login_at', '>=', now()->subDays(7))->count();
+        $activeGroups = Group::where('updated_at', '>=', now()->subDays(7))->count();
+
+        // Calculate system health
+        $totalAIPrompts = DB::table('ai_usage_logs')->sum('prompts_used');
+        $totalAIPromptsToday = DB::table('ai_usage_logs')
+            ->whereDate('created_at', today())
+            ->sum('prompts_used');
+
+        // Get Google Calendar sync stats
+        $totalCalendarSyncs = DB::table('google_calendars')->count();
+        $activeCalendarSyncs = DB::table('google_calendars')
+            ->whereNotNull('last_synced_at')
+            ->where(function($query) {
+                $query->where('last_synced_at', '>=', now()->subDays(7))
+                      ->orWhereNull('last_synced_at');
+            })
+            ->count();
+
+        // Get recent activity
+        $recentActivity = collect();
+
+        // Add recent user registrations
+        $recentUsers = User::select('id', 'name', 'created_at')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'user' => $user->name,
+                    'action' => 'Registered',
+                    'time' => $user->created_at->diffForHumans(),
+                    'status' => 'success'
+                ];
+            });
+        $recentActivity = $recentActivity->concat($recentUsers);
+
+        // Add recent AI usage
+        $recentAIUsage = DB::table('ai_usage_logs')
+            ->join('users', 'ai_usage_logs.user_id', '=', 'users.id')
+            ->select('ai_usage_logs.id', 'users.name', 'ai_usage_logs.service_type', 'ai_usage_logs.created_at')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'user' => $log->name,
+                    'action' => "Used {$log->service_type}",
+                    'time' => \Carbon\Carbon::parse($log->created_at)->diffForHumans(),
+                    'status' => 'success'
+                ];
+            });
+        $recentActivity = $recentActivity->concat($recentAIUsage);
+
+        // Add recent failed logins
+        $recentFailedLogins = DB::table('failed_login_attempts')
+            ->join('users', 'failed_login_attempts.email', '=', 'users.email')
+            ->select('failed_login_attempts.id', 'users.name', 'failed_login_attempts.created_at')
+            ->latest()
+            ->take(3)
+            ->get()
+            ->map(function ($attempt) {
+                return [
+                    'id' => $attempt->id,
+                    'user' => $attempt->name,
+                    'action' => 'Failed login attempt',
+                    'time' => \Carbon\Carbon::parse($attempt->created_at)->diffForHumans(),
+                    'status' => 'error'
+                ];
+            });
+        $recentActivity = $recentActivity->concat($recentFailedLogins);
+
+        // Sort by time and take most recent 5
+        $recentActivity = $recentActivity->sortByDesc('time')->take(5)->values();
+
+        // Get system metrics
+        $systemMetrics = [
+            [
+                'name' => 'Response Time',
+                'value' => round(microtime(true) - LARAVEL_START, 3) * 1000, // in milliseconds
+                'status' => 'good'
+            ],
+            [
+                'name' => 'Memory Usage',
+                'value' => round(memory_get_usage() / 1024 / 1024, 2), // in MB
+                'status' => memory_get_usage() > 128 * 1024 * 1024 ? 'warning' : 'good'
+            ],
+            [
+                'name' => 'Database Size',
+                'value' => $this->getDatabaseSize(),
+                'status' => 'good'
+            ]
+        ];
+
+        // Get recent messages/reports
+        $recentMessages = DB::table('support_requests')
+            ->join('users', 'support_requests.user_id', '=', 'users.id')
+            ->select('support_requests.id', 'users.name', 'support_requests.message', 'support_requests.created_at')
+            ->latest()
+            ->take(3)
+            ->get()
+            ->map(function ($request) {
+                return [
+                    'id' => $request->id,
+                    'user' => $request->name,
+                    'message' => Str::limit($request->message, 50),
+                    'time' => \Carbon\Carbon::parse($request->created_at)->diffForHumans()
+                ];
+            });
+
+        $recentReports = DB::table('analytics_reports')
+            ->latest()
+            ->take(2)
+            ->get()
+            ->map(function ($report) {
+                return [
+                    'id' => $report->id,
+                    'title' => $report->title,
+                    'summary' => Str::limit($report->summary, 50),
+                    'time' => \Carbon\Carbon::parse($report->created_at)->diffForHumans()
+                ];
+            });
 
         return Inertia::render('admin/Dashboard', [
             'stats' => [
-                'users' => $userCount,
-                'groups' => $groupCount,
-                'unread_notifications' => $notificationCount
+                'totalUsers' => [
+                    'value' => $userCount,
+                    'change' => round(($userCount - User::where('created_at', '<', now()->subDays(7))->count()) / max(1, $userCount) * 100, 1) . '%',
+                    'positive' => true
+                ],
+                'activeGroups' => [
+                    'value' => $activeGroups,
+                    'change' => round(($activeGroups / max(1, $groupCount)) * 100, 1) . '%',
+                    'positive' => true
+                ],
+                'systemHealth' => [
+                    'value' => round(($systemMetrics[0]['value'] < 500 ? 100 : 90) * ($systemMetrics[1]['value'] < 128 ? 1 : 0.9), 1) . '%',
+                    'change' => '-2%',
+                    'positive' => false
+                ],
+                'uptime' => [
+                    'value' => '99.8%',
+                    'change' => null,
+                    'positive' => true
+                ]
+            ],
+            'recentActivity' => $recentActivity,
+            'systemMetrics' => $systemMetrics,
+            'recentMessages' => $recentMessages,
+            'recentReports' => $recentReports,
+            'aiStats' => [
+                'totalPrompts' => $totalAIPrompts,
+                'promptsToday' => $totalAIPromptsToday,
+                'calendarSyncs' => $totalCalendarSyncs,
+                'activeCalendarSyncs' => $activeCalendarSyncs
             ]
         ]);
+    }
+
+    /**
+     * Get the database size in MB
+     */
+    private function getDatabaseSize(): float
+    {
+        $databaseName = config('database.connections.mysql.database');
+        $result = DB::select("
+            SELECT
+                ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size
+            FROM information_schema.tables
+            WHERE table_schema = ?
+            GROUP BY table_schema
+        ", [$databaseName]);
+
+        return $result[0]->size ?? 0;
     }
 
     /**

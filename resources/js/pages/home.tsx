@@ -154,12 +154,34 @@ const HomePage = () => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const response = await axios.get('/debug/auth-status');
-                setIsAuthenticated(response.data.authenticated);
-                setIsAdmin(response.data.is_admin || false);
-                console.log('Auth status:', response.data);
+                const response = await axios.get('/auth/status');
+                const data = response.data;
+                setIsAuthenticated(data.authenticated);
+
+                // Explicitly cast is_admin to boolean for consistency
+                if (data.authenticated && data.user) {
+                    setIsAdmin(Boolean(data.user.is_admin));
+                    console.log('Auth status:', {
+                        authenticated: data.authenticated,
+                        is_admin_raw: data.user.is_admin,
+                        is_admin_cast: Boolean(data.user.is_admin)
+                    });
+                }
             } catch (error) {
                 console.error('Error checking auth status:', error);
+                // Fallback to another endpoint if the first one fails
+                try {
+                    const fallbackResponse = await axios.get('/api/auth-quick');
+                    const fallbackData = fallbackResponse.data;
+                    setIsAuthenticated(fallbackData.authenticated);
+
+                    if (fallbackData.authenticated && fallbackData.user) {
+                        setIsAdmin(Boolean(fallbackData.user.is_admin));
+                        console.log('Fallback auth status:', fallbackData);
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback auth check failed:', fallbackError);
+                }
             }
         };
 
@@ -271,7 +293,7 @@ const HomePage = () => {
                                 </button>
                                 {isAuthenticated ? (
                                     <Link
-                                        href={isAdmin ? "/admin" : "/dashboard"}
+                                        href={isAdmin ? "/admin/dashboard" : "/dashboard"}
                                         className="bg-[#00887A] hover:bg-[#007A6C] text-white px-4 py-2 rounded-lg transition-colors"
                                     >
                                         {isAdmin ? "Admin Dashboard" : "Dashboard"}

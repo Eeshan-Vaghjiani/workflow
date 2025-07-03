@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { KanbanColumn } from './KanbanColumn';
 import { KanbanTask as TaskComponent } from './KanbanTask';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             setIsLoading(true);
             const data = await KanbanService.getBoard(boardId);
             setBoard(data);
-            setColumns(data.columns);
+            setColumns(data.columns || []);
             setIsLoading(false);
         } catch (err) {
             console.error('Error fetching board:', err);
@@ -57,7 +57,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
-        if (!over) return;
+        if (!over || !columns || columns.length === 0) return;
 
         // Extract task and column data from the event
         const taskId = active.id.toString();
@@ -125,16 +125,20 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
     };
 
     // Handle task drag start
-    const handleDragStart = (event: DragEndEvent) => {
+    const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
         const taskId = active.id.toString();
 
-        // Find the task in columns
-        for (const column of columns) {
-            const foundTask = column.tasks.find(task => task.id.toString() === taskId);
-            if (foundTask) {
-                setActiveTask(foundTask);
-                break;
+        // Find the task in columns - safely check for columns and tasks existence
+        if (columns && columns.length > 0) {
+            for (const column of columns) {
+                if (column.tasks && column.tasks.length > 0) {
+                    const foundTask = column.tasks.find(task => task.id.toString() === taskId);
+                    if (foundTask) {
+                        setActiveTask(foundTask);
+                        break;
+                    }
+                }
             }
         }
     };
@@ -145,10 +149,10 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             const newColumn = await KanbanService.createColumn({
                 ...columnData,
                 board_id: boardId,
-                position: columns.length,
+                position: columns ? columns.length : 0,
             });
 
-            setColumns([...columns, { ...newColumn, tasks: [] }]);
+            setColumns(prevColumns => [...(prevColumns || []), { ...newColumn, tasks: [] }]);
             setIsAddColumnOpen(false);
 
             toast({
@@ -178,7 +182,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
             description: '',
             priority: 'medium',
             created_by: 0,
-            position: column.tasks.length,
+            position: column.tasks ? column.tasks.length : 0,
             tags: [],
             attachments: [],
         });
@@ -320,14 +324,28 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
                     onDragEnd={handleDragEnd}
                 >
                     <div className="flex gap-4 h-full min-h-[calc(100vh-250px)]">
-                        {columns.map((column) => (
-                            <KanbanColumn
-                                key={column.id}
-                                column={column}
-                                onAddTask={() => handleAddTask(column.id)}
-                                onEditTask={handleEditTask}
-                            />
-                        ))}
+                        {columns && columns.length > 0 ? (
+                            columns.map((column) => (
+                                <KanbanColumn
+                                    key={column.id}
+                                    column={column}
+                                    onAddTask={() => handleAddTask(column.id)}
+                                    onEditTask={handleEditTask}
+                                />
+                            ))
+                        ) : (
+                            <div className="flex flex-col items-center justify-center w-full">
+                                <p className="text-muted-foreground mb-4">No columns found. Add a column to get started.</p>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsAddColumnOpen(true)}
+                                    className="flex items-center gap-1"
+                                >
+                                    <Plus size={16} />
+                                    Add Column
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Drag Overlay */}

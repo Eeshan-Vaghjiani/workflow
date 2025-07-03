@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -33,6 +34,8 @@ class User extends Authenticatable
         'is_paid_user',
         'last_payment_date',
         'total_prompts_purchased',
+        'api_token',
+        'deleted_at',
     ];
 
     /**
@@ -150,8 +153,8 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        // Cast to boolean and handle both 1/0 and true/false
-        return $this->is_admin == true;
+        // Use strict comparison to handle both 1/0 and true/false
+        return (bool)$this->is_admin === true;
     }
 
     /**

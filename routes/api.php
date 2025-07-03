@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\DirectMessageController;
 use App\Http\Controllers\API\AITaskController;
@@ -18,7 +19,6 @@ use App\Http\Controllers\API\GroupChatController as APIGroupChatController;
 use App\Http\Controllers\API\GroupMessageController;
 use App\Http\Controllers\GroupChatController as GroupChatControllerWeb;
 use App\Http\Controllers\API\TaskAssignmentController;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\API\SearchController;
 use App\Http\Controllers\StudyPlannerController;
 use App\Http\Controllers\CalendarController as CalendarControllerGroup;
@@ -82,8 +82,9 @@ Route::get('/auth-status', function (Request $request) {
 });
 
 // New quick auth check route with simple solution advice
-Route::get('/auth-quick', function (Request $request) {
-    $user = $request->user();
+Route::middleware(['web'])->get('/auth-quick', function (Request $request) {
+    // Try multiple auth guards to ensure we catch all authentication methods
+    $user = $request->user() ?? Auth::user();
     $isAuthenticated = !is_null($user);
 
     if ($isAuthenticated) {
@@ -197,7 +198,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates']);
 
     // Kanban Board Routes
-    Route::middleware('auth:sanctum')->prefix('kanban')->group(function () {
+    Route::middleware(\App\Http\Middleware\KanbanAuthMiddleware::class)->prefix('kanban')->group(function () {
         // Board Management
         Route::get('/boards', [KanbanBoardController::class, 'index']);
         Route::post('/boards', [KanbanBoardController::class, 'store']);
@@ -215,28 +216,46 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/tasks', [KanbanTaskController::class, 'store']);
         Route::put('/tasks/{task}', [KanbanTaskController::class, 'update']);
         Route::delete('/tasks/{task}', [KanbanTaskController::class, 'destroy']);
-        Route::put('/tasks/move', [KanbanTaskController::class, 'move']);
-        Route::put('/tasks/reorder', [KanbanTaskController::class, 'reorder']);
-        // Board Management
-        Route::get('/boards', [KanbanBoardController::class, 'index']);
-        Route::post('/boards', [KanbanBoardController::class, 'store']);
-        Route::get('/boards/{board}', [KanbanBoardController::class, 'show']);
-        Route::put('/boards/{board}', [KanbanBoardController::class, 'update']);
-        Route::delete('/boards/{board}', [KanbanBoardController::class, 'destroy']);
-
-        // Column Management
-        Route::post('/columns', [KanbanColumnController::class, 'store']);
-        Route::put('/columns/{column}', [KanbanColumnController::class, 'update']);
-        Route::delete('/columns/{column}', [KanbanColumnController::class, 'destroy']);
-        Route::put('/columns/reorder', [KanbanColumnController::class, 'reorder']);
-
-        // Task Management
-        Route::post('/tasks', [KanbanTaskController::class, 'store']);
-        Route::put('/tasks/{task}', [KanbanTaskController::class, 'update']);
-        Route::delete('/tasks/{task}', [KanbanTaskController::class, 'destroy']);
-        Route::put('/tasks/move', [KanbanTaskController::class, 'move']);
+        Route::post('/tasks/{task}/move', [KanbanTaskController::class, 'move']);
         Route::put('/tasks/reorder', [KanbanTaskController::class, 'reorder']);
     });
+});
+
+// Direct route for Kanban boards with web middleware for easier authentication
+Route::middleware(['web', \App\Http\Middleware\WebKanbanAuthMiddleware::class])->prefix('direct/kanban')->group(function () {
+    // Board endpoints
+    Route::get('/boards', [KanbanBoardController::class, 'index']);
+    Route::get('/boards/{board}', [KanbanBoardController::class, 'show']);
+    Route::post('/boards', [KanbanBoardController::class, 'store']);
+    Route::put('/boards/{board}', [KanbanBoardController::class, 'update']);
+    Route::delete('/boards/{board}', [KanbanBoardController::class, 'destroy']);
+    
+    // Column endpoints
+    Route::post('/columns', [KanbanColumnController::class, 'store']);
+    Route::put('/columns/{column}', [KanbanColumnController::class, 'update']);
+    Route::delete('/columns/{column}', [KanbanColumnController::class, 'destroy']);
+    Route::put('/columns/reorder', [KanbanColumnController::class, 'reorder']);
+    
+    // Task endpoints
+    Route::post('/tasks', [KanbanTaskController::class, 'store']);
+    Route::put('/tasks/{task}', [KanbanTaskController::class, 'update']);
+    Route::delete('/tasks/{task}', [KanbanTaskController::class, 'destroy']);
+    Route::post('/tasks/{task}/move', [KanbanTaskController::class, 'move']);
+    Route::put('/tasks/reorder', [KanbanTaskController::class, 'reorder']);
+});
+
+// Direct route for users with web middleware
+Route::middleware(['web', 'auth'])->get('/direct/users', function (Request $request) {
+    return response()->json([
+        'data' => \App\Models\User::select('id', 'name', 'avatar')->get()
+    ]);
+});
+
+// Also add direct kanban routes with web middleware for better session handling
+Route::middleware(['web', \App\Http\Middleware\WebKanbanAuthMiddleware::class])->group(function () {
+    // Simplified board endpoints for direct web access
+    Route::get('/web/kanban/boards', [KanbanBoardController::class, 'index']);
+    Route::get('/web/kanban/boards/{board}', [KanbanBoardController::class, 'show']);
 });
 
 // Chat-specific API routes using web middleware for session auth
@@ -755,4 +774,79 @@ Route::post('/contact', function (Request $request) {
     // For now, we'll just return a success response
 
     return response()->json(['success' => true, 'message' => 'Thank you for your message. We will get back to you soon.']);
+});
+
+// Debug route to test Kanban board authentication
+Route::middleware('auth:sanctum')->get('/debug/kanban-auth', function (Request $request) {
+    $user = $request->user();
+
+    // Test fetching kanban boards
+    $boards = App\Models\KanbanBoard::where('created_by', $user->id)->get();
+
+    return response()->json([
+        'authenticated' => true,
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ],
+        'boards_count' => $boards->count(),
+        'has_boards' => $boards->count() > 0,
+        'boards' => $boards,
+        'message' => 'Authentication is working correctly.',
+    ]);
+});
+
+// Add a debug endpoint to test Kanban authentication directly
+Route::get('/debug/kanban-auth-test', function (Request $request) {
+    try {
+        $user = Auth::user() ?? $request->user();
+        $userData = null;
+        
+        if ($user) {
+            $userData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => (bool)$user->is_admin,
+            ];
+        }
+        
+        return response()->json([
+            'authenticated' => !is_null($user),
+            'user' => $userData,
+            'request_info' => [
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'is_ajax' => $request->ajax(),
+                'wants_json' => $request->wantsJson(),
+                'expects_json' => $request->expectsJson(),
+            ],
+            'session' => [
+                'has_session' => $request->hasSession(),
+                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+            ],
+            'guards' => [
+                'web' => Auth::guard('web')->check(),
+                'api' => Auth::guard('api')->check(),
+                'sanctum' => Auth::guard('sanctum')->check(),
+            ],
+        ]);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('API Kanban Auth Debug Error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+        
+        // Return a simplified response that won't cause errors
+        return response()->json([
+            'authenticated' => Auth::check(),
+            'error' => 'Error retrieving kanban auth details: ' . $e->getMessage(),
+            'user' => Auth::check() ? [
+                'id' => Auth::id(),
+                'is_admin' => Auth::user() ? (bool)Auth::user()->is_admin : false
+            ] : null
+        ]);
+    }
 });

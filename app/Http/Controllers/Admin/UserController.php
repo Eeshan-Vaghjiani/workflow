@@ -83,6 +83,10 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if ($user->is_admin) {
+            return redirect()->back()->with('error', 'You cannot delete another admin user.');
+        }
+
         $user->delete();
         return redirect()->back()->with('success', 'User deleted successfully.');
     }
@@ -138,4 +142,11 @@ class UserController extends Controller
 
         return $pdf->download('users-report-' . now()->format('Y-m-d') . '.pdf');
     }
-} 
+
+    public function downloadPdf()
+    {
+        $users = User::all();
+        $pdf = Pdf::loadView('admin.users.pdf', compact('users'));
+        return $pdf->download('users.pdf');
+    }
+}

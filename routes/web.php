@@ -100,7 +100,7 @@ Route::get('/auth-success', function (Request $request) {
             'is_admin_raw' => $user->is_admin,
             'is_admin_cast' => (bool)$user->is_admin,
         ]);
-        
+
         if ((bool)$user->is_admin === true) {
             \Illuminate\Support\Facades\Log::info('Auth success: Redirecting admin user to admin dashboard');
             return redirect()->route('admin.dashboard');
@@ -272,6 +272,44 @@ Route::middleware([
     // Task update routes for calendar integration
     Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates'])->name('tasks.update-dates');
 });
+
+// Admin routes
+Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_factor', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        // User Management
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users/pdf', [UserController::class, 'downloadPdf'])->name('users.pdf');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [UserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+        Route::post('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+        Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+
+        // Profile & Settings
+        Route::get('/profile', [AdminDashboardController::class, 'profile'])->name('profile');
+        Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
+
+        // Groups
+        Route::get('/groups', [\App\Http\Controllers\Admin\GroupController::class, 'index'])->name('groups.index');
+        Route::get('/groups/pdf', [\App\Http\Controllers\Admin\GroupController::class, 'downloadPdf'])->name('groups.pdf');
+
+        // Analytics
+        Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('/analytics/pdf', [\App\Http\Controllers\Admin\AnalyticsController::class, 'downloadPdf'])->name('analytics.pdf');
+
+        // Audit Log
+        Route::get('/audit-log', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-log.index');
+        Route::get('/audit-log/pdf', [\App\Http\Controllers\Admin\AuditLogController::class, 'downloadPdf'])->name('audit-log.pdf');
+
+        // Notifications
+        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/pdf', [\App\Http\Controllers\Admin\NotificationController::class, 'downloadPdf'])->name('notifications.pdf');
+    });
 
 // Add API web fallback routes with explicit session auth
 Route::prefix('api/web')->middleware(['web', 'auth'])->group(function() {
@@ -1092,7 +1130,7 @@ Route::get('/debug/admin-check', function() {
 // Admin Routes
 Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_factor', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
-    
+
     // User Management
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
@@ -1101,6 +1139,26 @@ Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_fa
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::post('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
     Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+
+    // Profile & Settings
+    Route::get('/profile', [AdminDashboardController::class, 'profile'])->name('profile');
+    Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
+
+    // Groups
+    Route::get('/groups', [\App\Http\Controllers\Admin\GroupController::class, 'index'])->name('groups.index');
+    Route::get('/groups/pdf', [\App\Http\Controllers\Admin\GroupController::class, 'downloadPdf'])->name('groups.pdf');
+
+    // Analytics
+    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics/pdf', [\App\Http\Controllers\Admin\AnalyticsController::class, 'downloadPdf'])->name('analytics.pdf');
+
+    // Audit Log
+    Route::get('/audit-log', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-log.index');
+    Route::get('/audit-log/pdf', [\App\Http\Controllers\Admin\AuditLogController::class, 'downloadPdf'])->name('audit-log.pdf');
+
+    // Notifications
+    Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/pdf', [\App\Http\Controllers\Admin\NotificationController::class, 'downloadPdf'])->name('notifications.pdf');
 });
 
 /*
@@ -1156,7 +1214,7 @@ Route::get('/debug/kanban-auth-status', function (Request $request) {
             'file' => $e->getFile(),
             'line' => $e->getLine()
         ]);
-        
+
         // Return a simplified response that won't cause errors
         return response()->json([
             'authenticated' => Auth::check(),
@@ -1267,7 +1325,7 @@ Route::get('/debug/refresh-auth', [App\Http\Controllers\AuthDebugController::cla
 // Add a debug route for Kanban testing
 Route::get('/debug/kanban-test', function (Request $request) {
     $user = Auth::user();
-    
+
     // Check if user is authenticated
     if (!$user) {
         return response()->json([
@@ -1275,7 +1333,7 @@ Route::get('/debug/kanban-test', function (Request $request) {
             'message' => 'Not authenticated'
         ], 401);
     }
-    
+
     // Try to create a test board
     try {
         $board = App\Models\KanbanBoard::create([

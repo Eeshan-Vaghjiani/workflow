@@ -534,39 +534,20 @@ export default function Dashboard({
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     // Generate comprehensive dashboard report
-    const downloadDashboardReport = async (
-        dashboardRef: React.RefObject<HTMLDivElement>,
-        stats: {
-            totalUsers: {
-                value: number;
-                change: string;
-                positive: boolean;
-            };
-            activeGroups: {
-                value: number;
-                change: string;
-                positive: boolean;
-            };
-            systemHealth: {
-                value: string;
-                change: string;
-                positive: boolean;
-            };
-            uptime: {
-                value: string;
-                change: string | null;
-                positive: boolean;
-            };
-        },
-        systemMetrics: SystemMetric[],
-        aiStats: AIStats
-    ) => {
-        try {
-            setIsGeneratingPDF(true);
-            if (!dashboardRef.current) return;
+    const downloadDashboardReport = async () => {
+        setIsGeneratingPDF(true);
 
-            // Add PDF export class
+        // Add a class to the dashboard to override styles for PDF export
+        if (dashboardRef.current) {
             dashboardRef.current.classList.add('pdf-export');
+        }
+
+        // Wait for styles to apply
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        try {
+            const dashboardEl = dashboardRef.current;
+            if (!dashboardEl) return;
 
             // Create PDF
             const pdf = new jsPDF({
@@ -576,7 +557,7 @@ export default function Dashboard({
             });
 
             // Capture the dashboard overview
-            const canvas = await html2canvas(dashboardRef.current, {
+            const canvas = await html2canvas(dashboardEl, {
                 scale: 1.5,
                 logging: false,
                 useCORS: true,
@@ -695,7 +676,7 @@ export default function Dashboard({
                             </Button>
                             <Button
                                 variant="default"
-                                onClick={() => downloadDashboardReport(dashboardRef, stats, systemMetrics, aiStats)}
+                                onClick={() => downloadDashboardReport()}
                                 className="flex items-center gap-2"
                             >
                                 <FileDown className="h-4 w-4" />

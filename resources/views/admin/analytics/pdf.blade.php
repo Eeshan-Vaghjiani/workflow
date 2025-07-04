@@ -1,28 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Analytics PDF</title>
+    <title>Analytics Report</title>
     <style>
         body {
             font-family: sans-serif;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .report-container {
+            padding: 20px;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
         }
-        th {
-            background-color: #f2f2f2;
+        .metric {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .metric-label {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h1>Analytics Report</h1>
-    <p>Analytics data will be displayed here.</p>
-    {{-- You can add a table here once you have analytics data to display --}}
+    <div class="report-container">
+        <h1>Analytics Report</h1>
+        <div class="metric">
+            <span class="metric-label">Total Users:</span> {{ $userCount }}
+        </div>
+        <div class="metric">
+            <span class="metric-label">Total Groups:</span> {{ $groupCount }}
+        </div>
+        <div class="metric">
+            <span class="metric-label">Active Users (Last 7 Days):</span> {{ $activeUsers }}
+        </div>
+        <div class="metric">
+            <span class="metric-label">Active Groups (Last 7 Days):</span> {{ $activeGroups }}
+        </div>
+    </div>
 </body>
 </html>

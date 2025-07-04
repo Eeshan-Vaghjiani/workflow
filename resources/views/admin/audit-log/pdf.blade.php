@@ -22,7 +22,23 @@
 </head>
 <body>
     <h1>Audit Log</h1>
-    <p>Audit log data will be displayed here.</p>
-    {{-- You can add a table here once you have audit log data to display --}}
+    <table>
+        <thead>
+            <tr>
+                <th>User ID</th>
+                <th>Action</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($auditLog as $log)
+                <tr>
+                    <td>{{ $log->user_id }}</td>
+                    <td>{{ $log->action }}</td>
+                    <td>{{ $log->created_at }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </body>
 </html>

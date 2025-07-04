@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AdminDashboardController extends Controller
 {
@@ -310,14 +311,17 @@ class AdminDashboardController extends Controller
      */
     public function groups(): Response
     {
-        $groups = Group::with('owner:id,name')
-            ->withCount('members')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
+        $groups = Group::withCount('members')->get();
         return Inertia::render('admin/groups/Index', [
             'groups' => $groups
         ]);
+    }
+
+    public function groupsPdf()
+    {
+        $groups = Group::withCount('members')->get();
+        $pdf = Pdf::loadView('admin.groups.pdf', compact('groups'));
+        return $pdf->download('groups.pdf');
     }
 
     /**
@@ -349,7 +353,18 @@ class AdminDashboardController extends Controller
      */
     public function settings(): Response
     {
-        return Inertia::render('admin/settings/Index');
+        $settings = [
+            'siteName' => env('SITE_NAME', 'Workflow App'),
+            'maintenanceMode' => filter_var(env('MAINTENANCE_MODE', false), FILTER_VALIDATE_BOOLEAN),
+            'enable2FA' => filter_var(env('ENABLE_2FA', true), FILTER_VALIDATE_BOOLEAN),
+            'passwordMinLength' => (int) env('PASSWORD_MIN_LENGTH', 8),
+            'emailOnNewUser' => filter_var(env('EMAIL_ON_NEW_USER', true), FILTER_VALIDATE_BOOLEAN),
+            'emailOnGroupInvite' => filter_var(env('EMAIL_ON_GROUP_INVITE', true), FILTER_VALIDATE_BOOLEAN),
+        ];
+
+        return Inertia::render('admin/settings/Index', [
+            'settings' => $settings,
+        ]);
     }
 
     /**
@@ -477,5 +492,43 @@ class AdminDashboardController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to delete user: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Store the application settings.
+     */
+    public function storeSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'siteName' => 'required|string|max:255',
+            'maintenanceMode' => 'required|boolean',
+            'enable2FA' => 'required|boolean',
+            'passwordMinLength' => 'required|integer|min:8|max:32',
+            'emailOnNewUser' => 'required|boolean',
+            'emailOnGroupInvite' => 'required|boolean',
+        ]);
+
+        foreach ($validated as $key => $value) {
+            $this->setEnvValue(strtoupper(Str::snake($key)), is_bool($value) ? ($value ? 'true' : 'false') : $value);
+        }
+
+        return redirect()->route('admin.settings')->with('success', 'Settings saved successfully.');
+    }
+
+    /**
+     * Helper function to set a value in the .env file.
+     */
+    private function setEnvValue(string $key, string $value)
+    {
+        $path = app()->environmentFilePath();
+        $content = file_get_contents($path);
+
+        if (preg_match("/^{$key}=/m", $content)) {
+            $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
+        } else {
+            $content .= "\n{$key}={$value}";
+        }
+
+        file_put_contents($path, $content);
     }
 }

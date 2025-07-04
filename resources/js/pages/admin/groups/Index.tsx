@@ -2,11 +2,20 @@ import React from 'react';
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { FileDown } from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 interface Group {
     id: number;
     name: string;
     created_at: string;
+    members_count: number;
 }
 
 interface Props {
@@ -31,8 +40,34 @@ const GroupsIndex: React.FC<Props> = ({ groups }) => {
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">Group List</h2>
-                    {/* You can map over the 'groups' prop to display the data here */}
-                    <p>Group data will be displayed here.</p>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>ID</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Members</TableHead>
+                                <TableHead>Created At</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {groups.length > 0 ? (
+                                groups.map((group) => (
+                                    <TableRow key={group.id}>
+                                        <TableCell>{group.id}</TableCell>
+                                        <TableCell className="font-medium">{group.name}</TableCell>
+                                        <TableCell>{group.members_count}</TableCell>
+                                        <TableCell>{new Date(group.created_at).toLocaleDateString()}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center">
+                                        No groups found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
         </>

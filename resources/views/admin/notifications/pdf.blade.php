@@ -22,7 +22,23 @@
 </head>
 <body>
     <h1>Notifications</h1>
-    <p>Notification data will be displayed here.</p>
-    {{-- You can add a table here once you have notification data to display --}}
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Message</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($notifications as $notification)
+                <tr>
+                    <td>{{ $notification->type }}</td>
+                    <td>{{ $notification->data['message'] ?? 'N/A' }}</td>
+                    <td>{{ $notification->created_at->format('Y-m-d H:i') }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
 </body>
 </html>

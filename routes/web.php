@@ -293,22 +293,23 @@ Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_fa
         // Profile & Settings
         Route::get('/profile', [AdminDashboardController::class, 'profile'])->name('profile');
         Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
+        Route::post('/settings', [AdminDashboardController::class, 'storeSettings'])->name('settings.store');
 
         // Groups
-        Route::get('/groups', [\App\Http\Controllers\Admin\GroupController::class, 'index'])->name('groups.index');
-        Route::get('/groups/pdf', [\App\Http\Controllers\Admin\GroupController::class, 'downloadPdf'])->name('groups.pdf');
+        Route::get('/groups', [AdminDashboardController::class, 'groups'])->name('groups.index');
+        Route::get('/groups/pdf', [AdminDashboardController::class, 'groupsPdf'])->name('groups.pdf');
 
         // Analytics
-        Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
-        Route::get('/analytics/pdf', [\App\Http\Controllers\Admin\AnalyticsController::class, 'downloadPdf'])->name('analytics.pdf');
+        Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('analytics.index');
+        Route::get('/analytics/pdf', [AdminDashboardController::class, 'analyticsPdf'])->name('analytics.pdf');
 
         // Audit Log
-        Route::get('/audit-log', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-log.index');
-        Route::get('/audit-log/pdf', [\App\Http\Controllers\Admin\AuditLogController::class, 'downloadPdf'])->name('audit-log.pdf');
+        Route::get('/audit-log', [AdminDashboardController::class, 'audit'])->name('audit-log.index');
+        Route::get('/audit-log/pdf', [AdminDashboardController::class, 'auditPdf'])->name('audit-log.pdf');
 
         // Notifications
-        Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
-        Route::get('/notifications/pdf', [\App\Http\Controllers\Admin\NotificationController::class, 'downloadPdf'])->name('notifications.pdf');
+        Route::get('/notifications', [AdminDashboardController::class, 'notifications'])->name('notifications.index');
+        Route::get('/notifications/pdf', [AdminDashboardController::class, 'notificationsPdf'])->name('notifications.pdf');
     });
 
 // Add API web fallback routes with explicit session auth
@@ -1145,20 +1146,20 @@ Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_fa
     Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
 
     // Groups
-    Route::get('/groups', [\App\Http\Controllers\Admin\GroupController::class, 'index'])->name('groups.index');
-    Route::get('/groups/pdf', [\App\Http\Controllers\Admin\GroupController::class, 'downloadPdf'])->name('groups.pdf');
+    Route::get('/groups', [AdminDashboardController::class, 'groups'])->name('groups.index');
+    Route::get('/groups/pdf', [AdminDashboardController::class, 'groupsPdf'])->name('groups.pdf');
 
     // Analytics
-    Route::get('/analytics', [\App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
-    Route::get('/analytics/pdf', [\App\Http\Controllers\Admin\AnalyticsController::class, 'downloadPdf'])->name('analytics.pdf');
+    Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('analytics.index');
+    Route::get('/analytics/pdf', [AdminDashboardController::class, 'analyticsPdf'])->name('analytics.pdf');
 
     // Audit Log
-    Route::get('/audit-log', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-log.index');
-    Route::get('/audit-log/pdf', [\App\Http\Controllers\Admin\AuditLogController::class, 'downloadPdf'])->name('audit-log.pdf');
+    Route::get('/audit-log', [AdminDashboardController::class, 'audit'])->name('audit-log.index');
+    Route::get('/audit-log/pdf', [AdminDashboardController::class, 'auditPdf'])->name('audit-log.pdf');
 
     // Notifications
-    Route::get('/notifications', [\App\Http\Controllers\Admin\NotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/notifications/pdf', [\App\Http\Controllers\Admin\NotificationController::class, 'downloadPdf'])->name('notifications.pdf');
+    Route::get('/notifications', [AdminDashboardController::class, 'notifications'])->name('notifications.index');
+    Route::get('/notifications/pdf', [AdminDashboardController::class, 'notificationsPdf'])->name('notifications.pdf');
 });
 
 /*

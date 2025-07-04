@@ -27,6 +27,7 @@
             <tr>
                 <th>ID</th>
                 <th>Name</th>
+                <th>Members</th>
                 <th>Created At</th>
             </tr>
         </thead>
@@ -35,6 +36,7 @@
                 <tr>
                     <td>{{ $group->id }}</td>
                     <td>{{ $group->name }}</td>
+                    <td>{{ $group->members_count }}</td>
                     <td>{{ $group->created_at->format('Y-m-d') }}</td>
                 </tr>
             @endforeach

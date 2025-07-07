@@ -70,77 +70,52 @@
     <div class="stats-container">
         <div class="stat-box">
             <div class="stat-label">Total Users</div>
-            <div class="stat-value">{{ $stats['users'] }}</div>
+            <div class="stat-value">{{ $stats['users']['total'] }}</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Active Users (Last 7 Days)</div>
+            <div class="stat-value">{{ $stats['users']['active'] }}</div>
         </div>
         <div class="stat-box">
             <div class="stat-label">Total Groups</div>
-            <div class="stat-value">{{ $stats['groups'] }}</div>
+            <div class="stat-value">{{ $stats['groups']['total'] }}</div>
         </div>
         <div class="stat-box">
-            <div class="stat-label">Total Messages</div>
-            <div class="stat-value">{{ $stats['messages'] }}</div>
-        </div>
-        <div class="stat-box">
-            <div class="stat-label">Total Tasks</div>
-            <div class="stat-value">{{ $stats['tasks'] }}</div>
+            <div class="stat-label">Active Groups (Last 7 Days)</div>
+            <div class="stat-value">{{ $stats['groups']['active'] }}</div>
         </div>
     </div>
 
-    <h2 class="section-title">Monthly User Growth</h2>
+    <h2 class="section-title">User Activity Summary</h2>
     <table>
         <thead>
             <tr>
-                <th>Month</th>
-                <th>New Users</th>
+                <th>Metric</th>
+                <th>Count</th>
+                <th>Percentage</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($monthlyGrowth as $month => $count)
             <tr>
-                <td>{{ $month }}</td>
-                <td>{{ $count }}</td>
+                <td>Active Users</td>
+                <td>{{ $stats['users']['active'] }}</td>
+                <td>{{ $stats['users']['total'] > 0 ? round(($stats['users']['active'] / $stats['users']['total']) * 100, 1) : 0 }}%</td>
             </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <h2 class="section-title">Feature Usage</h2>
-    <table>
-        <thead>
             <tr>
-                <th>Feature</th>
-                <th>Usage Score</th>
+                <td>Inactive Users</td>
+                <td>{{ $stats['users']['total'] - $stats['users']['active'] }}</td>
+                <td>{{ $stats['users']['total'] > 0 ? round((($stats['users']['total'] - $stats['users']['active']) / $stats['users']['total']) * 100, 1) : 0 }}%</td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach($featureUsage as $feature)
             <tr>
-                <td>{{ $feature['name'] }}</td>
-                <td>{{ $feature['value'] }}%</td>
+                <td>Active Groups</td>
+                <td>{{ $stats['groups']['active'] }}</td>
+                <td>{{ $stats['groups']['total'] > 0 ? round(($stats['groups']['active'] / $stats['groups']['total']) * 100, 1) : 0 }}%</td>
             </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <h2 class="section-title">Top Users by Activity</h2>
-    <table>
-        <thead>
             <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Tasks</th>
-                <th>Groups</th>
+                <td>Inactive Groups</td>
+                <td>{{ $stats['groups']['total'] - $stats['groups']['active'] }}</td>
+                <td>{{ $stats['groups']['total'] > 0 ? round((($stats['groups']['total'] - $stats['groups']['active']) / $stats['groups']['total']) * 100, 1) : 0 }}%</td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach($topUsers as $user)
-            <tr>
-                <td>{{ $user['name'] }}</td>
-                <td>{{ $user['email'] }}</td>
-                <td>{{ $user['tasks'] }}</td>
-                <td>{{ $user['groups'] }}</td>
-            </tr>
-            @endforeach
         </tbody>
     </table>
 

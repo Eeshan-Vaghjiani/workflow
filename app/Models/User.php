@@ -150,7 +150,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'ADMIN';
+        return (bool) $this->is_admin;
     }
 
     /**

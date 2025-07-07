@@ -20,51 +20,13 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        $query = User::withTrashed()
-            ->select('id', 'name', 'email', 'is_admin', 'last_login_at', 'created_at', 'deleted_at')
-            ->withCount('groups');
-
-        // Apply filters if provided
-        if ($request->has('search')) {
-            $search = $request->input('search');
-            $query->where(function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->has('role')) {
-            $role = $request->input('role');
-            if ($role === 'admin') {
-                $query->where('is_admin', true);
-            } elseif ($role === 'user') {
-                $query->where('is_admin', false);
-            }
-        }
-
-        if ($request->has('status')) {
-            $status = $request->input('status');
-            if ($status === 'active') {
-                $query->whereNull('deleted_at');
-            } elseif ($status === 'deleted') {
-                $query->whereNotNull('deleted_at');
-            }
-        }
-
-        // Apply sorting
-        $sortField = $request->input('sort_field', 'created_at');
-        $sortDirection = $request->input('sort_direction', 'desc');
-        $allowedSortFields = ['name', 'email', 'created_at', 'last_login_at'];
-
-        if (in_array($sortField, $allowedSortFields)) {
-            $query->orderBy($sortField, $sortDirection);
-        }
-
-        $perPage = $request->input('per_page', 10);
-        $users = $query->paginate($perPage);
+        $users = User::withTrashed()
+            ->withCount('groups')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
         return response()->json([
-            'users' => $users->through(function ($user) {
+            'data' => $users->map(function ($user) {
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -73,15 +35,15 @@ class UserController extends Controller
                     'created_at' => $user->created_at->format('Y-m-d H:i:s'),
                     'last_login_at' => $user->last_login_at ? $user->last_login_at->format('Y-m-d H:i:s') : null,
                     'deleted' => !is_null($user->deleted_at),
-                    'groups_count' => $user->groups_count,
-                ],
+                    'groups_count' => $user->groups_count
+                ];
             }),
             'meta' => [
                 'total' => $users->total(),
                 'per_page' => $users->perPage(),
                 'current_page' => $users->currentPage(),
-                'last_page' => $users->lastPage(),
-            ],
+                'last_page' => $users->lastPage()
+            ]
         ]);
     }
 

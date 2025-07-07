@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, router, Link } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 import { motion } from 'framer-motion';
+import { useDebounce } from 'use-debounce';
 import {
     Search,
     Plus,
     Edit,
     Download,
     Filter,
-    ChevronDown,
     RefreshCw,
     Trash2
 } from 'lucide-react';
@@ -41,21 +41,24 @@ interface User {
     id: number;
     name: string;
     email: string;
-    is_admin: boolean;
+    role: 'ADMIN' | 'USER';
     created_at: string;
     last_login_at: string | null;
-    groups_count: number;
-    role: 'ADMIN' | 'USER';
     deleted_at: string | null;
 }
 
 interface UsersPageProps {
     users: {
         data: User[];
+        links: { url: string | null; label: string; active: boolean }[];
         current_page: number;
         last_page: number;
-        per_page: number;
+        from: number;
+        to: number;
         total: number;
+    };
+    filters: {
+        search: string;
     };
 }
 
@@ -83,8 +86,9 @@ const itemVariants = {
     }
 };
 
-export default function UsersIndex({ users }: UsersPageProps) {
-    const [searchTerm, setSearchTerm] = useState('');
+export default function UsersIndex({ users, filters }: UsersPageProps) {
+    const [searchTerm, setSearchTerm] = useState((filters?.search) || '');
+    const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
     const [isEditUserOpen, setIsEditUserOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -95,23 +99,28 @@ export default function UsersIndex({ users }: UsersPageProps) {
         is_admin: false,
     });
 
-    // Filter users based on search term
-    const filteredUsers = users.data.filter(user =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    // Handle search
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-    };
+    useEffect(() => {
+        if (debouncedSearchTerm !== ((filters?.search) || '')) {
+            router.get(
+                route('admin.users.index'),
+                { search: debouncedSearchTerm },
+                {
+                    preserveState: true,
+                    replace: true,
+                }
+            );
+        }
+    }, [debouncedSearchTerm, filters?.search]);
 
     // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post('/admin/users', formData);
-        setIsAddUserOpen(false);
-        setFormData({ name: '', email: '', password: '', is_admin: false });
+        router.post('/admin/users', formData, {
+            onSuccess: () => {
+                setIsAddUserOpen(false);
+                setFormData({ name: '', email: '', password: '', is_admin: false });
+            }
+        });
     };
 
     // Handle user update
@@ -119,10 +128,13 @@ export default function UsersIndex({ users }: UsersPageProps) {
         e.preventDefault();
         if (!selectedUser) return;
 
-        router.put(`/admin/users/${selectedUser.id}`, formData);
-        setIsEditUserOpen(false);
-        setSelectedUser(null);
-        setFormData({ name: '', email: '', password: '', is_admin: false });
+        router.put(`/admin/users/${selectedUser.id}`, formData, {
+            onSuccess: () => {
+                setIsEditUserOpen(false);
+                setSelectedUser(null);
+                setFormData({ name: '', email: '', password: '', is_admin: false });
+            }
+        });
     };
 
     // Handle user deletion
@@ -161,7 +173,7 @@ export default function UsersIndex({ users }: UsersPageProps) {
                     {
                         title: 'Active Users',
                         head: [['ID', 'Name', 'Email', 'Role', 'Created', 'Last Login']],
-                        body: filteredUsers
+                        body: users.data
                             .filter(user => !user.deleted_at)
                             .map(user => [
                                 user.id,
@@ -169,15 +181,13 @@ export default function UsersIndex({ users }: UsersPageProps) {
                                 user.email,
                                 user.role,
                                 format(new Date(user.created_at), 'PPP'),
-                                user.last_login_at
-                                    ? format(new Date(user.last_login_at), 'PPP')
-                                    : 'Never'
+                                user.last_login_at ? format(new Date(user.last_login_at), 'PPP') : 'Never'
                             ])
                     },
                     {
                         title: 'Deleted Users',
                         head: [['ID', 'Name', 'Email', 'Role', 'Created', 'Deleted At']],
-                        body: filteredUsers
+                        body: users.data
                             .filter(user => user.deleted_at)
                             .map(user => [
                                 user.id,
@@ -185,7 +195,7 @@ export default function UsersIndex({ users }: UsersPageProps) {
                                 user.email,
                                 user.role,
                                 format(new Date(user.created_at), 'PPP'),
-                                format(new Date(user.deleted_at), 'PPP')
+                                user.deleted_at ? format(new Date(user.deleted_at), 'PPP') : ''
                             ])
                     }
                 ]
@@ -214,10 +224,6 @@ export default function UsersIndex({ users }: UsersPageProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <Button onClick={handleExportPDF} variant="outline" size="sm">
-                            <Download className="h-4 w-4 mr-2" />
-                            Export PDF
-                        </Button>
                         <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                             <DialogTrigger asChild>
                                 <Button>
@@ -287,14 +293,14 @@ export default function UsersIndex({ users }: UsersPageProps) {
                                 <input
                                     type="search"
                                     className="block w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-[#00887A] focus:border-[#00887A] dark:focus:ring-[#00ccb4] dark:focus:border-[#00ccb4]"
-                                    placeholder="Search users..."
+                                    placeholder="Search users by name or email..."
                                     value={searchTerm}
-                                    onChange={handleSearch}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" disabled>
                                     <Filter className="h-4 w-4 mr-2" />
                                     Filter
                                 </button>
@@ -307,7 +313,10 @@ export default function UsersIndex({ users }: UsersPageProps) {
                                     Export
                                 </button>
 
-                                <button className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                <button
+                                    className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                    onClick={() => router.reload()}
+                                >
                                     <RefreshCw className="h-4 w-4" />
                                 </button>
                             </div>
@@ -332,7 +341,7 @@ export default function UsersIndex({ users }: UsersPageProps) {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredUsers.map((user) => (
+                                    {users.data.map((user) => (
                                         <TableRow key={user.id}>
                                             <TableCell>{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
@@ -385,66 +394,29 @@ export default function UsersIndex({ users }: UsersPageProps) {
                         </div>
 
                         {/* Pagination */}
-                        {users.last_page > 1 && (
+                        {users.links.length > 3 && (
                             <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
                                 <div className="flex-1 flex justify-between sm:hidden">
-                                    <button
-                                        onClick={() => router.get(route('admin.users.index', { page: users.current_page - 1 }))}
-                                        disabled={users.current_page === 1}
-                                        className="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 disabled:opacity-50"
-                                    >
-                                        Previous
-                                    </button>
-                                    <button
-                                        onClick={() => router.get(route('admin.users.index', { page: users.current_page + 1 }))}
-                                        disabled={users.current_page === users.last_page}
-                                        className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 disabled:opacity-50"
-                                    >
-                                        Next
-                                    </button>
+                                    <Link href={users.links[0].url || ''} className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${!users.links[0].url ? 'text-gray-400 bg-gray-200 dark:bg-gray-700' : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600'}`}>Previous</Link>
+                                    <Link href={users.links[users.links.length - 1].url || ''} className={`ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${!users.links[users.links.length - 1].url ? 'text-gray-400 bg-gray-200 dark:bg-gray-700' : 'text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600'}`}>Next</Link>
                                 </div>
                                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                                     <div>
-                                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                                            Showing <span className="font-medium">{(users.current_page - 1) * users.per_page + 1}</span> to <span className="font-medium">{Math.min(users.current_page * users.per_page, users.total)}</span> of <span className="font-medium">{users.total}</span> results
+                                        <p className="text-sm text-gray-700 dark:text-gray-400">
+                                            Showing <span className="font-medium">{users.from}</span> to <span className="font-medium">{users.to}</span> of{' '}
+                                            <span className="font-medium">{users.total}</span> results
                                         </p>
                                     </div>
                                     <div>
                                         <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                            <button
-                                                onClick={() => router.get(route('admin.users.index', { page: users.current_page - 1 }))}
-                                                disabled={users.current_page === 1}
-                                                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
-                                            >
-                                                <span className="sr-only">Previous</span>
-                                                <ChevronDown className="h-5 w-5 rotate-90" />
-                                            </button>
-
-                                            {/* Page numbers */}
-                                            {Array.from({ length: users.last_page }, (_, i) => i + 1).map(page => (
-                                                <button
-                                                    key={page}
-                                                    onClick={() => router.get(route('admin.users.index', { page }))}
-                                                    className={`
-                                                        relative inline-flex items-center px-4 py-2 border text-sm font-medium
-                                                        ${users.current_page === page
-                                                            ? 'z-10 bg-[#00887A] dark:bg-[#00887A] border-[#00887A] dark:border-[#00887A] text-white'
-                                                            : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                        }
-                                                    `}
-                                                >
-                                                    {page}
-                                                </button>
+                                            {users.links.map((link, index) => (
+                                                <Link
+                                                    key={index}
+                                                    href={link.url || ''}
+                                                    className={`relative inline-flex items-center px-4 py-2 text-sm font-medium ${link.active ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'} dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700`}
+                                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                                />
                                             ))}
-
-                                            <button
-                                                onClick={() => router.get(route('admin.users.index', { page: users.current_page + 1 }))}
-                                                disabled={users.current_page === users.last_page}
-                                                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
-                                            >
-                                                <span className="sr-only">Next</span>
-                                                <ChevronDown className="h-5 w-5 -rotate-90" />
-                                            </button>
                                         </nav>
                                     </div>
                                 </div>

@@ -1,53 +1,49 @@
-import React from 'react';
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+
 import { cn } from '@/lib/utils';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg' | 'icon';
+const buttonVariants = cva(
+  'inline-flex items-center justify-center font-medium rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00887A] dark:focus:ring-[#00ccb4] focus:ring-offset-white dark:focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed',
+  {
+    variants: {
+      variant: {
+        primary: 'bg-[#00887A] hover:bg-[#007A6C] text-white border-transparent',
+        secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 border-transparent',
+        outline: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600',
+        ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border-transparent',
+        danger: 'bg-red-600 hover:bg-red-700 text-white border-transparent',
+      },
+      size: {
+        sm: 'px-3 py-1.5 text-xs',
+        md: 'px-4 py-2 text-sm',
+        lg: 'px-5 py-2.5 text-base',
+        icon: 'p-2 h-9 w-9',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'md',
+    },
+  }
+);
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({
-    className,
-    children,
-    variant = 'primary',
-    size = 'md',
-    isLoading = false,
-    leftIcon,
-    rightIcon,
-    disabled,
-    ...props
-  }, ref) => {
-    const variantClasses = {
-      primary: 'bg-[#00887A] hover:bg-[#007A6C] text-white border-transparent',
-      secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 border-transparent',
-      outline: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600',
-      ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border-transparent',
-      danger: 'bg-red-600 hover:bg-red-700 text-white border-transparent',
-    };
-
-    const sizeClasses = {
-      sm: 'px-3 py-1.5 text-xs',
-      md: 'px-4 py-2 text-sm',
-      lg: 'px-5 py-2.5 text-base',
-      icon: 'p-2',
-    };
-
-    const isDisabled = disabled || isLoading;
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, children, isLoading, leftIcon, rightIcon, ...props }, ref) => {
+    const isDisabled = props.disabled || isLoading;
 
     return (
       <button
+        className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        className={cn(
-          'inline-flex items-center justify-center font-medium rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00887A] dark:focus:ring-[#00ccb4] focus:ring-offset-white dark:focus:ring-offset-gray-900',
-          variantClasses[variant],
-          sizeClasses[size],
-          isDisabled && 'opacity-50 cursor-not-allowed',
-          className
-        )}
         disabled={isDisabled}
         {...props}
       >
@@ -64,3 +60,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     );
   }
 );
+Button.displayName = 'Button';
+
+export { Button, buttonVariants };
+

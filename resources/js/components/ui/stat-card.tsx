@@ -12,6 +12,7 @@ export interface StatCardProps {
         isPositive: boolean;
     };
     className?: string;
+    variant?: 'default' | 'primary' | 'secondary' | 'success' | 'danger';
     onClick?: () => void;
 }
 
@@ -22,8 +23,39 @@ export const StatCard: React.FC<StatCardProps> = ({
     icon,
     trend,
     className,
+    variant = 'default',
     onClick,
 }) => {
+    const getIconContainerClass = () => {
+        switch (variant) {
+            case 'primary':
+                return 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300';
+            case 'secondary':
+                return 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300';
+            case 'success':
+                return 'bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300';
+            case 'danger':
+                return 'bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300';
+            default:
+                return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300';
+        }
+    };
+
+    const getValueClass = () => {
+        switch (variant) {
+            case 'primary':
+                return 'text-blue-600 dark:text-blue-300';
+            case 'secondary':
+                return 'text-purple-600 dark:text-purple-300';
+            case 'success':
+                return 'text-green-600 dark:text-green-300';
+            case 'danger':
+                return 'text-red-600 dark:text-red-300';
+            default:
+                return 'text-gray-900 dark:text-white';
+        }
+    };
+
     return (
         <Card
             className={cn(
@@ -38,7 +70,7 @@ export const StatCard: React.FC<StatCardProps> = ({
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                         {title}
                     </p>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <h3 className={cn("text-2xl font-bold", getValueClass())}>
                         {value}
                     </h3>
 
@@ -79,7 +111,7 @@ export const StatCard: React.FC<StatCardProps> = ({
                 </div>
 
                 {icon && (
-                    <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <div className={cn("p-3 rounded-lg", getIconContainerClass())}>
                         {icon}
                     </div>
                 )}

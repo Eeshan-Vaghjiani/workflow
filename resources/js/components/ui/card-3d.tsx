@@ -1,14 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
+import { motion, useMotionTemplate, useMotionValue, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
-interface Card3DProps extends React.HTMLAttributes<HTMLDivElement> {
+interface Card3DProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
     children: React.ReactNode;
     className?: string;
     glowColor?: string;
     hoverScale?: number;
     rotationIntensity?: number;
-    shadowColor?: string;
 }
 
 export const Card3D: React.FC<Card3DProps> = ({
@@ -17,7 +16,6 @@ export const Card3D: React.FC<Card3DProps> = ({
     glowColor,
     hoverScale = 1.02,
     rotationIntensity = 10,
-    shadowColor = "rgba(0, 136, 122, 0.2)",
     ...props
 }) => {
     const cardRef = useRef<HTMLDivElement>(null);
@@ -89,7 +87,7 @@ export const Card3D: React.FC<Card3DProps> = ({
         <motion.div
             ref={cardRef}
             className={cn(
-                "relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950",
+                "relative overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900",
                 className
             )}
             style={{

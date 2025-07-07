@@ -12,26 +12,25 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::withTrashed()
-            ->select('id', 'name', 'email', 'is_admin', 'last_login_at', 'created_at', 'deleted_at')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10)
-            ->through(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->is_admin ? 'ADMIN' : 'USER',
-                    'created' => $user->created_at->format('d/m/Y'),
-                    'lastLogin' => $user->last_login_at ? $user->last_login_at->format('d/m/Y') : 'Never',
-                    'deleted' => !is_null($user->deleted_at),
-                ];
+        $query = User::withTrashed()
+            ->select('id', 'name', 'email', 'is_admin', 'role', 'last_login_at', 'created_at', 'deleted_at')
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $searchTerm = $request->input('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('email', 'like', "%{$searchTerm}%");
             });
+        }
+
+        $users = $query->paginate(10)->withQueryString();
 
         return Inertia::render('admin/users/Index', [
-            'users' => $users
+            'users' => $users,
+            'filters' => $request->only(['search'])
         ]);
     }
 

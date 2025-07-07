@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\GroupMessage;
 use App\Models\DirectMessage;
 use App\Models\GroupTask;
+use App\Models\MpesaTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -26,6 +27,8 @@ class AdminDashboardController extends Controller
         // Middleware will be applied at the route level
     }
 
+
+
     /**
      * Show the admin dashboard.
      */
@@ -34,44 +37,58 @@ class AdminDashboardController extends Controller
         // Get basic stats
         $userCount = User::count();
         $groupCount = Group::count();
-        $activeUsers = User::where('last_login_at', '>=', now()->subDays(7))->count();
-        $activeGroups = Group::where('updated_at', '>=', now()->subDays(7))->count();
 
-        // Calculate system health
-        $totalAIPrompts = DB::table('ai_usage_logs')->sum('prompts_used');
-        $totalAIPromptsToday = DB::table('ai_usage_logs')
-            ->whereDate('created_at', today())
-            ->sum('prompts_used');
+        // Get assignment stats
+        $assignmentCount = DB::table('group_assignments')->count();
+
+        // M-Pesa Analytics
+        $totalProRevenue = MpesaTransaction::where('status', 'completed')->sum('amount');
+        $mpesaPromptsCompleted = MpesaTransaction::where('status', 'completed')->count();
+        $mpesaPromptsFailed = MpesaTransaction::where('status', '!=', 'completed')->count();
+
+        // AI & Integration Stats from api_logs
+        $totalAIPrompts = DB::table('api_logs')->count();
+        $promptsToday = DB::table('api_logs')->whereDate('created_at', today())->count();
 
         // Get Google Calendar sync stats
         $totalCalendarSyncs = DB::table('google_calendars')->count();
         $activeCalendarSyncs = DB::table('google_calendars')
-            ->whereNotNull('last_synced_at')
-            ->where(function($query) {
-                $query->where('last_synced_at', '>=', now()->subDays(7))
-                      ->orWhereNull('last_synced_at');
-            })
+            ->where('updated_at', '>=', now()->subDays(7))
             ->count();
 
+        // API Usage Chart data
+        $apiUsageLast7Days = DB::table('api_logs')
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
+            ->where('created_at', '>=', now()->subDays(7))
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->map(function ($item) {
+                return ['date' => $item->date, 'count' => $item->count];
+            });
+
+        // Get system health metrics
         return Inertia::render('admin/Dashboard', [
             'stats' => [
-                'users' => [
-                    'total' => $userCount,
-                    'active' => $activeUsers,
-                ],
-                'groups' => [
-                    'total' => $groupCount,
-                    'active' => $activeGroups,
-                ],
-                'ai' => [
-                    'total_prompts' => $totalAIPrompts,
-                    'prompts_today' => $totalAIPromptsToday,
-                ],
-                'calendar' => [
-                    'total_syncs' => $totalCalendarSyncs,
-                    'active_syncs' => $activeCalendarSyncs,
+                'users' => ['total' => $userCount],
+                'groups' => ['total' => $groupCount],
+                'mpesa' => ['total_revenue' => number_format($totalProRevenue, 2)],
+                'assignments' => ['total' => $assignmentCount],
+            ],
+            'charts' => [
+                'api_usage_last_7_days' => $apiUsageLast7Days,
+                'mpesa_prompts_status' => [
+                    'completed' => $mpesaPromptsCompleted,
+                    'failed' => $mpesaPromptsFailed,
                 ],
             ],
+            'aiStats' => [
+                'totalPrompts' => $totalAIPrompts,
+                'promptsToday' => $promptsToday,
+                'calendarSyncs' => $totalCalendarSyncs,
+                'activeCalendarSyncs' => $activeCalendarSyncs,
+            ],
+
         ]);
     }
 
@@ -129,6 +146,7 @@ class AdminDashboardController extends Controller
         $activeGroups = Group::where('updated_at', '>=', now()->subDays(7))->count();
 
         $pdf = PDF::loadView('admin/analytics/pdf', [
+            'date' => now()->format('F j, Y'),
             'stats' => [
                 'users' => [
                     'total' => $userCount,

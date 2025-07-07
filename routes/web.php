@@ -43,9 +43,6 @@ Route::get('/csrf-refresh', function() {
 });
 
 Route::get('/', function () {
-    // Set cookie in the global cookie jar
-    Cookie::queue('stay_on_home', 'true', 60 * 24 * 30); // 30 days
-
     // If user is authenticated and has 2FA enabled but not verified
     if (Auth::check()) {
         $user = Auth::user();
@@ -80,14 +77,6 @@ Route::get('/mpesa/status/{checkoutRequestId}', [App\Http\Controllers\MpesaContr
 
 // Add a direct route to the dashboard for WorkOS authentication callback
 Route::get('/auth-success', function (Request $request) {
-    // Always check for the stay_on_home cookie first
-    $stayHomeCookie = $request->cookie('stay_on_home');
-    if ($stayHomeCookie === 'true') {
-        // Log that we're respecting the cookie
-        \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to home due to stay_on_home cookie');
-        return redirect()->route('home', ['stay' => 'true']);
-    }
-
     // Check if there's a redirect parameter
     if ($request->has('redirect')) {
         \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to custom URL: ' . $request->input('redirect'));
@@ -299,10 +288,24 @@ Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_fa
         // Groups
         Route::get('/groups', [AdminDashboardController::class, 'groups'])->name('groups.index');
         Route::get('/groups/pdf', [AdminDashboardController::class, 'groupsPdf'])->name('groups.pdf');
+        Route::get('/groups/{group}', [App\Http\Controllers\Admin\GroupController::class, 'show'])->name('groups.show');
+        Route::get('/groups/{group}/edit', [App\Http\Controllers\Admin\GroupController::class, 'edit'])->name('groups.edit');
+        Route::put('/groups/{group}', [App\Http\Controllers\Admin\GroupController::class, 'update'])->name('groups.update');
+        Route::delete('/groups/{group}', [App\Http\Controllers\Admin\GroupController::class, 'destroy'])->name('groups.destroy');
+        Route::post('/groups/{id}/restore', [App\Http\Controllers\Admin\GroupController::class, 'restore'])->name('groups.restore');
 
         // Analytics
         Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('/analytics/pdf', [AdminDashboardController::class, 'analyticsPdf'])->name('analytics.pdf');
+
+        // Assignments
+        Route::get('/assignments', [App\Http\Controllers\Admin\AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{assignment}', [App\Http\Controllers\Admin\AssignmentController::class, 'show'])->name('assignments.show');
+        Route::get('/assignments/{assignment}/edit', [App\Http\Controllers\Admin\AssignmentController::class, 'edit'])->name('assignments.edit');
+        Route::put('/assignments/{assignment}', [App\Http\Controllers\Admin\AssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('/assignments/{assignment}', [App\Http\Controllers\Admin\AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::post('/assignments/{id}/restore', [App\Http\Controllers\Admin\AssignmentController::class, 'restore'])->name('assignments.restore');
+        Route::get('/assignments/pdf', [App\Http\Controllers\Admin\AssignmentController::class, 'downloadPdf'])->name('assignments.pdf');
     });
 
 // Add API web fallback routes with explicit session auth
@@ -944,22 +947,13 @@ Route::get('/workos-callback', function (\Illuminate\Http\Request $request) {
         session(['workos_access_token' => $authResponse->accessToken]);
 
                         // Redirect based on user role
-        $isAdmin = (bool)$user->is_admin;
-
-        \Illuminate\Support\Facades\Log::info('WorkOS login - checking admin status', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'is_admin_raw' => $user->is_admin,
-            'is_admin_cast' => $isAdmin,
-        ]);
-
-        if ($isAdmin) {
-            \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to admin dashboard');
+        if ($user->isAdmin()) {
+            \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to admin dashboard', ['user_id' => $user->id]);
             return redirect()->route('admin.dashboard');
         }
 
         // Redirect to regular dashboard
-        \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to regular dashboard');
+        \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to regular dashboard', ['user_id' => $user->id]);
         return redirect()->route('dashboard');
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('WorkOS authentication error', [

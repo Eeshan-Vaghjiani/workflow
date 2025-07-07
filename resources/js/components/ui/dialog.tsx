@@ -157,3 +157,16 @@ export function DialogClose({ className, ...props }: DialogCloseProps) {
     </button>
   );
 }
+
+interface DialogFooterProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function DialogFooter({ children, className }: DialogFooterProps) {
+  return (
+    <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-6", className)}>
+      {children}
+    </div>
+  );
+}

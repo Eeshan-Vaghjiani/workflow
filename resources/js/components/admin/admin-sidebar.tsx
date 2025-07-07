@@ -6,7 +6,8 @@ import {
     Users,
     Shield,
     BarChart3,
-    UserCog
+    UserCog,
+    FileText
 } from 'lucide-react';
 
 const sidebarVariants = {
@@ -48,6 +49,7 @@ const navigation = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Groups', href: '/admin/groups', icon: Shield },
+    { name: 'Assignments', href: '/admin/assignments', icon: FileText },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Profile', href: '/admin/profile', icon: UserCog },
 ];
@@ -86,7 +88,7 @@ export const AdminSidebar = () => {
             <div className="absolute bottom-0 left-0 right-0 p-4">
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-4 mt-4">
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                        Admin Control Center v1.0
+
                     </p>
                 </div>
             </div>

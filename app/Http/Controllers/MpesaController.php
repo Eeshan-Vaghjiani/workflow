@@ -230,12 +230,17 @@ class MpesaController extends Controller
     /**
      * Check payment status by CheckoutRequestID
      */
-    public function checkStatus(Request $request)
+    public function checkStatus(Request $request, $checkout_request_id = null)
     {
         try {
-            $validated = $request->validate([
-                'checkoutRequestId' => 'required|string',
-            ]);
+            $checkoutId = $checkout_request_id;
+
+            if (!$checkoutId) {
+                $validated = $request->validate([
+                    'checkoutRequestId' => 'required|string',
+                ]);
+                $checkoutId = $validated['checkoutRequestId'];
+            }
 
             // Get access token
             $accessToken = $this->getAccessToken();
@@ -256,7 +261,7 @@ class MpesaController extends Controller
                 'BusinessShortCode' => $this->shortcode,
                 'Password' => $password,
                 'Timestamp' => $timestamp,
-                'CheckoutRequestID' => $validated['checkoutRequestId'],
+                'CheckoutRequestID' => $checkoutId,
             ]);
 
             $result = $response->json();
@@ -265,7 +270,7 @@ class MpesaController extends Controller
             Log::info('M-Pesa Status Check Response', $result);
 
             // Check if there's a transaction in our database
-            $transaction = MpesaTransaction::where('checkout_request_id', $validated['checkoutRequestId'])->first();
+            $transaction = MpesaTransaction::where('checkout_request_id', $checkoutId)->first();
 
             if (!$transaction) {
                 return response()->json([
@@ -445,8 +450,9 @@ class MpesaController extends Controller
             // Get the prompt count from the transaction or use default based on amount
             $promptCount = $transaction->prompt_count ?? ($transaction->amount == 1000 ? 150 : 500);
 
-            // Add the prompts to the user's account
-            $user->ai_prompts_remaining += $promptCount;
+            // Set the user's prompts, reset used count, and update status
+            $user->ai_prompts_remaining = $promptCount;
+            $user->prompts_used = 0; // Reset prompts used counter
             $user->total_prompts_purchased += $promptCount;
             $user->is_paid_user = true;
             $user->last_payment_date = now();

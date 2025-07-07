@@ -165,7 +165,7 @@ export default function Analytics({ analytics_data }: AnalyticsPageProps) {
                                         type="monotone"
                                         dataKey="count"
                                         name="New Users"
-                                        stroke="#00887A"
+                                        stroke="rgb(0, 136, 122)"
                                         strokeWidth={2}
                                     />
                                 </LineChart>
@@ -192,7 +192,7 @@ export default function Analytics({ analytics_data }: AnalyticsPageProps) {
                                     <Bar
                                         dataKey="count"
                                         name="New Groups"
-                                        fill="#00887A"
+                                        fill="rgb(0, 136, 122)"
                                     />
                                 </BarChart>
                             </ResponsiveContainer>

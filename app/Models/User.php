@@ -7,21 +7,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
         'last_login_at',
         'workos_id',
         'avatar',
@@ -33,12 +36,14 @@ class User extends Authenticatable
         'is_paid_user',
         'last_payment_date',
         'total_prompts_purchased',
+        'api_token',
+        'deleted_at',
     ];
 
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $hidden = [
         'password',
@@ -49,30 +54,25 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'last_login_at' => 'datetime',
-            'two_factor_confirmed_at' => 'datetime',
-            'last_payment_date' => 'datetime',
-            'is_paid_user' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'last_login_at' => 'datetime',
+        'two_factor_confirmed_at' => 'datetime',
+        'last_payment_date' => 'datetime',
+        'is_paid_user' => 'boolean',
+    ];
 
     /**
      * Get the groups that the user belongs to.
      */
     public function groups()
     {
-        return $this->belongsToMany(Group::class)
-            ->withPivot('role')
-            ->withTimestamps();
+        return $this->belongsToMany(Group::class);
     }
 
     public function notifications()
@@ -99,7 +99,7 @@ class User extends Authenticatable
      */
     public function hasTwoFactorEnabled(): bool
     {
-        return ! is_null($this->two_factor_confirmed_at);
+        return ! is_null($this->two_factor_secret);
     }
 
     /**
@@ -150,8 +150,7 @@ class User extends Authenticatable
      */
     public function isAdmin(): bool
     {
-        // Cast to boolean and handle both 1/0 and true/false
-        return $this->is_admin == true;
+        return (bool) $this->is_admin;
     }
 
     /**

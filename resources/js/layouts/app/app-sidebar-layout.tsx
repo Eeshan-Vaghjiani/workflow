@@ -48,32 +48,36 @@ const headerVariants: Variants = {
 export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWithChildren<{ breadcrumbs?: BreadcrumbItem[] }>) {
     return (
         <AppShell variant="sidebar">
-            <AppSidebar />
-            <div className="flex flex-col flex-1 overflow-hidden pl-0">
-                <motion.div
-                    variants={headerVariants}
-                    initial="initial"
-                    animate="animate"
-                    className="px-1 pt-1"
-                >
-                    <GlassContainer
-                        className="mb-2"
-                        blurIntensity="sm"
-                        border={true}
+            <div className="flex h-full w-full">
+                <div className="flex-shrink-0">
+                    <AppSidebar />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                    <motion.div
+                        variants={headerVariants}
+                        initial="initial"
+                        animate="animate"
+                        className="px-1 pt-1"
                     >
-                        <AppSidebarHeader breadcrumbs={breadcrumbs} />
-                    </GlassContainer>
-                </motion.div>
+                        <GlassContainer
+                            className="mb-2"
+                            blurIntensity="sm"
+                            border={true}
+                        >
+                            <AppSidebarHeader breadcrumbs={breadcrumbs} />
+                        </GlassContainer>
+                    </motion.div>
 
-                <motion.main
-                    className="flex-1 overflow-y-auto p-2 md:p-3 bg-gradient-to-br from-softBlue/20 to-white/10 dark:from-gray-800/30 dark:to-gray-900/20 futuristic-scrollbar h-full flex flex-col"
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    variants={contentVariants}
-                >
-                    {children}
-                </motion.main>
+                    <motion.main
+                        className="flex-1 overflow-y-auto p-2 md:p-3 bg-gradient-to-br from-softBlue/20 to-white/10 dark:from-gray-800/30 dark:to-gray-900/20 futuristic-scrollbar h-full flex flex-col"
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        variants={contentVariants}
+                    >
+                        {children}
+                    </motion.main>
+                </div>
             </div>
         </AppShell>
     );

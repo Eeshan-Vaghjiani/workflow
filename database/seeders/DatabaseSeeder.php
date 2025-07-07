@@ -21,5 +21,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             PricingPackageSeeder::class,
         ]);
+
+        $this->call(KanbanDummyDataSeeder::class);
     }
 }

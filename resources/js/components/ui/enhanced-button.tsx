@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMagneticHover } from '@/hooks/use-animation';
+import { Link } from '@inertiajs/react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -18,9 +19,9 @@ interface EnhancedButtonProps {
     children: React.ReactNode;
     className?: string;
     disabled?: boolean;
-    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    onClick?: React.MouseEventHandler<HTMLButtonElement | HTMLDivElement>;
     type?: "button" | "submit" | "reset";
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
@@ -35,17 +36,27 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
     disabled = false,
     className = '',
     children,
+    onClick,
+    type = "button",
     ...props
 }) => {
-    const buttonRef = useRef<HTMLButtonElement>(null);
+    const elementRef = useRef<HTMLButtonElement | HTMLDivElement>(null);
     // Only apply magnetic effect if enabled and button is not disabled or loading
     const magneticEnabled = magnetic && !disabled && !loading;
     const { isHovered } = useMagneticHover(
-        buttonRef,
+        elementRef,
         magneticEnabled ? magneticStrength : 0
     );
 
-    // Base classes for button
+    // Check if children contains a Link component
+    const hasLinkChild = React.Children.toArray(children).some(child =>
+        React.isValidElement(child) && (
+            child.type === Link ||
+            (typeof child.type === 'function' && child.type.name === 'Link')
+        )
+    );
+
+    // Base classes for button/div
     const baseClasses = 'relative inline-flex items-center justify-center font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
 
     // Size classes
@@ -75,16 +86,23 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
     // Construct final className
     const buttonClasses = `${baseClasses} ${sizeClasses} ${variantClasses} ${disabledClasses} ${widthClass} ${className}`;
 
-    return (
-        <motion.button
-            ref={buttonRef}
-            className={buttonClasses}
-            disabled={disabled || loading}
-            initial={{ scale: 1 }}
-            whileHover={!disabled && !loading ? { scale: 1.03 } : {}}
-            whileTap={!disabled && !loading ? { scale: 0.97 } : {}}
-            {...props}
-        >
+    // Get glow color based on variant
+    const getGlowColor = () => {
+        switch (variant) {
+            case 'primary':
+                return 'from-[#00887A] to-[#00B397]';
+            case 'secondary':
+                return 'from-[#77A6F7] to-[#6495E6]';
+            case 'danger':
+                return 'from-red-500 to-red-700';
+            default:
+                return 'from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800';
+        }
+    };
+
+    // Prepare content
+    const content = (
+        <>
             <AnimatePresence initial={false}>
                 {loading && (
                     <motion.div
@@ -135,15 +153,49 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
                 <span className="ml-2">{icon}</span>
             )}
 
-            {/* Animated glow effect when hovered, visible in dark mode */}
+            {/* Animated glow effect when hovered - using theme colors instead of rainbow */}
             {isHovered && !disabled && !loading && (
                 <motion.div
-                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-[#00FFA3] to-[#FF006E] opacity-30 dark:opacity-20 blur-sm"
+                    className={`absolute inset-0 rounded-lg bg-gradient-to-r ${getGlowColor()} opacity-30 dark:opacity-20 blur-sm`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: variant === 'ghost' || variant === 'outline' ? 0.2 : 0.1 }}
                     exit={{ opacity: 0 }}
                 />
             )}
+        </>
+    );
+
+    // If we have a Link child, render a div with button styling
+    if (hasLinkChild) {
+        return (
+            <motion.div
+                ref={elementRef as React.RefObject<HTMLDivElement>}
+                className={buttonClasses}
+                initial={{ scale: 1 }}
+                whileHover={!disabled && !loading ? { scale: 1.03 } : {}}
+                whileTap={!disabled && !loading ? { scale: 0.97 } : {}}
+                onClick={onClick}
+                {...props}
+            >
+                {content}
+            </motion.div>
+        );
+    }
+
+    // Otherwise render a normal button
+    return (
+        <motion.button
+            ref={elementRef as React.RefObject<HTMLButtonElement>}
+            className={buttonClasses}
+            disabled={disabled || loading}
+            initial={{ scale: 1 }}
+            whileHover={!disabled && !loading ? { scale: 1.03 } : {}}
+            whileTap={!disabled && !loading ? { scale: 0.97 } : {}}
+            onClick={onClick}
+            type={type}
+            {...props}
+        >
+            {content}
         </motion.button>
     );
 };

@@ -1,0 +1,181 @@
+.pdf-export {
+    /* Base colors - using standard RGB values */
+    --primary-500: rgb(59, 130, 246) !important;
+    --primary-600: rgb(37, 99, 235) !important;
+    --neon-green: rgb(74, 222, 128) !important;
+    --background: rgb(255, 255, 255) !important;
+    --foreground: rgb(31, 41, 55) !important;
+    --card: rgb(255, 255, 255) !important;
+    --card-foreground: rgb(31, 41, 55) !important;
+    --popover: rgb(255, 255, 255) !important;
+    --popover-foreground: rgb(31, 41, 55) !important;
+    --primary: rgb(31, 41, 55) !important;
+    --primary-foreground: rgb(255, 255, 255) !important;
+    --secondary: rgb(241, 245, 249) !important;
+    --secondary-foreground: rgb(31, 41, 55) !important;
+    --muted: rgb(241, 245, 249) !important;
+    --muted-foreground: rgb(107, 114, 128) !important;
+    --accent: rgb(241, 245, 249) !important;
+    --accent-foreground: rgb(31, 41, 55) !important;
+    --destructive: rgb(239, 68, 68) !important;
+    --destructive-foreground: rgb(255, 255, 255) !important;
+    --border: rgb(229, 231, 235) !important;
+    --input: rgb(229, 231, 235) !important;
+    --ring: rgb(59, 130, 246) !important;
+    --chart-1: rgb(59, 130, 246) !important;
+    --chart-2: rgb(74, 222, 128) !important;
+    --chart-3: rgb(245, 158, 11) !important;
+    --chart-4: rgb(239, 68, 68) !important;
+    --chart-5: rgb(168, 85, 247) !important;
+}
+
+.pdf-export * {
+    color-scheme: light !important;
+    background-color: white !important;
+    color: rgb(31, 41, 55) !important;
+}
+
+/* Text colors */
+.pdf-export .text-gray-500,
+.pdf-export .dark\:text-gray-400 {
+    color: rgb(107, 114, 128) !important;
+}
+
+.pdf-export .text-gray-900,
+.pdf-export .dark\:text-white {
+    color: rgb(31, 41, 55) !important;
+}
+
+/* Background colors */
+.pdf-export .bg-softBlue,
+.pdf-export .dark\:bg-primary-600\/20 {
+    background-color: rgb(219, 234, 254) !important;
+}
+
+/* Glass container styles */
+.pdf-export .glass-container {
+    background-color: rgb(255, 255, 255) !important;
+    border: 1px solid rgb(229, 231, 235) !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Status colors */
+.pdf-export .text-green-500 {
+    color: rgb(34, 197, 94) !important;
+}
+
+.pdf-export .text-red-500 {
+    color: rgb(239, 68, 68) !important;
+}
+
+/* Button styles */
+.pdf-export button {
+    background-color: transparent !important;
+    color: rgb(107, 114, 128) !important;
+}
+
+/* Remove any backdrop filters */
+.pdf-export * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Force light theme for all elements */
+.pdf-export .dark {
+    background-color: rgb(255, 255, 255) !important;
+    color: rgb(31, 41, 55) !important;
+}
+
+.pdf-export [class*="dark:"] {
+    background-color: rgb(255, 255, 255) !important;
+    color: rgb(31, 41, 55) !important;
+}
+
+/* Chart colors */
+.pdf-export .recharts-sector {
+    fill: rgb(59, 130, 246) !important;
+}
+
+.pdf-export .recharts-line {
+    stroke: rgb(59, 130, 246) !important;
+}
+
+.pdf-export .recharts-bar-rectangle {
+    fill: rgb(59, 130, 246) !important;
+}
+
+/* Table styles */
+.pdf-export table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+.pdf-export th,
+.pdf-export td {
+    border: 1px solid rgb(229, 231, 235) !important;
+    padding: 8px !important;
+    text-align: left !important;
+}
+
+.pdf-export th {
+    background-color: rgb(249, 250, 251) !important;
+    color: rgb(31, 41, 55) !important;
+}
+
+/* Card styles */
+.pdf-export .card {
+    background-color: rgb(255, 255, 255) !important;
+    border: 1px solid rgb(229, 231, 235) !important;
+    border-radius: 8px !important;
+    padding: 16px !important;
+}
+
+/* Badge styles */
+.pdf-export .badge {
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+.pdf-export .badge-default {
+    background-color: rgb(229, 231, 235) !important;
+    color: rgb(31, 41, 55) !important;
+}
+
+.pdf-export .badge-primary {
+    background-color: rgb(59, 130, 246) !important;
+    color: rgb(255, 255, 255) !important;
+}
+
+.pdf-export .badge-success {
+    background-color: rgb(34, 197, 94) !important;
+    color: rgb(255, 255, 255) !important;
+}
+
+.pdf-export .badge-warning {
+    background-color: rgb(245, 158, 11) !important;
+    color: rgb(255, 255, 255) !important;
+}
+
+.pdf-export .badge-error {
+    background-color: rgb(239, 68, 68) !important;
+    color: rgb(255, 255, 255) !important;
+}
+
+/* Stat card styles */
+.pdf-export .stat-card {
+    background-color: rgb(255, 255, 255) !important;
+    border: 1px solid rgb(229, 231, 235) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Override any modern color functions */
+.pdf-export [style*="oklch"],
+.pdf-export [style*="hsl"],
+.pdf-export [style*="hsla"] {
+    color: rgb(31, 41, 55) !important;
+    background-color: rgb(255, 255, 255) !important;
+}

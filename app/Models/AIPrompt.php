@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class AIPrompt extends Model
+class AiPrompt extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -14,19 +14,16 @@ class AIPrompt extends Model
 
     protected $fillable = [
         'user_id',
-        'group_id',
         'prompt',
         'response',
-        'model_used',
-        'success',
-        'endpoint',
-        'response_time_ms',
-        'metadata',
+        'model',
+        'tokens_used',
+        'completion_time'
     ];
 
     protected $casts = [
-        'success' => 'boolean',
-        'metadata' => 'array',
+        'tokens_used' => 'integer',
+        'completion_time' => 'float',
     ];
 
     public function user()

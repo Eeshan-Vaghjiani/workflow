@@ -1,9 +1,21 @@
 // Profile Page
-import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import React, { useRef, useState } from 'react';
+import { Head } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { User, Mail, Camera, Trash2, Save, Briefcase, Calendar } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
+import InputError from '@/components/input-error';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { UserCircle, Lock, Bell, Palette, Shield } from 'lucide-react';
 
 // Define the User type
 interface User {
@@ -13,10 +25,16 @@ interface User {
     avatar: string | null;
     created_at: string;
     is_admin: boolean;
+    email_verified_at: string | null;
+    two_factor_enabled: boolean;
+    two_factor_confirmed: boolean;
 }
 
 interface ProfileProps {
     user: User;
+    qrCode?: string;
+    recoveryCodes?: string[];
+    confirming?: boolean;
 }
 
 // Animation variants
@@ -43,8 +61,14 @@ const itemVariants = {
     }
 };
 
-export default function AdminProfile({ user }: ProfileProps) {
-    const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatar || null);
+export default function AdminProfile({ user, qrCode, recoveryCodes, confirming }: ProfileProps) {
+    const [avatarPreview, setAvatarPreview] = React.useState<string | null>(user.avatar || null);
+    const [activeTab, setActiveTab] = useState('profile');
+    const [showingRecoveryCodes, setShowingRecoveryCodes] = useState(false);
+    const [confirmingDisable, setConfirmingDisable] = useState(false);
+    const [confirmingRecoveryCodeRegeneration, setConfirmingRecoveryCodeRegeneration] = useState(false);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+    const codeInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: user.name || '',
@@ -53,6 +77,35 @@ export default function AdminProfile({ user }: ProfileProps) {
         department: 'IT Department',
         avatar: null as File | null,
         _method: 'PUT'
+    });
+
+    // Password update form
+    const passwordForm = useForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    // Two-factor forms
+    const enableForm = useForm({
+        code: '',
+    });
+
+    const confirmForm = useForm({
+        code: '',
+    });
+
+    const disableForm = useForm({
+        password: '',
+    });
+
+    const regenerateCodesForm = useForm({
+        password: '',
+    });
+
+    // Appearance form
+    const appearanceForm = useForm({
+        theme: 'system',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -87,80 +140,114 @@ export default function AdminProfile({ user }: ProfileProps) {
         reader.readAsDataURL(file);
     };
 
+    // Profile update submission
+    const submitProfileForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        post(route('admin.profile.update'), {
+            preserveScroll: true,
+        });
+    };
+
+    // Password update submission
+    const submitPasswordForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        passwordForm.put(route('admin.password.update'), {
+            preserveScroll: true,
+            onSuccess: () => passwordForm.reset(),
+        });
+    };
+
+    // Two-factor authentication handlers
+    const submitEnableForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        enableForm.post(route('two-factor.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                enableForm.reset();
+                setShowingRecoveryCodes(true);
+            },
+            onError: () => {
+                if (codeInputRef.current) {
+                    codeInputRef.current.focus();
+                }
+            },
+        });
+    };
+
+    const submitConfirmForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        confirmForm.put(route('two-factor.update'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                confirmForm.reset();
+            },
+            onError: () => {
+                if (codeInputRef.current) {
+                    codeInputRef.current.focus();
+                }
+            },
+        });
+    };
+
+    const submitDisableForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        disableForm.delete(route('two-factor.destroy'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                disableForm.reset();
+                setConfirmingDisable(false);
+            },
+            onError: () => {
+                if (passwordInputRef.current) {
+                    passwordInputRef.current.focus();
+                }
+            },
+        });
+    };
+
+    const submitRegenerateCodesForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        regenerateCodesForm.post(route('two-factor.recovery-codes'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                regenerateCodesForm.reset();
+                setConfirmingRecoveryCodeRegeneration(false);
+                setShowingRecoveryCodes(true);
+            },
+            onError: () => {
+                if (passwordInputRef.current) {
+                    passwordInputRef.current.focus();
+                }
+            },
+        });
+    };
+
     return (
         <AdminLayout>
             <Head title="Admin Profile" />
-
             <motion.div
-                className="mb-6"
-                initial={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.5 }}
             >
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
-                <p className="text-gray-500 dark:text-gray-400">Manage your account information</p>
-            </motion.div>
-
-            <motion.div
-                className="grid grid-cols-1 md:grid-cols-3 gap-6"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                {/* Profile Overview Card */}
-                <motion.div
-                    className="md:col-span-1"
-                    variants={itemVariants}
-                >
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                        <div className="flex flex-col items-center">
-                            <div className="relative">
-                                <div className="w-24 h-24 rounded-full bg-[#D3E3FC] dark:bg-[#1e3a60] flex items-center justify-center overflow-hidden">
-                                    {avatarPreview ? (
-                                        <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <span className="text-4xl font-bold text-[#00887A] dark:text-[#00ccb4]">
-                                            {data.name?.charAt(0) || 'A'}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">{data.name}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{data.email}</p>
-
-                            <div className="w-full mt-6 space-y-3">
-                                <div className="flex items-center text-sm">
-                                    <Briefcase className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                                    <span className="text-gray-700 dark:text-gray-300">{data.jobTitle}</span>
-                                </div>
-                                <div className="flex items-center text-sm">
-                                    <Calendar className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
-                                    <span className="text-gray-700 dark:text-gray-300">
-                                        Joined {user.created_at ? formatDate(user.created_at) : 'N/A'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="w-full mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
-                                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Account Status</h4>
-                                <div className="flex items-center">
-                                    <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">Active</span>
-                                </div>
-                            </div>
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 className="text-2xl font-bold">User Profile</h1>
+                        <p className="text-gray-500 dark:text-gray-400">Manage your profile information.</p>
+                    </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center space-x-6">
+                        <img src={user.avatar} alt="User Avatar" className="w-24 h-24 rounded-full" />
+                        <div>
+                            <h2 className="text-2xl font-bold">{user.name}</h2>
+                            <p className="text-gray-500">{user.email}</p>
+                            <p className="text-sm text-blue-500 font-semibold">Administrator</p>
                         </div>
                     </div>
-                </motion.div>
-
-                {/* Profile Edit Form */}
-                <motion.div
-                    className="md:col-span-2"
-                    variants={itemVariants}
-                >
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-100 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Profile Information</h3>
-
-                        <form onSubmit={handleSubmit}>
+                    <div className="mt-6 border-t pt-6">
+                        <h3 className="text-lg font-semibold mb-4">Profile Details</h3>
+                        <form onSubmit={submitProfileForm}>
                             <div className="space-y-6">
                                 {/* Avatar Upload */}
                                 <div>
@@ -279,7 +366,7 @@ export default function AdminProfile({ user }: ProfileProps) {
 
                                 {/* Form Buttons */}
                                 <div className="pt-4 flex justify-end space-x-4">
-                                    <button
+                                    <Button
                                         type="button"
                                         className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center"
                                         onClick={() => {
@@ -289,20 +376,20 @@ export default function AdminProfile({ user }: ProfileProps) {
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
                                         Reset
-                                    </button>
-                                    <button
+                                    </Button>
+                                    <Button
                                         type="submit"
                                         className="px-4 py-2 bg-[#00887A] hover:bg-[#007a6c] text-white rounded-md transition-colors flex items-center"
                                         disabled={processing}
                                     >
                                         <Save className="h-4 w-4 mr-2" />
                                         {processing ? 'Saving...' : 'Save Changes'}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         </form>
                     </div>
-                </motion.div>
+                </div>
             </motion.div>
         </AdminLayout>
     );

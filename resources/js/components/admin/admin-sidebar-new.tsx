@@ -6,12 +6,7 @@ import {
     Users,
     Shield,
     BarChart3,
-    Settings,
-    FileText,
-    Bell,
-    UserCog,
-    ChevronLeft,
-    ChevronRight
+    UserCog
 } from 'lucide-react';
 import { useMagneticHover } from '@/hooks/use-animation';
 import { GlassContainer } from '@/components/ui/glass-container';
@@ -74,9 +69,6 @@ const navigation = [
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Groups', href: '/admin/groups', icon: Shield },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-    { name: 'Settings', href: '/admin/settings', icon: Settings },
-    { name: 'Audit Logs', href: '/admin/audit', icon: FileText },
-    { name: 'Notifications', href: '/admin/notifications', icon: Bell },
     { name: 'Profile', href: '/admin/profile', icon: UserCog },
 ];
 

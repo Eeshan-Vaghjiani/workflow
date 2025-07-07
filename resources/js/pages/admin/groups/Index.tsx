@@ -1,334 +1,177 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
+import { motion, Variants } from 'framer-motion';
+import { format } from 'date-fns';
+import { useDebounce } from 'use-debounce';
 import AdminLayout from '@/layouts/admin-layout';
-import { motion } from 'framer-motion';
-import {
-    Users,
-    UserPlus,
-    Search,
-    MoreHorizontal,
-    Edit3,
-    Trash2,
-    ChevronLeft,
-    ChevronRight
-} from 'lucide-react';
+import { Card3D } from '@/components/ui/card-3d';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Search, FileDown, Trash2, Edit2, RefreshCw, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Animation variants
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
-
-const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            type: "spring" as const,
-            stiffness: 100,
-            damping: 15
-        }
-    }
-};
-
-// Define types for the data
+// Interfaces
 interface Group {
     id: number;
     name: string;
-    description: string;
-    members_count: number;
     created_at: string;
-    owner: {
-        id: number;
-        name: string;
-    };
+    members_count: number;
     deleted_at: string | null;
+    owner: {
+        name: string;
+        email: string;
+    };
 }
 
-interface GroupsProps {
+interface GroupsPageProps {
     groups: {
         data: Group[];
         current_page: number;
         last_page: number;
         per_page: number;
         total: number;
+        links: { url: string | null; label: string; active: boolean }[];
+    };
+    filters: {
+        search: string;
     };
 }
 
-export default function Groups({ groups }: GroupsProps) {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
+// Animation Variants
+const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.05 } } };
+const itemVariants: Variants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100, damping: 15 } } };
 
-    // Filter groups based on search query (client-side filtering)
-    const filteredGroups = searchQuery === ''
-        ? groups.data
-        : groups.data.filter(group =>
-            group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (group.description && group.description.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
+// Component
+const GroupsIndex: React.FC<GroupsPageProps> = ({ groups, filters }) => {
+    const [searchTerm, setSearchTerm] = useState(filters?.search || '');
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+    const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
 
-    // Handle dropdown toggle
-    const toggleDropdown = (id: number) => {
-        setDropdownOpen(dropdownOpen === id ? null : id);
+    useEffect(() => {
+        if (debouncedSearchTerm !== (filters?.search || '')) {
+            router.get(route('admin.groups.index'), { search: debouncedSearchTerm }, { preserveState: true, replace: true });
+        }
+    }, [debouncedSearchTerm, filters?.search]);
+
+    const handleDownloadPdf = () => window.location.href = route('admin.groups.pdf');
+    const handleDelete = (group: Group) => {
+        setSelectedGroup(group);
+        setDeleteDialogOpen(true);
     };
+    const handleRestore = (group: Group) => router.post(route('admin.groups.restore', group.id), {}, { preserveScroll: true });
 
-    // Handle edit group
-    const handleEdit = (id: number) => {
-        // In a real app, this would navigate to an edit page
-        alert(`Edit group with ID: ${id}`);
-        setDropdownOpen(null);
-    };
-
-    // Handle delete group
-    const handleDelete = (id: number) => {
-        if (confirm(`Are you sure you want to delete this group?`)) {
-            router.delete(route('admin.groups.delete', { id }), {
+    const confirmDelete = () => {
+        if (selectedGroup) {
+            router.delete(route('admin.groups.destroy', selectedGroup.id), {
                 onSuccess: () => {
-                    // The page will refresh with updated data
-                }
+                    setDeleteDialogOpen(false);
+                    setSelectedGroup(null);
+                },
+                preserveScroll: true,
             });
         }
-        setDropdownOpen(null);
-    };
-
-    // Handle creating a new group
-    const handleCreateGroup = () => {
-        // Navigate to create new group page
-        router.visit(route('groups.create'));
-    };
-
-    // Handle pagination
-    const goToPage = (page: number) => {
-        router.get(route('admin.groups.index', { page }));
-    };
-
-    // Format date for display
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString();
     };
 
     return (
         <AdminLayout>
-            <Head title="Admin Groups" />
-
-            <div className="mb-6 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Groups Management</h1>
-                    <p className="text-gray-500 dark:text-gray-400">Manage user groups and their access</p>
-                </div>
-
-                <button
-                    onClick={handleCreateGroup}
-                    className="px-4 py-2 bg-[#00887A] hover:bg-[#007a6c] text-white rounded-md transition-colors flex items-center"
-                >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Create Group
-                </button>
-            </div>
-
-            <motion.div
-                className="space-y-6"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-            >
-                {/* Search and Filter */}
-                <motion.div
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-100 dark:border-gray-700"
-                    variants={itemVariants}
-                >
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Search className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
-                            type="text"
-                            className="block w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-[#00887A] focus:border-[#00887A]"
-                            placeholder="Search groups by name or description..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+            <Head title="Manage Groups" />
+            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+                <motion.div variants={itemVariants} className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-[rgb(17,24,39)] dark:text-white">Manage Groups</h1>
+                        <p className="text-[rgb(75,85,99)] dark:text-[rgb(156,163,175)]">A list of all groups in the system.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => router.reload()} variant="outline" size="sm"><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
+                        <Button onClick={handleDownloadPdf}><FileDown className="h-4 w-4 mr-2" />Export PDF</Button>
                     </div>
                 </motion.div>
 
-                {/* Groups Table */}
-                <motion.div
-                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700"
-                    variants={itemVariants}
-                >
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-gray-50 dark:bg-gray-700 text-left">
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Name
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Description
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Owner
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Members
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Created
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {filteredGroups.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={7} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                            No groups found
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredGroups.map((group) => (
-                                        <tr
-                                            key={group.id}
-                                            className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                        >
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center">
-                                                    <div className="h-8 w-8 rounded-full bg-[#D3E3FC] dark:bg-[#1e3a60] flex items-center justify-center text-[#00887A] dark:text-[#00ccb4] mr-3">
-                                                        <Users className="h-4 w-4" />
-                                                    </div>
-                                                    <div className="font-medium text-gray-900 dark:text-white">
-                                                        {group.name}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {group.description || 'No description'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-gray-300">
-                                                    {group.owner ? group.owner.name : 'Unknown'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900 dark:text-gray-300">
-                                                    {group.members_count}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {formatDate(group.created_at)}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${!group.deleted_at
-                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                                                    }`}>
-                                                    {!group.deleted_at ? 'Active' : 'Deleted'}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={() => toggleDropdown(group.id)}
-                                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
-                                                    >
-                                                        <MoreHorizontal className="h-5 w-5" />
-                                                    </button>
-
-                                                    {dropdownOpen === group.id && (
-                                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
-                                                            <div className="py-1">
-                                                                <button
-                                                                    onClick={() => handleEdit(group.id)}
-                                                                    className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                                                                >
-                                                                    <Edit3 className="h-4 w-4 mr-2" />
-                                                                    Edit Group
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDelete(group.id)}
-                                                                    className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                                    Delete Group
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-600 sm:px-6">
-                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700 dark:text-gray-300">
-                                    Showing <span className="font-medium">{(groups.current_page - 1) * groups.per_page + 1}</span> to{' '}
-                                    <span className="font-medium">
-                                        {Math.min(groups.current_page * groups.per_page, groups.total)}
-                                    </span> of{' '}
-                                    <span className="font-medium">{groups.total}</span> results
-                                </p>
-                            </div>
-                            <div>
-                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button
-                                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        disabled={groups.current_page === 1}
-                                        onClick={() => goToPage(groups.current_page - 1)}
-                                    >
-                                        <span className="sr-only">Previous</span>
-                                        <ChevronLeft className="h-5 w-5" />
-                                    </button>
-
-                                    {[...Array(groups.last_page)].map((_, i) => (
-                                        <button
-                                            key={i + 1}
-                                            onClick={() => goToPage(i + 1)}
-                                            className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium
-                                                ${groups.current_page === i + 1
-                                                    ? 'text-[#00887A] dark:text-[#00ccb4] bg-gray-50 dark:bg-gray-700'
-                                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                }`}
-                                        >
-                                            {i + 1}
-                                        </button>
-                                    ))}
-
-                                    <button
-                                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                                        disabled={groups.current_page === groups.last_page}
-                                        onClick={() => goToPage(groups.current_page + 1)}
-                                    >
-                                        <span className="sr-only">Next</span>
-                                        <ChevronRight className="h-5 w-5" />
-                                    </button>
-                                </nav>
+                <motion.div variants={itemVariants}>
+                    <Card3D className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="relative w-full max-w-sm">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Input
+                                    placeholder="Search by name or owner..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10"
+                                />
                             </div>
                         </div>
-                    </div>
+                        <div className="overflow-x-auto rounded-lg border dark:border-gray-700">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Owner</TableHead>
+                                        <TableHead>Members</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Created At</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {groups.data.length > 0 ? (
+                                        groups.data.map((group) => (
+                                            <TableRow key={group.id}>
+                                                <TableCell className="font-medium">{group.name}</TableCell>
+                                                <TableCell>{group.owner.name}</TableCell>
+                                                <TableCell>{group.members_count}</TableCell>
+                                                <TableCell><Badge variant={group.deleted_at ? 'danger' : 'success'}>{group.deleted_at ? 'Deleted' : 'Active'}</Badge></TableCell>
+                                                <TableCell>{format(new Date(group.created_at), 'PPP')}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button variant="ghost" size="icon" onClick={() => router.visit(route('admin.groups.show', group.id))}><Eye className="h-4 w-4" /></Button>
+                                                        {!group.deleted_at ? (
+                                                            <>
+                                                                <Button variant="ghost" size="icon" onClick={() => router.visit(route('admin.groups.edit', group.id))}><Edit2 className="h-4 w-4" /></Button>
+                                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(group)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                            </>
+                                                        ) : (
+                                                            <Button variant="ghost" size="icon" onClick={() => handleRestore(group)}><RefreshCw className="h-4 w-4 text-green-500" /></Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow><TableCell colSpan={6} className="text-center py-16">No groups found.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                        {groups.total > groups.per_page && (
+                            <div className="flex items-center justify-between mt-4">
+                                <p className="text-sm text-gray-500">Showing {groups.data.length} of {groups.total} groups</p>
+                                <div className="flex items-center gap-2">
+                                    <Button onClick={() => router.get(groups.links[0].url!)} disabled={!groups.links[0].url} variant="outline" size="sm"><ChevronLeft className="h-4 w-4 mr-1"/> Previous</Button>
+                                    <Button onClick={() => router.get(groups.links[groups.links.length - 1].url!)} disabled={!groups.links[groups.links.length - 1].url} variant="outline" size="sm">Next <ChevronRight className="h-4 w-4 ml-1"/></Button>
+                                </div>
+                            </div>
+                        )}
+                    </Card3D>
                 </motion.div>
             </motion.div>
+
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Are you sure?</DialogTitle>
+                        <DialogDescription>This will soft delete the group "{selectedGroup?.name}". This action can be undone later.</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button variant="danger" onClick={confirmDelete}>Delete</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
-}
+};
+
+export default GroupsIndex;

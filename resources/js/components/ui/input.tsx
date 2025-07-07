@@ -1,24 +1,42 @@
-import * as React from "react"
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-import { cn } from "@/lib/utils"
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  error?: string;
+}
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+export const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type = 'text', leftIcon, rightIcon, error, ...props }, ref) => {
     return (
-      <input
-        type={type}
-        className={cn(
-          "flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950 dark:ring-offset-neutral-950 dark:placeholder:text-neutral-400 dark:focus-visible:ring-neutral-300",
-          className
+      <div className="relative">
+        {leftIcon && (
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400 dark:text-gray-500">
+            {leftIcon}
+          </div>
         )}
-        ref={ref}
-        {...props}
-      />
-    )
+        <input
+          type={type}
+          className={cn(
+            'block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 py-2 text-gray-900 dark:text-white shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#00887A] focus:border-[#00887A] dark:focus:ring-[#00ccb4] dark:focus:border-[#00ccb4]',
+            leftIcon && 'pl-10',
+            rightIcon && 'pr-10',
+            error && 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500 dark:focus:ring-red-500 dark:focus:border-red-500',
+            className
+          )}
+          ref={ref}
+          {...props}
+        />
+        {rightIcon && (
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-400 dark:text-gray-500">
+            {rightIcon}
+          </div>
+        )}
+        {error && (
+          <p className="mt-1 text-sm text-red-500">{error}</p>
+        )}
+      </div>
+    );
   }
-)
-Input.displayName = "Input"
-
-export { Input }
+);

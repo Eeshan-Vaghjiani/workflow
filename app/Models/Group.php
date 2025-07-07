@@ -12,6 +12,11 @@ class Group extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
         'description',
@@ -55,25 +60,25 @@ class Group extends Model
     public function isLeader($user)
     {
         $userId = $user instanceof User ? $user->id : $user;
-        
+
         $member = $this->members()
             ->where('user_id', $userId)
             ->first();
-            
+
         Log::info('Group isLeader check', [
             'user_id' => $userId,
             'group_id' => $this->id,
             'member_role' => $member ? $member->pivot->role : null,
             'is_leader' => $member && $member->pivot->role === 'leader'
         ]);
-        
+
         return $member && $member->pivot->role === 'leader';
     }
 
     public function isMember($user)
     {
         $userId = $user instanceof User ? $user->id : $user;
-        
+
         return $this->members()
             ->where('user_id', $userId)
             ->exists();
@@ -82,9 +87,17 @@ class Group extends Model
     public function hasJoinRequest($user)
     {
         $userId = $user instanceof User ? $user->id : $user;
-        
+
         return $this->joinRequests()
             ->where('user_id', $userId)
             ->exists();
+    }
+
+    /**
+     * Get the users that belong to the group.
+     */
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
     }
 }

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { motion, useAnimation } from 'framer-motion';
 import { type NavItem, PageProps } from '@/types';
 import {
@@ -20,14 +20,15 @@ import {
     ChevronRight,
     Sparkles,
     LogOut,
+    Trello,
     LucideIcon
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { useMagneticHover } from '@/hooks/use-animation';
-import { EnhancedButton } from '@/components/ui/enhanced-button';
 
 interface NavItemWithIcon extends NavItem {
     icon: LucideIcon;
+    method?: string;
 }
 
 const mainNavItems: NavItemWithIcon[] = [
@@ -50,6 +51,11 @@ const mainNavItems: NavItemWithIcon[] = [
         title: 'Tasks',
         href: '/tasks',
         icon: CheckSquare,
+    },
+    {
+        title: 'Kanban',
+        href: '/kanban',
+        icon: Trello,
     },
     {
         title: 'Calendar',
@@ -103,6 +109,7 @@ const settingsNavItems: NavItemWithIcon[] = [
         title: 'Logout',
         href: route('logout'),
         icon: LogOut,
+        method: 'post'
     }
 ];
 
@@ -112,12 +119,7 @@ export function AppSidebar() {
     const hasAnimatedRef = useRef(false);
     const prevUrlRef = useRef(url);
     const logoRef = useRef<HTMLDivElement>(null);
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('app_sidebar_collapsed') === 'true';
-        }
-        return false;
-    });
+    const [isCollapsed, setIsCollapsed] = useState(false); // Default to expanded
 
     // Apply magnetic effect to logo
     useMagneticHover(logoRef, 0.3);
@@ -138,20 +140,43 @@ export function AppSidebar() {
         prevUrlRef.current = url;
     }, [url, controls]);
 
-    // Save collapsed state to localStorage
-    useEffect(() => {
-        localStorage.setItem('app_sidebar_collapsed', isCollapsed.toString());
-    }, [isCollapsed]);
-
     const toggleCollapse = () => {
         setIsCollapsed(prev => !prev);
+    };
+
+    // More precise active route check
+    const isActiveRoute = (itemHref: string) => {
+        // Special case for dashboard to prevent matching with '/dashboard/gantt'
+        if (itemHref === '/dashboard' && url === '/dashboard') {
+            return true;
+        }
+
+        // Handle exact matches
+        if (url === itemHref) {
+            return true;
+        }
+
+        // For other nested routes, check if they start with the itemHref
+        // but make sure we're not matching partial segments
+        if (itemHref !== '/dashboard' && url.startsWith(itemHref)) {
+            // Check if the next character after the href is a slash or nothing
+            const nextChar = url.charAt(itemHref.length);
+            return nextChar === '' || nextChar === '/';
+        }
+
+        return false;
+    };
+
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        router.post(route('logout'));
     };
 
     const AnimatedNavMain = () => {
         return (
             <nav className="space-y-1 px-3">
                 {mainNavItems.map((item, index) => {
-                    const isActive = url.startsWith(item.href);
+                    const isActive = isActiveRoute(item.href);
                     const Icon = item.icon;
                     return (
                         <motion.div
@@ -164,8 +189,8 @@ export function AppSidebar() {
                                     x: 0,
                                     opacity: 1,
                                     transition: {
-                                        delay: index * 0.1,
-                                        duration: 0.3,
+                                        delay: index * 0.05, // Reduced delay to prevent long animations
+                                        duration: 0.2,
                                         ease: "easeOut"
                                     }
                                 }
@@ -201,13 +226,28 @@ export function AppSidebar() {
         return (
             <nav className="space-y-1 px-3">
                 {settingsNavItems.map((item) => {
-                    const isActive = url.startsWith(item.href);
+                    const isActive = isActiveRoute(item.href);
                     const Icon = item.icon;
+
+                    if (item.title === 'Logout') {
+                        return (
+                            <button
+                                key={item.href}
+                                onClick={handleLogout}
+                                className={`flex items-center w-full px-3 py-2 rounded-md transition-colors text-foreground hover:bg-primary/10 dark:hover:bg-primary/20 ${isCollapsed ? 'justify-center' : ''}`}
+                            >
+                                <Icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-2'}`} />
+                                {!isCollapsed && (
+                                    <span>{item.title}</span>
+                                )}
+                            </button>
+                        );
+                    }
+
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            {...(item.title === 'Logout' ? { method: 'post' } : {})}
                             className={`flex items-center px-3 py-2 rounded-md transition-colors ${isActive
                                 ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-foreground'
                                 : 'text-foreground hover:bg-primary/10 dark:hover:bg-primary/20'
@@ -225,46 +265,49 @@ export function AppSidebar() {
     };
 
     return (
-        <motion.aside
-            className={`fixed inset-y-0 left-0 z-20 flex flex-col bg-white/80 dark:bg-gray-900/80 shadow-sm backdrop-blur-md border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out ${isCollapsed ? 'w-16' : 'w-64'
-                }`}
-            initial={!hasAnimatedRef.current ? { x: -20, opacity: 0 } : false}
-            animate={controls}
-        >
-            <div className="flex items-center justify-between p-4">
-                <div ref={logoRef} className={`flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`}>
+        <aside className={`bg-card border-r border-border transition-all duration-300 flex flex-col ${isCollapsed ? 'w-[70px]' : 'w-[240px]'}`}>
+            <div className="flex items-center justify-between p-4 border-b border-border">
+                <div ref={logoRef} className={`transition-opacity duration-300 ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}`}>
                     <AppLogo />
                 </div>
-                <EnhancedButton
+                <button
                     onClick={toggleCollapse}
-                    variant="ghost"
-                    size="sm"
-                    className={`${isCollapsed ? 'absolute -right-3 top-5 bg-white dark:bg-gray-800 rounded-full shadow-sm' : ''}`}
+                    className="p-2 rounded-lg hover:bg-accent transition-colors"
                 >
-                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-                </EnhancedButton>
+                    {isCollapsed ? (
+                        <ChevronRight className="h-5 w-5" />
+                    ) : (
+                        <ChevronLeft className="h-5 w-5" />
+                    )}
+                </button>
             </div>
 
-            {/* AI Prompts Buy Button */}
-            {!isCollapsed && (
-                <div className="px-4 mb-2">
-                    <Link
-                        href="/pricing"
-                        className="flex items-center justify-center py-1.5 px-2 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
-                    >
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Buy AI Prompts
-                    </Link>
-                </div>
-            )}
-
             <div className="flex-1 overflow-y-auto futuristic-scrollbar">
+                <div className="p-2">
+                    {isCollapsed ? (
+                        <button
+                            onClick={() => router.visit('/pricing')}
+                            className="w-full p-2 flex flex-col items-center justify-center bg-primary text-white dark:text-black rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <Sparkles className="h-5 w-5" />
+                        </button>
+                    ) : (
+                        <Link
+                            href="/pricing"
+                            className="w-full p-2 flex items-center justify-center bg-primary text-white dark:text-black rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                            <Sparkles className="h-5 w-5 mr-2" />
+                            <span>Buy AI Prompts</span>
+                        </Link>
+                    )}
+                </div>
+
                 <AnimatedNavMain />
             </div>
 
-            <div className="p-3">
+            <div className="border-t border-border p-2">
                 <SettingsNav />
             </div>
-        </motion.aside>
+        </aside>
     );
 }

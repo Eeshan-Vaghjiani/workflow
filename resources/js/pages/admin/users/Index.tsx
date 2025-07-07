@@ -33,6 +33,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { generatePDFReport } from '@/lib/pdfUtils';
+import { format } from 'date-fns';
 
 // Define interface for user data
 interface User {
@@ -44,7 +46,7 @@ interface User {
     last_login_at: string | null;
     groups_count: number;
     role: 'ADMIN' | 'USER';
-    deleted: boolean;
+    deleted_at: string | null;
 }
 
 interface UsersPageProps {
@@ -83,11 +85,6 @@ const itemVariants = {
 
 export default function UsersIndex({ users }: UsersPageProps) {
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortField, setSortField] = useState('name');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-    const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
-    const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
     const [isAddUserOpen, setIsAddUserOpen] = useState(false);
     const [isEditUserOpen, setIsEditUserOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -98,111 +95,18 @@ export default function UsersIndex({ users }: UsersPageProps) {
         is_admin: false,
     });
 
-    // Handle sort
-    const handleSort = (field: string) => {
-        if (sortField === field) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
+    // Filter users based on search term
+    const filteredUsers = users.data.filter(user =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     // Handle search
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
     };
 
-    // Handle checkbox selection
-    const handleSelectUser = (userId: number) => {
-        if (selectedUsers.includes(userId)) {
-            setSelectedUsers(selectedUsers.filter(id => id !== userId));
-        } else {
-            setSelectedUsers([...selectedUsers, userId]);
-        }
-    };
-
-    // Handle select all
-    const handleSelectAll = () => {
-        if (selectedUsers.length === filteredUsers.length) {
-            setSelectedUsers([]);
-        } else {
-            setSelectedUsers(filteredUsers.map(user => user.id));
-        }
-    };
-
-    // Toggle dropdown
-    const toggleDropdown = (userId: number | null) => {
-        setDropdownOpen(dropdownOpen === userId ? null : userId);
-    };
-
-    // Handle delete user
-    const handleDeleteUser = (userId: number) => {
-        if (confirmDelete === userId) {
-            router.delete(route('admin.users.delete', { id: userId }), {
-                onSuccess: () => {
-                    setDropdownOpen(null);
-                    setConfirmDelete(null);
-                },
-                preserveScroll: true,
-            });
-        } else {
-            setConfirmDelete(userId);
-            // Auto-reset confirmation after 5 seconds
-            setTimeout(() => {
-                setConfirmDelete(null);
-            }, 5000);
-        }
-    };
-
-    // Export users as PDF
-    const exportUsersPDF = () => {
-        window.location.href = route('admin.users.export');
-    };
-
-    // Export users as CSV
-    const exportUsers = () => {
-        const csvHeader = ['ID', 'Name', 'Email', 'Role', 'Created At', 'Last Login', 'Groups'];
-        let csvContent = csvHeader.join(',') + '\n';
-
-        users.data.forEach(user => {
-            const userValues = [
-                user.id,
-                `"${user.name}"`,
-                `"${user.email}"`,
-                user.is_admin ? 'ADMIN' : 'USER',
-                new Date(user.created_at).toLocaleDateString(),
-                user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never',
-                user.groups_count,
-            ];
-            csvContent += userValues.join(',') + '\n';
-        });
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'users_data.csv';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // Filter users based on search term
-    const filteredUsers = users.data
-        .filter(user =>
-            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .sort((a, b) => {
-            const aValue = String(a[sortField as keyof User] || '');
-            const bValue = String(b[sortField as keyof User] || '');
-
-            return sortDirection === 'asc'
-                ? aValue.localeCompare(bValue)
-                : bValue.localeCompare(aValue);
-        });
-
+    // Handle form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         router.post('/admin/users', formData);
@@ -210,6 +114,7 @@ export default function UsersIndex({ users }: UsersPageProps) {
         setFormData({ name: '', email: '', password: '', is_admin: false });
     };
 
+    // Handle user update
     const handleUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser) return;
@@ -220,18 +125,21 @@ export default function UsersIndex({ users }: UsersPageProps) {
         setFormData({ name: '', email: '', password: '', is_admin: false });
     };
 
+    // Handle user deletion
     const handleDelete = (user: User) => {
         if (confirm('Are you sure you want to delete this user?')) {
             router.delete(`/admin/users/${user.id}`);
         }
     };
 
+    // Handle user restoration
     const handleRestore = (user: User) => {
         if (confirm('Are you sure you want to restore this user?')) {
             router.post(`/admin/users/${user.id}/restore`);
         }
     };
 
+    // Open edit dialog
     const openEditDialog = (user: User) => {
         setSelectedUser(user);
         setFormData({
@@ -241,6 +149,51 @@ export default function UsersIndex({ users }: UsersPageProps) {
             is_admin: user.role === 'ADMIN',
         });
         setIsEditUserOpen(true);
+    };
+
+    // New PDF export function using our utility
+    const handleExportPDF = async () => {
+        try {
+            await generatePDFReport({
+                fileName: `users-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+                reportTitle: 'User Management Report',
+                tables: [
+                    {
+                        title: 'Active Users',
+                        head: [['ID', 'Name', 'Email', 'Role', 'Created', 'Last Login']],
+                        body: filteredUsers
+                            .filter(user => !user.deleted_at)
+                            .map(user => [
+                                user.id,
+                                user.name,
+                                user.email,
+                                user.role,
+                                format(new Date(user.created_at), 'PPP'),
+                                user.last_login_at
+                                    ? format(new Date(user.last_login_at), 'PPP')
+                                    : 'Never'
+                            ])
+                    },
+                    {
+                        title: 'Deleted Users',
+                        head: [['ID', 'Name', 'Email', 'Role', 'Created', 'Deleted At']],
+                        body: filteredUsers
+                            .filter(user => user.deleted_at)
+                            .map(user => [
+                                user.id,
+                                user.name,
+                                user.email,
+                                user.role,
+                                format(new Date(user.created_at), 'PPP'),
+                                format(new Date(user.deleted_at), 'PPP')
+                            ])
+                    }
+                ]
+            });
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            alert('Failed to generate PDF report. Please try again.');
+        }
     };
 
     return (
@@ -260,18 +213,70 @@ export default function UsersIndex({ users }: UsersPageProps) {
                         <p className="text-gray-600 dark:text-gray-400">Manage user accounts and permissions</p>
                     </div>
 
-                    <motion.a
-                        href="/admin/users/create"
-                        className="flex items-center justify-center px-4 py-2 bg-[#00887A] hover:bg-[#007A6C] text-white rounded-lg transition-colors"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <Plus className="h-5 w-5 mr-2" />
-                        Add New User
-                    </motion.a>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={handleExportPDF} variant="outline" size="sm">
+                            <Download className="h-4 w-4 mr-2" />
+                            Export PDF
+                        </Button>
+                        <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add User
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Add New User</DialogTitle>
+                                </DialogHeader>
+                                <form onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="name">Name</Label>
+                                        <Input
+                                            id="name"
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="email">Email</Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="password">Password</Label>
+                                        <Input
+                                            id="password"
+                                            type="password"
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="is_admin"
+                                            checked={formData.is_admin}
+                                            onCheckedChange={(checked) =>
+                                                setFormData({ ...formData, is_admin: checked as boolean })
+                                            }
+                                        />
+                                        <Label htmlFor="is_admin">Admin User</Label>
+                                    </div>
+                                    <Button type="submit" className="w-full">Add User</Button>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </motion.div>
 
-                {/* Filters and Search */}
+                {/* Search and filters */}
                 <motion.div variants={itemVariants}>
                     <Card3D className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -296,7 +301,7 @@ export default function UsersIndex({ users }: UsersPageProps) {
 
                                 <button
                                     className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                                    onClick={exportUsers}
+                                    onClick={handleExportPDF}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
                                     Export
@@ -336,16 +341,16 @@ export default function UsersIndex({ users }: UsersPageProps) {
                                                     {user.role}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                                            <TableCell>{user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : 'Never'}</TableCell>
+                                            <TableCell>{format(new Date(user.created_at), 'PPP')}</TableCell>
+                                            <TableCell>{user.last_login_at ? format(new Date(user.last_login_at), 'PPP') : 'Never'}</TableCell>
                                             <TableCell>
-                                                <Badge variant={user.deleted ? 'destructive' : 'default'}>
-                                                    {user.deleted ? 'Deleted' : 'Active'}
+                                                <Badge variant={user.deleted_at ? 'danger' : 'success'}>
+                                                    {user.deleted_at ? 'Deleted' : 'Active'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
-                                                    {!user.deleted ? (
+                                                    {!user.deleted_at ? (
                                                         <>
                                                             <Button
                                                                 variant="ghost"
@@ -449,62 +454,7 @@ export default function UsersIndex({ users }: UsersPageProps) {
                 </motion.div>
             </motion.div>
 
-            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-                <DialogTrigger asChild>
-                    <Button className="flex items-center gap-2">
-                        <Plus className="w-4 h-4" />
-                        Add User
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Add New User</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <Label htmlFor="name">Name</Label>
-                            <Input
-                                id="name"
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={formData.email}
-                                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label htmlFor="password">Password</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                value={formData.password}
-                                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="is_admin"
-                                checked={formData.is_admin}
-                                onCheckedChange={(checked) =>
-                                    setFormData({ ...formData, is_admin: checked as boolean })
-                                }
-                            />
-                            <Label htmlFor="is_admin">Admin User</Label>
-                        </div>
-                        <Button type="submit" className="w-full">Add User</Button>
-                    </form>
-                </DialogContent>
-            </Dialog>
-
+            {/* Edit User Dialog */}
             <Dialog open={isEditUserOpen} onOpenChange={setIsEditUserOpen}>
                 <DialogContent>
                     <DialogHeader>

@@ -6,19 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('support_requests', function (Blueprint $table) {
+        Schema::create('calendar_syncs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('message');
+            $table->string('calendar_id');
+            $table->timestamp('last_sync_at')->nullable();
             $table->string('status')->default('pending');
+            $table->text('error_message')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('support_requests');
+        Schema::dropIfExists('calendar_syncs');
     }
 };

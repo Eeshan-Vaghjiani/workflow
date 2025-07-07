@@ -1,10 +1,21 @@
 // Profile Page
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Head } from '@inertiajs/react';
 import AdminLayout from '@/layouts/admin-layout';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { User, Mail, Camera, Trash2, Save, Briefcase, Calendar } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
+import InputError from '@/components/input-error';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { UserCircle, Lock, Bell, Palette, Shield } from 'lucide-react';
 
 // Define the User type
 interface User {
@@ -14,10 +25,16 @@ interface User {
     avatar: string | null;
     created_at: string;
     is_admin: boolean;
+    email_verified_at: string | null;
+    two_factor_enabled: boolean;
+    two_factor_confirmed: boolean;
 }
 
 interface ProfileProps {
     user: User;
+    qrCode?: string;
+    recoveryCodes?: string[];
+    confirming?: boolean;
 }
 
 // Animation variants
@@ -44,8 +61,14 @@ const itemVariants = {
     }
 };
 
-export default function AdminProfile({ user }: ProfileProps) {
+export default function AdminProfile({ user, qrCode, recoveryCodes, confirming }: ProfileProps) {
     const [avatarPreview, setAvatarPreview] = React.useState<string | null>(user.avatar || null);
+    const [activeTab, setActiveTab] = useState('profile');
+    const [showingRecoveryCodes, setShowingRecoveryCodes] = useState(false);
+    const [confirmingDisable, setConfirmingDisable] = useState(false);
+    const [confirmingRecoveryCodeRegeneration, setConfirmingRecoveryCodeRegeneration] = useState(false);
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+    const codeInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: user.name || '',
@@ -54,6 +77,35 @@ export default function AdminProfile({ user }: ProfileProps) {
         department: 'IT Department',
         avatar: null as File | null,
         _method: 'PUT'
+    });
+
+    // Password update form
+    const passwordForm = useForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    // Two-factor forms
+    const enableForm = useForm({
+        code: '',
+    });
+
+    const confirmForm = useForm({
+        code: '',
+    });
+
+    const disableForm = useForm({
+        password: '',
+    });
+
+    const regenerateCodesForm = useForm({
+        password: '',
+    });
+
+    // Appearance form
+    const appearanceForm = useForm({
+        theme: 'system',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -88,6 +140,88 @@ export default function AdminProfile({ user }: ProfileProps) {
         reader.readAsDataURL(file);
     };
 
+    // Profile update submission
+    const submitProfileForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        post(route('admin.profile.update'), {
+            preserveScroll: true,
+        });
+    };
+
+    // Password update submission
+    const submitPasswordForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        passwordForm.put(route('admin.password.update'), {
+            preserveScroll: true,
+            onSuccess: () => passwordForm.reset(),
+        });
+    };
+
+    // Two-factor authentication handlers
+    const submitEnableForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        enableForm.post(route('two-factor.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                enableForm.reset();
+                setShowingRecoveryCodes(true);
+            },
+            onError: () => {
+                if (codeInputRef.current) {
+                    codeInputRef.current.focus();
+                }
+            },
+        });
+    };
+
+    const submitConfirmForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        confirmForm.put(route('two-factor.update'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                confirmForm.reset();
+            },
+            onError: () => {
+                if (codeInputRef.current) {
+                    codeInputRef.current.focus();
+                }
+            },
+        });
+    };
+
+    const submitDisableForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        disableForm.delete(route('two-factor.destroy'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                disableForm.reset();
+                setConfirmingDisable(false);
+            },
+            onError: () => {
+                if (passwordInputRef.current) {
+                    passwordInputRef.current.focus();
+                }
+            },
+        });
+    };
+
+    const submitRegenerateCodesForm = (e: React.FormEvent) => {
+        e.preventDefault();
+        regenerateCodesForm.post(route('two-factor.recovery-codes'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                regenerateCodesForm.reset();
+                setConfirmingRecoveryCodeRegeneration(false);
+                setShowingRecoveryCodes(true);
+            },
+            onError: () => {
+                if (passwordInputRef.current) {
+                    passwordInputRef.current.focus();
+                }
+            },
+        });
+    };
+
     return (
         <AdminLayout>
             <Head title="Admin Profile" />
@@ -113,7 +247,7 @@ export default function AdminProfile({ user }: ProfileProps) {
                     </div>
                     <div className="mt-6 border-t pt-6">
                         <h3 className="text-lg font-semibold mb-4">Profile Details</h3>
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={submitProfileForm}>
                             <div className="space-y-6">
                                 {/* Avatar Upload */}
                                 <div>

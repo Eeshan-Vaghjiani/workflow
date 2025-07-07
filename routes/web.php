@@ -23,7 +23,9 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminAnalyticsController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminUserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -278,38 +280,29 @@ Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_fa
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard.alt');
 
         // User Management
-        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/pdf', [UserController::class, 'downloadPdf'])->name('users.pdf');
         Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
-        Route::post('/users', [UserController::class, 'store'])->name('users.store');
-        Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-        Route::post('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
+        Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.delete');
+        Route::post('/users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
         Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
 
-        // Profile & Settings
+        // Profile
         Route::get('/profile', [AdminDashboardController::class, 'profile'])->name('profile');
-        Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
-        Route::post('/settings', [AdminDashboardController::class, 'storeSettings'])->name('settings.store');
 
         // Groups
         Route::get('/groups', [AdminDashboardController::class, 'groups'])->name('groups.index');
         Route::get('/groups/pdf', [AdminDashboardController::class, 'groupsPdf'])->name('groups.pdf');
 
         // Analytics
-        Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('analytics.index');
+        Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics.index');
         Route::get('/analytics/pdf', [AdminDashboardController::class, 'analyticsPdf'])->name('analytics.pdf');
-
-        // Audit Log
-        Route::get('/audit-log', [AdminDashboardController::class, 'audit'])->name('audit-log.index');
-        Route::get('/audit-log/pdf', [AdminDashboardController::class, 'auditPdf'])->name('audit-log.pdf');
-
-        // Notifications
-        Route::get('/notifications', [AdminDashboardController::class, 'notifications'])->name('notifications.index');
-        Route::get('/notifications/pdf', [AdminDashboardController::class, 'notificationsPdf'])->name('notifications.pdf');
     });
 
 // Add API web fallback routes with explicit session auth
@@ -1126,40 +1119,6 @@ Route::get('/debug/admin-check', function() {
         'is_admin_method' => $user->isAdmin(),
         'admin_route' => route('admin.dashboard'),
     ]);
-});
-
-// Admin Routes
-Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_factor', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
-
-    // User Management
-    Route::get('/users', [UserController::class, 'index'])->name('users.index');
-    Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
-    Route::post('/users', [UserController::class, 'store'])->name('users.store');
-    Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
-    Route::post('/users/{id}/restore', [UserController::class, 'restore'])->name('users.restore');
-    Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
-
-    // Profile & Settings
-    Route::get('/profile', [AdminDashboardController::class, 'profile'])->name('profile');
-    Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
-
-    // Groups
-    Route::get('/groups', [AdminDashboardController::class, 'groups'])->name('groups.index');
-    Route::get('/groups/pdf', [AdminDashboardController::class, 'groupsPdf'])->name('groups.pdf');
-
-    // Analytics
-    Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('analytics.index');
-    Route::get('/analytics/pdf', [AdminDashboardController::class, 'analyticsPdf'])->name('analytics.pdf');
-
-    // Audit Log
-    Route::get('/audit-log', [AdminDashboardController::class, 'audit'])->name('audit-log.index');
-    Route::get('/audit-log/pdf', [AdminDashboardController::class, 'auditPdf'])->name('audit-log.pdf');
-
-    // Notifications
-    Route::get('/notifications', [AdminDashboardController::class, 'notifications'])->name('notifications.index');
-    Route::get('/notifications/pdf', [AdminDashboardController::class, 'notificationsPdf'])->name('notifications.pdf');
 });
 
 /*

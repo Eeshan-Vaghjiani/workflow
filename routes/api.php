@@ -229,13 +229,13 @@ Route::middleware(['web', \App\Http\Middleware\WebKanbanAuthMiddleware::class])-
     Route::post('/boards', [KanbanBoardController::class, 'store']);
     Route::put('/boards/{board}', [KanbanBoardController::class, 'update']);
     Route::delete('/boards/{board}', [KanbanBoardController::class, 'destroy']);
-    
+
     // Column endpoints
     Route::post('/columns', [KanbanColumnController::class, 'store']);
     Route::put('/columns/{column}', [KanbanColumnController::class, 'update']);
     Route::delete('/columns/{column}', [KanbanColumnController::class, 'destroy']);
     Route::put('/columns/reorder', [KanbanColumnController::class, 'reorder']);
-    
+
     // Task endpoints
     Route::post('/tasks', [KanbanTaskController::class, 'store']);
     Route::put('/tasks/{task}', [KanbanTaskController::class, 'update']);
@@ -802,7 +802,7 @@ Route::get('/debug/kanban-auth-test', function (Request $request) {
     try {
         $user = Auth::user() ?? $request->user();
         $userData = null;
-        
+
         if ($user) {
             $userData = [
                 'id' => $user->id,
@@ -811,7 +811,7 @@ Route::get('/debug/kanban-auth-test', function (Request $request) {
                 'is_admin' => (bool)$user->is_admin,
             ];
         }
-        
+
         return response()->json([
             'authenticated' => !is_null($user),
             'user' => $userData,
@@ -838,7 +838,7 @@ Route::get('/debug/kanban-auth-test', function (Request $request) {
             'file' => $e->getFile(),
             'line' => $e->getLine()
         ]);
-        
+
         // Return a simplified response that won't cause errors
         return response()->json([
             'authenticated' => Auth::check(),
@@ -849,4 +849,15 @@ Route::get('/debug/kanban-auth-test', function (Request $request) {
             ] : null
         ]);
     }
+});
+
+// Admin User Management API
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    // User management
+    Route::get('/users', [App\Http\Controllers\API\UserController::class, 'index']);
+    Route::post('/users', [App\Http\Controllers\API\UserController::class, 'store']);
+    Route::put('/users/{id}', [App\Http\Controllers\API\UserController::class, 'update']);
+    Route::delete('/users/{id}', [App\Http\Controllers\API\UserController::class, 'destroy']);
+    Route::post('/users/{id}/restore', [App\Http\Controllers\API\UserController::class, 'restore']);
+    Route::get('/users/pdf', [App\Http\Controllers\API\UserController::class, 'generatePdf']);
 });

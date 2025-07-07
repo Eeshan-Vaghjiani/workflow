@@ -6,22 +6,20 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class MpesaTransaction extends Model
+class WorkosAuth extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
-        'amount',
-        'phone_number',
-        'transaction_id',
+        'provider',
         'status',
-        'response_code',
-        'response_description'
+        'error_message',
+        'auth_details'
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'auth_details' => 'array',
     ];
 
     public function user()

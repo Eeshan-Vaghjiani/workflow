@@ -17,10 +17,21 @@ import {
 } from 'lucide-react';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { Button } from '@/components/ui/button';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import 'jspdf-autotable';
+import { UserOptions } from 'jspdf-autotable';
 import './pdf-styles.css';
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+    interface jsPDF {
+        autoTable: (options: UserOptions) => jsPDF;
+        lastAutoTable: {
+            finalY: number;
+        } | undefined;
+    }
+}
 
 // Animation variants
 const containerVariants: Variants = {
@@ -112,7 +123,7 @@ const downloadEnhancedPDF = async (element: HTMLElement, data: DownloadData, fil
         // Add data in table format
         const tableData = Object.entries(data).map(([key, value]) => [key, value.toString()]);
 
-        // @ts-expect-error - jspdf-autotable types
+        // @ts-expect-error jspdf-autotable types are not properly defined
         pdf.autoTable({
             startY: yPosition,
             head: [['Metric', 'Value']],
@@ -524,131 +535,333 @@ interface DashboardProps {
 }
 
 export default function Dashboard({
-    stats,
-    systemMetrics,
-    recentMessages,
-    recentReports,
-    aiStats
+    stats = {
+        totalUsers: { value: 0, change: '0%', positive: true },
+        activeGroups: { value: 0, change: '0%', positive: true },
+        systemHealth: { value: '0%', change: '0%', positive: true },
+        uptime: { value: '0%', change: null, positive: true }
+    },
+    systemMetrics = [],
+    recentMessages = [],
+    recentReports = [],
+    aiStats = {
+        totalPrompts: 0,
+        promptsToday: 0,
+        calendarSyncs: 0,
+        activeCalendarSyncs: 0
+    }
 }: DashboardProps) {
-    const dashboardRef = useRef<HTMLDivElement>(null);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const dashboardRef = useRef<HTMLDivElement>(null);
 
-    // Generate comprehensive dashboard report
+    // Add the basic fallback report function
+    const downloadBasicDashboardReport = async () => {
+        setIsGeneratingPDF(true);
+
+        try {
+            // Create PDF document
+            const pdf = new jsPDF();
+            let yPos = 20;
+            const lineHeight = 10;
+            const margin = 20;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+
+            // Add title
+            pdf.setFontSize(20);
+            pdf.setFont('helvetica', 'bold');
+            const title = 'Dashboard Report (Basic Version)';
+            const titleWidth = pdf.getStringUnitWidth(title) * 20 / pdf.internal.scaleFactor;
+            const titleX = (pageWidth - titleWidth) / 2;
+            pdf.text(title, titleX, yPos);
+            yPos += lineHeight * 2;
+
+            // Add timestamp
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPos);
+            yPos += lineHeight * 2;
+
+            // Add system metrics
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('System Metrics', margin, yPos);
+            yPos += lineHeight;
+
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            systemMetrics.forEach(metric => {
+                if (yPos > pdf.internal.pageSize.getHeight() - margin) {
+                    pdf.addPage();
+                    yPos = margin;
+                }
+                pdf.text(`${metric.name}: ${metric.value} (${metric.status})`, margin, yPos);
+                yPos += lineHeight;
+            });
+
+            yPos += lineHeight;
+
+            // Add AI stats
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            if (yPos > pdf.internal.pageSize.getHeight() - margin * 3) {
+                pdf.addPage();
+                yPos = margin;
+            }
+            pdf.text('AI Statistics', margin, yPos);
+            yPos += lineHeight;
+
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            const aiStatsList = [
+                `Total Prompts: ${aiStats.totalPrompts}`,
+                `Prompts Today: ${aiStats.promptsToday}`,
+                `Calendar Syncs: ${aiStats.calendarSyncs}`,
+                `Active Calendar Syncs: ${aiStats.activeCalendarSyncs}`
+            ];
+
+            aiStatsList.forEach(stat => {
+                if (yPos > pdf.internal.pageSize.getHeight() - margin) {
+                    pdf.addPage();
+                    yPos = margin;
+                }
+                pdf.text(stat, margin, yPos);
+                yPos += lineHeight;
+            });
+
+            // Save the PDF
+            pdf.save(`dashboard-basic-report-${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (error) {
+            console.error('Error generating basic PDF:', error);
+            alert('Failed to generate basic PDF report. Please try again.');
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
+
+    // Update the downloadDashboardReport function to use proper type casting
     const downloadDashboardReport = async () => {
         setIsGeneratingPDF(true);
 
-        // Add a class to the dashboard to override styles for PDF export
-        if (dashboardRef.current) {
-            dashboardRef.current.classList.add('pdf-export');
-        }
-
-        // Wait for styles to apply
-        await new Promise(resolve => setTimeout(resolve, 100));
-
         try {
             const dashboardEl = dashboardRef.current;
-            if (!dashboardEl) return;
+            if (!dashboardEl) {
+                throw new Error('Dashboard element not found');
+            }
 
-            // Create PDF
+            // Create a clone of the dashboard element
+            const clone = dashboardEl.cloneNode(true) as HTMLElement;
+
+            // Force light theme and apply safe styles
+            clone.classList.remove('dark');
+            clone.classList.add('light', 'pdf-export');
+
+            // Create a temporary container
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            container.style.top = '-9999px';
+            container.style.width = dashboardEl.offsetWidth + 'px';
+            container.style.height = dashboardEl.offsetHeight + 'px';
+            container.appendChild(clone);
+            document.body.appendChild(container);
+
+            // Create PDF with proper type
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
                 format: 'a4'
             });
 
-            // Capture the dashboard overview
-            const canvas = await html2canvas(dashboardEl, {
-                scale: 1.5,
-                logging: false,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                removeContainer: true,
-                onclone: (document, element) => {
-                    // Force light theme for PDF
-                    element.classList.remove('dark');
-                    const meta = document.createElement('meta');
-                    meta.setAttribute('name', 'color-scheme');
-                    meta.setAttribute('content', 'light');
-                    document.head.appendChild(meta);
+            try {
+                // Capture the dashboard overview with improved error handling
+                const canvas = await html2canvas(clone, {
+                    scale: 1.5,
+                    logging: false,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    onclone: (document, element) => {
+                        // Apply simpler styles to avoid color parsing issues
+                        const style = document.createElement('style');
+                        style.innerHTML = `
+                            * {
+                                color-scheme: light !important;
+                                background: white !important;
+                                color: #333333 !important;
+                                border-color: #e5e7eb !important;
+                            }
+                            [class*="text-"] {
+                                color: #333333 !important;
+                            }
+                            [class*="bg-"] {
+                                background: #f8f9fa !important;
+                            }
+                            [class*="dark:"] {
+                                background: white !important;
+                                color: #333333 !important;
+                            }
+                            [style*="oklch"],
+                            [style*="hsl"],
+                            [style*="hsla"] {
+                                color: #333333 !important;
+                                background: white !important;
+                            }
+                            .recharts-sector {
+                                fill: #3b82f6 !important;
+                            }
+                            .recharts-line {
+                                stroke: #3b82f6 !important;
+                            }
+                            .recharts-bar-rectangle {
+                                fill: #3b82f6 !important;
+                            }
+                            .badge {
+                                background: #e5e7eb !important;
+                                color: #1f2937 !important;
+                            }
+                            .badge-success {
+                                background: #22c55e !important;
+                                color: white !important;
+                            }
+                            .badge-error {
+                                background: #ef4444 !important;
+                                color: white !important;
+                            }
+                            table {
+                                border-collapse: collapse !important;
+                            }
+                            th, td {
+                                border: 1px solid #e5e7eb !important;
+                                color: #1f2937 !important;
+                            }
+                            th {
+                                background: #f9fafb !important;
+                            }
+                            .glass-container {
+                                background: white !important;
+                                backdrop-filter: none !important;
+                                -webkit-backdrop-filter: none !important;
+                                box-shadow: none !important;
+                            }
+                            .stat-card {
+                                background: white !important;
+                                border: 1px solid #e5e7eb !important;
+                                box-shadow: none !important;
+                            }
+                        `;
+                        document.head.appendChild(style);
+
+                        // Remove any backdrop filters and modern color functions
+                        element.querySelectorAll('*').forEach(el => {
+                            if (el instanceof HTMLElement) {
+                                const style = el.style;
+                                style.setProperty('backdrop-filter', 'none', 'important');
+                                style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+                                style.setProperty('background', 'white', 'important');
+                                style.setProperty('color', '#333333', 'important');
+                                style.setProperty('box-shadow', 'none', 'important');
+
+                                // Remove any oklch colors
+                                const computedStyle = window.getComputedStyle(el);
+                                const bgColor = computedStyle.backgroundColor;
+                                const color = computedStyle.color;
+
+                                if (bgColor.includes('oklch')) {
+                                    style.setProperty('background-color', '#ffffff', 'important');
+                                }
+                                if (color.includes('oklch')) {
+                                    style.setProperty('color', '#333333', 'important');
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // Add title
+                pdf.setFontSize(20);
+                pdf.setFont('helvetica', 'bold');
+                const title = 'Dashboard Report';
+                const titleWidth = pdf.getStringUnitWidth(title) * 20 / pdf.internal.scaleFactor;
+                const titleX = (pdf.internal.pageSize.getWidth() - titleWidth) / 2;
+                pdf.text(title, titleX, 20);
+
+                // Add timestamp
+                pdf.setFontSize(10);
+                pdf.setFont('helvetica', 'normal');
+                const timestamp = `Generated on: ${new Date().toLocaleString()}`;
+                pdf.text(timestamp, 20, 30);
+
+                // Add the dashboard overview
+                const imgWidth = pdf.internal.pageSize.getWidth() - 40;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 20, 40, imgWidth, imgHeight);
+
+                // Add system metrics table
+                pdf.addPage();
+
+                try {
+                    // Attempt to use autoTable with proper type casting
+                    pdf.autoTable({
+                        head: [['Metric', 'Value', 'Status']],
+                        body: systemMetrics.map(metric => [
+                            metric.name,
+                            metric.value.toString(),
+                            metric.status
+                        ]),
+                        startY: 20,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [59, 130, 246],
+                            textColor: 255
+                        },
+                        alternateRowStyles: {
+                            fillColor: [245, 247, 250]
+                        }
+                    });
+
+                    // Add AI stats table
+                    pdf.autoTable({
+                        head: [['AI Metric', 'Value']],
+                        body: [
+                            ['Total Prompts', aiStats.totalPrompts],
+                            ['Prompts Today', aiStats.promptsToday],
+                            ['Calendar Syncs', aiStats.calendarSyncs],
+                            ['Active Calendar Syncs', aiStats.activeCalendarSyncs]
+                        ],
+                        startY: pdf.lastAutoTable?.finalY ? pdf.lastAutoTable.finalY + 20 : 20,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [59, 130, 246],
+                            textColor: 255
+                        },
+                        alternateRowStyles: {
+                            fillColor: [245, 247, 250]
+                        }
+                    });
+                } catch (tableError) {
+                    console.error('Error generating tables:', tableError);
+                    // If autoTable fails, fall back to basic report
+                    await downloadBasicDashboardReport();
+                    return;
                 }
-            });
 
-            // Remove PDF export class
-            dashboardRef.current.classList.remove('pdf-export');
-
-            // Add title
-            pdf.setFontSize(20);
-            pdf.setFont('helvetica', 'bold');
-            const title = 'Dashboard Report';
-            const titleWidth = pdf.getStringUnitWidth(title) * 20 / pdf.internal.scaleFactor;
-            const titleX = (pdf.internal.pageSize.getWidth() - titleWidth) / 2;
-            pdf.text(title, titleX, 20);
-
-            // Add timestamp
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'normal');
-            const timestamp = `Generated on: ${new Date().toLocaleString()}`;
-            pdf.text(timestamp, 20, 30);
-
-            // Add the dashboard overview
-            const imgWidth = pdf.internal.pageSize.getWidth() - 40;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 20, 40, imgWidth, imgHeight);
-
-            // Add system metrics table
-            pdf.addPage();
-            // @ts-expect-error - jspdf-autotable types
-            pdf.autoTable({
-                head: [['Metric', 'Value', 'Status']],
-                body: systemMetrics.map(metric => [
-                    metric.name,
-                    metric.value.toString(),
-                    metric.status
-                ]),
-                startY: 20,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [59, 130, 246],
-                    textColor: 255
-                },
-                alternateRowStyles: {
-                    fillColor: [245, 247, 250]
+                // Save the PDF
+                pdf.save(`dashboard-report-${new Date().toISOString().split('T')[0]}.pdf`);
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                // If html2canvas or other operations fail, fall back to basic report
+                await downloadBasicDashboardReport();
+            } finally {
+                // Clean up temporary container
+                if (container.parentNode) {
+                    container.parentNode.removeChild(container);
                 }
-            });
-
-            // Add AI stats table
-            const pdfWithTable = pdf as jsPDF & { lastAutoTable: { finalY: number } };
-            // @ts-expect-error - jspdf-autotable types
-            pdf.autoTable({
-                head: [['AI Metric', 'Value']],
-                body: [
-                    ['Total Prompts', aiStats.totalPrompts],
-                    ['Prompts Today', aiStats.promptsToday],
-                    ['Calendar Syncs', aiStats.calendarSyncs],
-                    ['Active Calendar Syncs', aiStats.activeCalendarSyncs]
-                ],
-                startY: pdfWithTable.lastAutoTable?.finalY + 20 || 20,
-                theme: 'grid',
-                headStyles: {
-                    fillColor: [59, 130, 246],
-                    textColor: 255
-                },
-                alternateRowStyles: {
-                    fillColor: [245, 247, 250]
-                }
-            });
-
-            // Save the PDF
-            pdf.save(`dashboard-report-${new Date().toISOString().split('T')[0]}.pdf`);
-
+            }
         } catch (error) {
-            console.error('Error generating dashboard report:', error);
-            alert('There was an error generating the report. Please try again.');
+            console.error('Error in downloadDashboardReport:', error);
+            // If everything fails, try the basic report
+            await downloadBasicDashboardReport();
         } finally {
             setIsGeneratingPDF(false);
-            if (dashboardRef.current) {
-                dashboardRef.current.classList.remove('pdf-export');
-            }
         }
     };
 
@@ -675,7 +888,7 @@ export default function Dashboard({
                                 Refresh Data
                             </Button>
                             <Button
-                                variant="default"
+                                variant="primary"
                                 onClick={() => downloadDashboardReport()}
                                 className="flex items-center gap-2"
                             >
@@ -688,37 +901,45 @@ export default function Dashboard({
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatsCard
                             title="Total Users"
-                            value={stats.totalUsers.value}
+                            value={stats?.totalUsers?.value || 0}
                             icon={<Users className="h-6 w-6" />}
-                            change={stats.totalUsers.change}
-                            positive={stats.totalUsers.positive}
+                            change={stats?.totalUsers?.change || '0%'}
+                            positive={stats?.totalUsers?.positive !== false}
                             delay={0.1}
                         />
                         <StatsCard
                             title="Active Groups"
-                            value={stats.activeGroups.value}
+                            value={stats?.activeGroups?.value || 0}
                             icon={<UserCheck className="h-6 w-6" />}
-                            change={stats.activeGroups.change}
-                            positive={stats.activeGroups.positive}
+                            change={stats?.activeGroups?.change || '0%'}
+                            positive={stats?.activeGroups?.positive !== false}
                             delay={0.2}
                         />
                         <StatsCard
                             title="Uptime"
-                            value={stats.uptime.value}
+                            value={stats?.uptime?.value || '0%'}
                             icon={<Clock className="h-6 w-6" />}
-                            positive={stats.uptime.positive}
+                            positive={stats?.uptime?.positive !== false}
                             delay={0.4}
                         />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <ActivityCard />
-                        <SystemHealthCard metrics={systemMetrics} />
+                        <SystemHealthCard metrics={systemMetrics || []} />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <AIStatsCard stats={aiStats} />
-                        <MessagesAndReportsCard messages={recentMessages} reports={recentReports} />
+                        <AIStatsCard stats={aiStats || {
+                            totalPrompts: 0,
+                            promptsToday: 0,
+                            calendarSyncs: 0,
+                            activeCalendarSyncs: 0
+                        }} />
+                        <MessagesAndReportsCard
+                            messages={recentMessages || []}
+                            reports={recentReports || []}
+                        />
                     </div>
                 </motion.div>
             </div>

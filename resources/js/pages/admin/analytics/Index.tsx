@@ -1,72 +1,205 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Head } from '@inertiajs/react';
-import { Button } from '@/components/ui/button';
-import { FileDown, Users, Box, Activity, BarChart } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
+import { Card3D } from '@/components/ui/card-3d';
+import { Button } from '@/components/ui/button';
+import { Download } from 'lucide-react';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    BarChart,
+    Bar
+} from 'recharts';
+import { generatePDFReport, chartToImage } from '@/lib/pdfUtils';
+import { format } from 'date-fns';
 
-interface StatCardProps {
-    icon: React.ElementType;
-    title: string;
-    value: string | number;
-    change?: string;
-    positive?: boolean;
+interface AnalyticsData {
+    total_syncs?: number;
+    total_users?: number;
+    total_groups?: number;
+    user_registrations?: {
+        date: string;
+        count: number;
+    }[];
+    group_creations?: {
+        date: string;
+        count: number;
+    }[];
 }
 
-const StatCard: React.FC<StatCardProps> = ({ icon: Icon, title, value, change, positive }) => (
-    <div className="bg-white p-6 rounded-lg shadow-md flex items-center">
-        <div className="bg-blue-100 p-3 rounded-full mr-4">
-            <Icon className="h-6 w-6 text-blue-500" />
-        </div>
-        <div>
-            <p className="text-sm text-gray-500">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
-            {change && (
-                <p className={`text-sm ${positive ? 'text-green-500' : 'text-red-500'}`}>
-                    {change}
-                </p>
-            )}
-        </div>
-    </div>
-);
-
-interface Props {
-    userCount: number;
-    groupCount: number;
-    activeUsers: number;
-    activeGroups: number;
+interface AnalyticsPageProps {
+    analytics_data?: AnalyticsData;
 }
 
-const AnalyticsIndex: React.FC<Props> = ({ userCount, groupCount, activeUsers, activeGroups }) => {
-    const handleDownloadPdf = () => {
-        window.location.href = route('admin.analytics.pdf');
+export default function Analytics({ analytics_data }: AnalyticsPageProps) {
+    const userChartRef = useRef<HTMLDivElement>(null);
+    const groupChartRef = useRef<HTMLDivElement>(null);
+
+    // Safely access analytics data with fallbacks
+    const {
+        total_syncs = 0,
+        total_users = 0,
+        total_groups = 0,
+        user_registrations = [],
+        group_creations = []
+    } = analytics_data || {};
+
+    const handleExportPDF = async () => {
+        try {
+            // Convert charts to images
+            const userChartImage = userChartRef.current ? await chartToImage(userChartRef.current) : null;
+            const groupChartImage = groupChartRef.current ? await chartToImage(groupChartRef.current) : null;
+
+            await generatePDFReport({
+                fileName: `analytics-report-${format(new Date(), 'yyyy-MM-dd')}.pdf`,
+                reportTitle: 'Analytics Report',
+                tables: [
+                    {
+                        title: 'Summary Statistics',
+                        head: [['Metric', 'Value']],
+                        body: [
+                            ['Total Users', total_users],
+                            ['Total Groups', total_groups],
+                            ['Total Syncs', total_syncs]
+                        ]
+                    },
+                    {
+                        title: 'User Registration Data',
+                        head: [['Date', 'New Users']],
+                        body: user_registrations.map(data => [
+                            format(new Date(data.date), 'PPP'),
+                            data.count
+                        ])
+                    },
+                    {
+                        title: 'Group Creation Data',
+                        head: [['Date', 'New Groups']],
+                        body: group_creations.map(data => [
+                            format(new Date(data.date), 'PPP'),
+                            data.count
+                        ])
+                    }
+                ],
+                charts: [
+                    ...(userChartImage ? [{
+                        title: 'User Registration Trend',
+                        imageData: userChartImage,
+                        width: 180,
+                        height: 100
+                    }] : []),
+                    ...(groupChartImage ? [{
+                        title: 'Group Creation Trend',
+                        imageData: groupChartImage,
+                        width: 180,
+                        height: 100
+                    }] : [])
+                ]
+            });
+        } catch (error) {
+            console.error('Error exporting PDF:', error);
+            alert('Failed to generate PDF report. Please try again.');
+        }
     };
 
     return (
         <AdminLayout>
             <Head title="Analytics" />
-            <div className="p-4 md:p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-2xl font-bold">Analytics</h1>
-                    <Button onClick={handleDownloadPdf} className="flex items-center gap-2">
-                        <FileDown className="h-4 w-4" />
-                        <span>Download PDF</span>
+
+            <div className="space-y-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+                        <p className="text-gray-600 dark:text-gray-400">System performance and usage statistics</p>
+                    </div>
+
+                    <Button onClick={handleExportPDF} variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Export PDF
                     </Button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <StatCard icon={Users} title="Total Users" value={userCount} />
-                    <StatCard icon={Box} title="Total Groups" value={groupCount} />
-                    <StatCard icon={Activity} title="Active Users" value={activeUsers} />
-                    <StatCard icon={BarChart} title="Active Groups" value={activeGroups} />
+
+                {/* Summary Cards */}
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card3D className="p-6">
+                        <h3 className="text-lg font-semibold mb-2">Total Users</h3>
+                        <p className="text-3xl font-bold">{total_users.toLocaleString()}</p>
+                    </Card3D>
+
+                    <Card3D className="p-6">
+                        <h3 className="text-lg font-semibold mb-2">Total Groups</h3>
+                        <p className="text-3xl font-bold">{total_groups.toLocaleString()}</p>
+                    </Card3D>
+
+                    <Card3D className="p-6">
+                        <h3 className="text-lg font-semibold mb-2">Total Syncs</h3>
+                        <p className="text-3xl font-bold">{total_syncs.toLocaleString()}</p>
+                    </Card3D>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h2 className="text-xl font-semibold mb-4">User Activity Chart</h2>
-                    <div className="h-64 bg-gray-100 flex items-center justify-center rounded-md">
-                        <p className="text-gray-500">Chart will be implemented here.</p>
-                    </div>
+
+                {/* Charts */}
+                <div className="grid gap-6 md:grid-cols-2">
+                    {/* User Registrations Chart */}
+                    <Card3D className="p-6">
+                        <h3 className="text-lg font-semibold mb-4">User Registrations</h3>
+                        <div ref={userChartRef} className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={user_registrations}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={(date) => format(new Date(date), 'MMM d')}
+                                    />
+                                    <YAxis />
+                                    <Tooltip
+                                        labelFormatter={(date) => format(new Date(date as string), 'PPP')}
+                                    />
+                                    <Legend />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="count"
+                                        name="New Users"
+                                        stroke="#00887A"
+                                        strokeWidth={2}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card3D>
+
+                    {/* Group Creations Chart */}
+                    <Card3D className="p-6">
+                        <h3 className="text-lg font-semibold mb-4">Group Creations</h3>
+                        <div ref={groupChartRef} className="h-[300px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={group_creations}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={(date) => format(new Date(date), 'MMM d')}
+                                    />
+                                    <YAxis />
+                                    <Tooltip
+                                        labelFormatter={(date) => format(new Date(date as string), 'PPP')}
+                                    />
+                                    <Legend />
+                                    <Bar
+                                        dataKey="count"
+                                        name="New Groups"
+                                        fill="#00887A"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card3D>
                 </div>
             </div>
         </AdminLayout>
     );
-};
-
-export default AnalyticsIndex;
+}

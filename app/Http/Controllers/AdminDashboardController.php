@@ -299,11 +299,107 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * Generate PDF report for analytics.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function analyticsPdf()
+    {
+        // Get analytics data
+        $userCount = User::count();
+        $userGrowth = User::select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('created_at', '>', now()->subYear())
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        // Format user growth data
+        $monthlyGrowth = [];
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        foreach (range(1, 12) as $i => $month) {
+            $found = $userGrowth->where('month', $month)->first();
+            $monthlyGrowth[$months[$i - 1]] = $found ? $found->count : 0;
+        }
+
+        // Get group data
+        $groupCount = Group::count();
+        $messageCount = GroupMessage::count() + DirectMessage::count();
+        $taskCount = GroupTask::count();
+
+        // Get feature usage stats
+        $featureUsage = [
+            ['name' => 'Chat', 'value' => min(100, round(($messageCount / max(1, $userCount)) * 20))],
+            ['name' => 'Tasks', 'value' => min(100, round(($taskCount / max(1, $userCount)) * 10))],
+            ['name' => 'Groups', 'value' => min(100, round(($groupCount / max(1, $userCount)) * 30))],
+            ['name' => 'Calendar', 'value' => min(100, rand(30, 70))],
+            ['name' => 'AI Tasks', 'value' => min(100, rand(40, 80))],
+        ];
+
+        // Get top users by activity
+        $topUsers = User::withCount('groups')
+            ->orderByDesc('groups_count')
+            ->limit(5)
+            ->get()
+            ->map(function($user) {
+                return [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'tasks' => 0, // We don't have a direct tasks relationship
+                    'groups' => $user->groups_count
+                ];
+            });
+
+        $data = [
+            'stats' => [
+                'users' => $userCount,
+                'groups' => $groupCount,
+                'messages' => $messageCount,
+                'tasks' => $taskCount
+            ],
+            'monthlyGrowth' => $monthlyGrowth,
+            'featureUsage' => $featureUsage,
+            'topUsers' => $topUsers,
+            'date' => now()->format('Y-m-d H:i:s')
+        ];
+
+        $pdf = Pdf::loadView('admin.analytics.pdf', $data);
+        return $pdf->download('analytics-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Show the audit page.
      */
     public function audit(): Response
     {
         return Inertia::render('admin/audit/Index');
+    }
+
+    /**
+     * Generate PDF report for audit log.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function auditPdf()
+    {
+        $auditLogs = DB::table('audit_logs')
+            ->join('users', 'audit_logs.user_id', '=', 'users.id')
+            ->select('audit_logs.*', 'users.name as user_name')
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        $data = [
+            'auditLogs' => $auditLogs,
+            'date' => now()->format('Y-m-d H:i:s')
+        ];
+
+        $pdf = Pdf::loadView('admin.audit.pdf', $data);
+        return $pdf->download('audit-log-' . now()->format('Y-m-d') . '.pdf');
     }
 
     /**
@@ -336,6 +432,27 @@ class AdminDashboardController extends Controller
         return Inertia::render('admin/notifications/Index', [
             'notifications' => $notifications
         ]);
+    }
+
+    /**
+     * Generate PDF report for notifications.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function notificationsPdf()
+    {
+        $notifications = Notification::with('user:id,name,email')
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        $data = [
+            'notifications' => $notifications,
+            'date' => now()->format('Y-m-d H:i:s')
+        ];
+
+        $pdf = Pdf::loadView('admin.notifications.pdf', $data);
+        return $pdf->download('notifications-' . now()->format('Y-m-d') . '.pdf');
     }
 
     /**
@@ -383,8 +500,7 @@ class AdminDashboardController extends Controller
     public function markNotificationAsRead(Request $request, $id)
     {
         $notification = Notification::findOrFail($id);
-        $notification->read = true;
-        $notification->save();
+        $notification->update(['read' => true]);
 
         return back();
     }
@@ -446,17 +562,20 @@ class AdminDashboardController extends Controller
                 'department' => 'nullable|string|max:255',
             ]);
 
-            // Update the user
-            $user->name = $validated['name'];
-            $user->email = $validated['email'];
+            // Prepare update data
+            $updateData = [
+                'name' => $validated['name'],
+                'email' => $validated['email']
+            ];
 
             // Handle avatar upload if provided
             if ($request->hasFile('avatar')) {
                 $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar = '/storage/' . $avatarPath;
+                $updateData['avatar'] = '/storage/' . $avatarPath;
             }
 
-            $user->save();
+            // Update the user
+            User::where('id', $user->id)->update($updateData);
 
             return redirect()->route('admin.profile.index')->with('success', 'Profile updated successfully');
         } catch (\Exception $e) {

@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AdminDashboardController extends Controller
 {
@@ -29,18 +31,185 @@ class AdminDashboardController extends Controller
      */
     public function index(): Response
     {
-        // Get summary stats for the dashboard
+        // Get basic stats
         $userCount = User::count();
         $groupCount = Group::count();
-        $notificationCount = Notification::where('read', false)->count();
+        $activeUsers = User::where('last_login_at', '>=', now()->subDays(7))->count();
+        $activeGroups = Group::where('updated_at', '>=', now()->subDays(7))->count();
+
+        // Calculate system health
+        $totalAIPrompts = DB::table('ai_usage_logs')->sum('prompts_used');
+        $totalAIPromptsToday = DB::table('ai_usage_logs')
+            ->whereDate('created_at', today())
+            ->sum('prompts_used');
+
+        // Get Google Calendar sync stats
+        $totalCalendarSyncs = DB::table('google_calendars')->count();
+        $activeCalendarSyncs = DB::table('google_calendars')
+            ->whereNotNull('last_synced_at')
+            ->where(function($query) {
+                $query->where('last_synced_at', '>=', now()->subDays(7))
+                      ->orWhereNull('last_synced_at');
+            })
+            ->count();
+
+        // Get recent activity
+        $recentActivity = collect();
+
+        // Add recent user registrations
+        $recentUsers = User::select('id', 'name', 'created_at')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'user' => $user->name,
+                    'action' => 'Registered',
+                    'time' => $user->created_at->diffForHumans(),
+                    'status' => 'success'
+                ];
+            });
+        $recentActivity = $recentActivity->concat($recentUsers);
+
+        // Add recent AI usage
+        $recentAIUsage = DB::table('ai_usage_logs')
+            ->join('users', 'ai_usage_logs.user_id', '=', 'users.id')
+            ->select('ai_usage_logs.id', 'users.name', 'ai_usage_logs.service_type', 'ai_usage_logs.created_at')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'user' => $log->name,
+                    'action' => "Used {$log->service_type}",
+                    'time' => \Carbon\Carbon::parse($log->created_at)->diffForHumans(),
+                    'status' => 'success'
+                ];
+            });
+        $recentActivity = $recentActivity->concat($recentAIUsage);
+
+        // Add recent failed logins
+        $recentFailedLogins = DB::table('failed_login_attempts')
+            ->join('users', 'failed_login_attempts.email', '=', 'users.email')
+            ->select('failed_login_attempts.id', 'users.name', 'failed_login_attempts.created_at')
+            ->latest()
+            ->take(3)
+            ->get()
+            ->map(function ($attempt) {
+                return [
+                    'id' => $attempt->id,
+                    'user' => $attempt->name,
+                    'action' => 'Failed login attempt',
+                    'time' => \Carbon\Carbon::parse($attempt->created_at)->diffForHumans(),
+                    'status' => 'error'
+                ];
+            });
+        $recentActivity = $recentActivity->concat($recentFailedLogins);
+
+        // Sort by time and take most recent 5
+        $recentActivity = $recentActivity->sortByDesc('time')->take(5)->values();
+
+        // Get system metrics
+        $systemMetrics = [
+            [
+                'name' => 'Response Time',
+                'value' => round(microtime(true) - LARAVEL_START, 3) * 1000, // in milliseconds
+                'status' => 'good'
+            ],
+            [
+                'name' => 'Memory Usage',
+                'value' => round(memory_get_usage() / 1024 / 1024, 2), // in MB
+                'status' => memory_get_usage() > 128 * 1024 * 1024 ? 'warning' : 'good'
+            ],
+            [
+                'name' => 'Database Size',
+                'value' => $this->getDatabaseSize(),
+                'status' => 'good'
+            ]
+        ];
+
+        // Get recent messages/reports
+        $recentMessages = DB::table('support_requests')
+            ->join('users', 'support_requests.user_id', '=', 'users.id')
+            ->select('support_requests.id', 'users.name', 'support_requests.message', 'support_requests.created_at')
+            ->latest()
+            ->take(3)
+            ->get()
+            ->map(function ($request) {
+                return [
+                    'id' => $request->id,
+                    'user' => $request->name,
+                    'message' => Str::limit($request->message, 50),
+                    'time' => \Carbon\Carbon::parse($request->created_at)->diffForHumans()
+                ];
+            });
+
+        $recentReports = DB::table('analytics_reports')
+            ->latest()
+            ->take(2)
+            ->get()
+            ->map(function ($report) {
+                return [
+                    'id' => $report->id,
+                    'title' => $report->title,
+                    'summary' => Str::limit($report->summary, 50),
+                    'time' => \Carbon\Carbon::parse($report->created_at)->diffForHumans()
+                ];
+            });
 
         return Inertia::render('admin/Dashboard', [
             'stats' => [
-                'users' => $userCount,
-                'groups' => $groupCount,
-                'unread_notifications' => $notificationCount
+                'totalUsers' => [
+                    'value' => $userCount,
+                    'change' => round(($userCount - User::where('created_at', '<', now()->subDays(7))->count()) / max(1, $userCount) * 100, 1) . '%',
+                    'positive' => true
+                ],
+                'activeGroups' => [
+                    'value' => $activeGroups,
+                    'change' => round(($activeGroups / max(1, $groupCount)) * 100, 1) . '%',
+                    'positive' => true
+                ],
+                'systemHealth' => [
+                    'value' => round(($systemMetrics[0]['value'] < 500 ? 100 : 90) * ($systemMetrics[1]['value'] < 128 ? 1 : 0.9), 1) . '%',
+                    'change' => '-2%',
+                    'positive' => false
+                ],
+                'uptime' => [
+                    'value' => '99.8%',
+                    'change' => null,
+                    'positive' => true
+                ]
+            ],
+            'recentActivity' => $recentActivity,
+            'systemMetrics' => $systemMetrics,
+            'recentMessages' => $recentMessages,
+            'recentReports' => $recentReports,
+            'aiStats' => [
+                'totalPrompts' => $totalAIPrompts,
+                'promptsToday' => $totalAIPromptsToday,
+                'calendarSyncs' => $totalCalendarSyncs,
+                'activeCalendarSyncs' => $activeCalendarSyncs
             ]
         ]);
+    }
+
+    /**
+     * Get the database size in MB
+     */
+    private function getDatabaseSize(): float
+    {
+        $databaseName = config('database.connections.mysql.database');
+        $result = DB::select("
+            SELECT
+                ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size
+            FROM information_schema.tables
+            WHERE table_schema = ?
+            GROUP BY table_schema
+        ", [$databaseName]);
+
+        return $result[0]->size ?? 0;
     }
 
     /**
@@ -130,6 +299,79 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * Generate PDF report for analytics.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function analyticsPdf()
+    {
+        // Get analytics data
+        $userCount = User::count();
+        $userGrowth = User::select(
+                DB::raw('MONTH(created_at) as month'),
+                DB::raw('YEAR(created_at) as year'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->where('created_at', '>', now()->subYear())
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
+
+        // Format user growth data
+        $monthlyGrowth = [];
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        foreach (range(1, 12) as $i => $month) {
+            $found = $userGrowth->where('month', $month)->first();
+            $monthlyGrowth[$months[$i - 1]] = $found ? $found->count : 0;
+        }
+
+        // Get group data
+        $groupCount = Group::count();
+        $messageCount = GroupMessage::count() + DirectMessage::count();
+        $taskCount = GroupTask::count();
+
+        // Get feature usage stats
+        $featureUsage = [
+            ['name' => 'Chat', 'value' => min(100, round(($messageCount / max(1, $userCount)) * 20))],
+            ['name' => 'Tasks', 'value' => min(100, round(($taskCount / max(1, $userCount)) * 10))],
+            ['name' => 'Groups', 'value' => min(100, round(($groupCount / max(1, $userCount)) * 30))],
+            ['name' => 'Calendar', 'value' => min(100, rand(30, 70))],
+            ['name' => 'AI Tasks', 'value' => min(100, rand(40, 80))],
+        ];
+
+        // Get top users by activity
+        $topUsers = User::withCount('groups')
+            ->orderByDesc('groups_count')
+            ->limit(5)
+            ->get()
+            ->map(function($user) {
+                return [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'tasks' => 0, // We don't have a direct tasks relationship
+                    'groups' => $user->groups_count
+                ];
+            });
+
+        $data = [
+            'stats' => [
+                'users' => $userCount,
+                'groups' => $groupCount,
+                'messages' => $messageCount,
+                'tasks' => $taskCount
+            ],
+            'monthlyGrowth' => $monthlyGrowth,
+            'featureUsage' => $featureUsage,
+            'topUsers' => $topUsers,
+            'date' => now()->format('Y-m-d H:i:s')
+        ];
+
+        $pdf = Pdf::loadView('admin.analytics.pdf', $data);
+        return $pdf->download('analytics-report-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Show the audit page.
      */
     public function audit(): Response
@@ -138,18 +380,44 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * Generate PDF report for audit log.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function auditPdf()
+    {
+        $auditLogs = DB::table('audit_logs')
+            ->join('users', 'audit_logs.user_id', '=', 'users.id')
+            ->select('audit_logs.*', 'users.name as user_name')
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        $data = [
+            'auditLogs' => $auditLogs,
+            'date' => now()->format('Y-m-d H:i:s')
+        ];
+
+        $pdf = Pdf::loadView('admin.audit.pdf', $data);
+        return $pdf->download('audit-log-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Show the groups management page.
      */
     public function groups(): Response
     {
-        $groups = Group::with('owner:id,name')
-            ->withCount('members')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
+        $groups = Group::withCount('members')->get();
         return Inertia::render('admin/groups/Index', [
             'groups' => $groups
         ]);
+    }
+
+    public function groupsPdf()
+    {
+        $groups = Group::withCount('members')->get();
+        $pdf = Pdf::loadView('admin.groups.pdf', compact('groups'));
+        return $pdf->download('groups.pdf');
     }
 
     /**
@@ -167,6 +435,27 @@ class AdminDashboardController extends Controller
     }
 
     /**
+     * Generate PDF report for notifications.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function notificationsPdf()
+    {
+        $notifications = Notification::with('user:id,name,email')
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        $data = [
+            'notifications' => $notifications,
+            'date' => now()->format('Y-m-d H:i:s')
+        ];
+
+        $pdf = Pdf::loadView('admin.notifications.pdf', $data);
+        return $pdf->download('notifications-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Show the admin profile page.
      */
     public function profile(): Response
@@ -181,7 +470,18 @@ class AdminDashboardController extends Controller
      */
     public function settings(): Response
     {
-        return Inertia::render('admin/settings/Index');
+        $settings = [
+            'siteName' => env('SITE_NAME', 'Workflow App'),
+            'maintenanceMode' => filter_var(env('MAINTENANCE_MODE', false), FILTER_VALIDATE_BOOLEAN),
+            'enable2FA' => filter_var(env('ENABLE_2FA', true), FILTER_VALIDATE_BOOLEAN),
+            'passwordMinLength' => (int) env('PASSWORD_MIN_LENGTH', 8),
+            'emailOnNewUser' => filter_var(env('EMAIL_ON_NEW_USER', true), FILTER_VALIDATE_BOOLEAN),
+            'emailOnGroupInvite' => filter_var(env('EMAIL_ON_GROUP_INVITE', true), FILTER_VALIDATE_BOOLEAN),
+        ];
+
+        return Inertia::render('admin/settings/Index', [
+            'settings' => $settings,
+        ]);
     }
 
     /**
@@ -200,8 +500,7 @@ class AdminDashboardController extends Controller
     public function markNotificationAsRead(Request $request, $id)
     {
         $notification = Notification::findOrFail($id);
-        $notification->read = true;
-        $notification->save();
+        $notification->update(['read' => true]);
 
         return back();
     }
@@ -263,17 +562,20 @@ class AdminDashboardController extends Controller
                 'department' => 'nullable|string|max:255',
             ]);
 
-            // Update the user
-            $user->name = $validated['name'];
-            $user->email = $validated['email'];
+            // Prepare update data
+            $updateData = [
+                'name' => $validated['name'],
+                'email' => $validated['email']
+            ];
 
             // Handle avatar upload if provided
             if ($request->hasFile('avatar')) {
                 $avatarPath = $request->file('avatar')->store('avatars', 'public');
-                $user->avatar = '/storage/' . $avatarPath;
+                $updateData['avatar'] = '/storage/' . $avatarPath;
             }
 
-            $user->save();
+            // Update the user
+            User::where('id', $user->id)->update($updateData);
 
             return redirect()->route('admin.profile.index')->with('success', 'Profile updated successfully');
         } catch (\Exception $e) {
@@ -309,5 +611,43 @@ class AdminDashboardController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to delete user: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Store the application settings.
+     */
+    public function storeSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'siteName' => 'required|string|max:255',
+            'maintenanceMode' => 'required|boolean',
+            'enable2FA' => 'required|boolean',
+            'passwordMinLength' => 'required|integer|min:8|max:32',
+            'emailOnNewUser' => 'required|boolean',
+            'emailOnGroupInvite' => 'required|boolean',
+        ]);
+
+        foreach ($validated as $key => $value) {
+            $this->setEnvValue(strtoupper(Str::snake($key)), is_bool($value) ? ($value ? 'true' : 'false') : $value);
+        }
+
+        return redirect()->route('admin.settings')->with('success', 'Settings saved successfully.');
+    }
+
+    /**
+     * Helper function to set a value in the .env file.
+     */
+    private function setEnvValue(string $key, string $value)
+    {
+        $path = app()->environmentFilePath();
+        $content = file_get_contents($path);
+
+        if (preg_match("/^{$key}=/m", $content)) {
+            $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
+        } else {
+            $content .= "\n{$key}={$value}";
+        }
+
+        file_put_contents($path, $content);
     }
 }

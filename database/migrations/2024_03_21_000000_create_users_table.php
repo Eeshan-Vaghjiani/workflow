@@ -20,8 +20,11 @@ class CreateUsersTable extends Migration
             $table->string('workos_id')->nullable()->unique();
             $table->text('avatar')->nullable();
             $table->enum('status', ['online', 'offline', 'away'])->default('offline');
+            $table->string('role')->default('USER');
+            $table->boolean('is_admin')->default(false);
             $table->rememberToken();
             $table->timestamp('last_login_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

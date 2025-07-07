@@ -13,6 +13,7 @@ use App\Http\Controllers\GroupTaskController;
 use App\Http\Controllers\MpesaController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PusherTestController;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,10 @@ use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AdminAnalyticsController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminUserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,8 +43,19 @@ Route::get('/csrf-refresh', function() {
 });
 
 Route::get('/', function () {
-    // Set cookie in the global cookie jar
-    Cookie::queue('stay_on_home', 'true', 60 * 24 * 30); // 30 days
+    // If user is authenticated and has 2FA enabled but not verified
+    if (Auth::check()) {
+        $user = Auth::user();
+        if ($user->hasTwoFactorEnabled() && !session('two_factor_authenticated')) {
+            // Store the intended URL based on user role
+            if ($user->isAdmin()) {
+                session(['url.intended' => route('admin.dashboard')]);
+            } else {
+                session(['url.intended' => route('dashboard')]);
+            }
+            return redirect()->route('two-factor.verify');
+        }
+    }
 
     // Render the home page
     return Inertia::render('home');
@@ -61,14 +77,6 @@ Route::get('/mpesa/status/{checkoutRequestId}', [App\Http\Controllers\MpesaContr
 
 // Add a direct route to the dashboard for WorkOS authentication callback
 Route::get('/auth-success', function (Request $request) {
-    // Always check for the stay_on_home cookie first
-    $stayHomeCookie = $request->cookie('stay_on_home');
-    if ($stayHomeCookie === 'true') {
-        // Log that we're respecting the cookie
-        \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to home due to stay_on_home cookie');
-        return redirect()->route('home', ['stay' => 'true']);
-    }
-
     // Check if there's a redirect parameter
     if ($request->has('redirect')) {
         \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to custom URL: ' . $request->input('redirect'));
@@ -77,13 +85,24 @@ Route::get('/auth-success', function (Request $request) {
 
     // Check user role and redirect accordingly
     $user = Auth::user();
-    if ($user && $user->is_admin) {
-        \Illuminate\Support\Facades\Log::info('Auth success: Redirecting admin user to admin dashboard');
-        return redirect()->route('admin.dashboard');
+    if ($user) {
+        \Illuminate\Support\Facades\Log::info('Auth success: User authenticated', [
+            'user_id' => $user->id,
+            'is_admin_raw' => $user->is_admin,
+            'is_admin_cast' => (bool)$user->is_admin,
+        ]);
+
+        if ((bool)$user->is_admin === true) {
+            \Illuminate\Support\Facades\Log::info('Auth success: Redirecting admin user to admin dashboard');
+            return redirect()->route('admin.dashboard');
+        } else {
+            \Illuminate\Support\Facades\Log::info('Auth success: Redirecting regular user to dashboard');
+            return redirect()->route('dashboard');
+        }
     }
 
-    \Illuminate\Support\Facades\Log::info('Auth success: Redirecting to regular dashboard');
-    return redirect()->route('dashboard');
+    \Illuminate\Support\Facades\Log::info('Auth success: No user found, redirecting to home');
+    return redirect()->route('home');
 })->name('auth.success');
 
 // Add authentication debugger page
@@ -244,6 +263,50 @@ Route::middleware([
     // Task update routes for calendar integration
     Route::put('/tasks/{id}', [App\Http\Controllers\API\TaskController::class, 'updateDates'])->name('tasks.update-dates');
 });
+
+// Admin routes
+Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_factor', 'admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard.alt');
+
+        // User Management
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('/users/pdf', [UserController::class, 'downloadPdf'])->name('users.pdf');
+        Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
+        Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.delete');
+        Route::post('/users/{id}/restore', [AdminUserController::class, 'restore'])->name('users.restore');
+        Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+
+        // Profile
+        Route::get('/profile', [AdminDashboardController::class, 'profile'])->name('profile');
+
+        // Groups
+        Route::get('/groups', [AdminDashboardController::class, 'groups'])->name('groups.index');
+        Route::get('/groups/pdf', [AdminDashboardController::class, 'groupsPdf'])->name('groups.pdf');
+        Route::get('/groups/{group}', [App\Http\Controllers\Admin\GroupController::class, 'show'])->name('groups.show');
+        Route::get('/groups/{group}/edit', [App\Http\Controllers\Admin\GroupController::class, 'edit'])->name('groups.edit');
+        Route::put('/groups/{group}', [App\Http\Controllers\Admin\GroupController::class, 'update'])->name('groups.update');
+        Route::delete('/groups/{group}', [App\Http\Controllers\Admin\GroupController::class, 'destroy'])->name('groups.destroy');
+        Route::post('/groups/{id}/restore', [App\Http\Controllers\Admin\GroupController::class, 'restore'])->name('groups.restore');
+
+        // Analytics
+        Route::get('/analytics', [AdminAnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('/analytics/pdf', [AdminDashboardController::class, 'analyticsPdf'])->name('analytics.pdf');
+
+        // Assignments
+        Route::get('/assignments', [App\Http\Controllers\Admin\AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{assignment}', [App\Http\Controllers\Admin\AssignmentController::class, 'show'])->name('assignments.show');
+        Route::get('/assignments/{assignment}/edit', [App\Http\Controllers\Admin\AssignmentController::class, 'edit'])->name('assignments.edit');
+        Route::put('/assignments/{assignment}', [App\Http\Controllers\Admin\AssignmentController::class, 'update'])->name('assignments.update');
+        Route::delete('/assignments/{assignment}', [App\Http\Controllers\Admin\AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        Route::post('/assignments/{id}/restore', [App\Http\Controllers\Admin\AssignmentController::class, 'restore'])->name('assignments.restore');
+        Route::get('/assignments/pdf', [App\Http\Controllers\Admin\AssignmentController::class, 'downloadPdf'])->name('assignments.pdf');
+    });
 
 // Add API web fallback routes with explicit session auth
 Route::prefix('api/web')->middleware(['web', 'auth'])->group(function() {
@@ -662,16 +725,27 @@ Route::get('group-tasks/{task}/edit', [App\Http\Controllers\GroupTaskController:
 Route::put('group-tasks/{task}', [App\Http\Controllers\GroupTaskController::class, 'updateSimple'])
     ->name('group-tasks.update-simple');
 
-// Add authentication status check route
+// Add a simple auth status endpoint
 Route::get('/auth/status', function () {
-    return response()->json([
-        'authenticated' => Auth::check(),
-        'user' => Auth::user(),
-        'csrf_token' => csrf_token(),
-        'session_id' => Session::getId(),
-        'cookies' => request()->cookies->all(),
-    ]);
-})->middleware(['web']);
+    try {
+        $user = Auth::user();
+        return response()->json([
+            'authenticated' => Auth::check(),
+            'user' => $user ? [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => (bool)$user->is_admin,
+            ] : null,
+        ]);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Simple Auth Status Error: ' . $e->getMessage());
+        return response()->json([
+            'authenticated' => false,
+            'error' => 'Error checking authentication status'
+        ]);
+    }
+});
 
 // Add route to refresh CSRF token and session
 Route::get('/auth/refresh-session', function () {
@@ -873,22 +947,13 @@ Route::get('/workos-callback', function (\Illuminate\Http\Request $request) {
         session(['workos_access_token' => $authResponse->accessToken]);
 
                         // Redirect based on user role
-        $isAdmin = (bool)$user->is_admin;
-
-        \Illuminate\Support\Facades\Log::info('WorkOS login - checking admin status', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'is_admin_raw' => $user->is_admin,
-            'is_admin_cast' => $isAdmin,
-        ]);
-
-        if ($isAdmin) {
-            \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to admin dashboard');
+        if ($user->isAdmin()) {
+            \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to admin dashboard', ['user_id' => $user->id]);
             return redirect()->route('admin.dashboard');
         }
 
         // Redirect to regular dashboard
-        \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to regular dashboard');
+        \Illuminate\Support\Facades\Log::info('WorkOS login - redirecting to regular dashboard', ['user_id' => $user->id]);
         return redirect()->route('dashboard');
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('WorkOS authentication error', [
@@ -1050,33 +1115,6 @@ Route::get('/debug/admin-check', function() {
     ]);
 });
 
-// Admin Routes
-Route::middleware('web')->group(function () {
-    Route::middleware(['auth', 'verified', ValidateSessionWithWorkOS::class, 'two_factor', 'admin'])
-        ->prefix('admin')
-        ->name('admin.')
-        ->group(function () {
-            Route::get('/', [App\Http\Controllers\AdminDashboardController::class, 'index'])->name('dashboard');
-            Route::get('/users', [App\Http\Controllers\AdminDashboardController::class, 'users'])->name('users.index');
-            Route::delete('/users/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteUser'])->name('users.delete');
-            Route::get('/analytics', [App\Http\Controllers\AdminDashboardController::class, 'analytics'])->name('analytics.index');
-            Route::get('/audit', [App\Http\Controllers\AdminDashboardController::class, 'audit'])->name('audit.index');
-            Route::get('/groups', [App\Http\Controllers\AdminDashboardController::class, 'groups'])->name('groups.index');
-            Route::delete('/groups/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteGroup'])->name('groups.delete');
-            Route::get('/notifications', [App\Http\Controllers\AdminDashboardController::class, 'notifications'])->name('notifications.index');
-            Route::post('/notifications/{id}/mark-as-read', [App\Http\Controllers\AdminDashboardController::class, 'markNotificationAsRead'])->name('notifications.mark-as-read');
-            Route::post('/notifications/mark-all-as-read', [App\Http\Controllers\AdminDashboardController::class, 'markAllNotificationsAsRead'])->name('notifications.mark-all-as-read');
-            Route::delete('/notifications/{id}', [App\Http\Controllers\AdminDashboardController::class, 'deleteNotification'])->name('notifications.delete');
-            Route::get('/profile', [App\Http\Controllers\AdminDashboardController::class, 'profile'])->name('profile.index');
-            Route::put('/profile', [App\Http\Controllers\AdminDashboardController::class, 'updateProfile'])->name('profile.update');
-            Route::get('/settings', [App\Http\Controllers\AdminDashboardController::class, 'settings'])->name('settings.index');
-            Route::get('/settings/appearance', function () {
-                return Inertia::render('admin/settings/appearance');
-            })->name('settings.appearance');
-            Route::get('/security', [App\Http\Controllers\AdminDashboardController::class, 'security'])->name('security.index');
-        });
-});
-
 /*
 |--------------------------------------------------------------------------
 | Kanban Routes
@@ -1092,4 +1130,210 @@ Route::middleware(['auth'])->group(function () {
             'initialBoardId' => $board
         ]);
     })->name('kanban.board');
+});
+
+// Kanban debug routes
+Route::get('/debug/kanban', function () {
+    return view('debug.kanban');
+});
+
+// Add a debug route for Kanban authentication
+Route::get('/debug/kanban-auth-status', function (Request $request) {
+    try {
+        $user = Auth::user();
+        $authInfo = [
+            'authenticated' => Auth::check(),
+            'user' => $user ? [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_admin' => (bool)$user->is_admin,
+            ] : null,
+            'guards' => [
+                'web' => Auth::guard('web')->check(),
+                'api' => Auth::guard('api')->check(),
+                'sanctum' => Auth::guard('sanctum')->check(),
+            ],
+            'session' => [
+                'has_session' => $request->hasSession(),
+                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
+            ],
+            'kanban_boards' => $user ? App\Models\KanbanBoard::where('created_by', $user->id)->count() : 0,
+        ];
+
+        return response()->json($authInfo);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Kanban Auth Debug Error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
+
+        // Return a simplified response that won't cause errors
+        return response()->json([
+            'authenticated' => Auth::check(),
+            'error' => 'Error retrieving kanban auth details: ' . $e->getMessage(),
+            'user' => Auth::check() ? [
+                'id' => Auth::id(),
+                'is_admin' => Auth::user() ? (bool)Auth::user()->is_admin : false
+            ] : null
+        ]);
+    }
+});
+
+// Add a route to create a test Kanban board for the current user
+Route::middleware(['auth'])->get('/debug/create-test-kanban', function (Request $request) {
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['error' => 'Not authenticated'], 401);
+    }
+
+    try {
+        $board = App\Models\KanbanBoard::create([
+            'name' => 'Test Board ' . now()->format('Y-m-d H:i'),
+            'description' => 'Created via debug route',
+            'created_by' => $user->id,
+            'is_active' => true,
+        ]);
+
+        // Create default columns
+        $columns = [
+            ['name' => 'To Do', 'color' => '#3B82F6', 'position' => 1, 'is_default' => true],
+            ['name' => 'In Progress', 'color' => '#F59E0B', 'position' => 2, 'is_default' => false],
+            ['name' => 'Done', 'color' => '#10B981', 'position' => 3, 'is_default' => false],
+        ];
+
+        foreach ($columns as $column) {
+            $board->columns()->create([
+                'name' => $column['name'],
+                'color' => $column['color'],
+                'position' => $column['position'],
+                'is_default' => $column['is_default'],
+                'settings' => [],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test Kanban board created',
+            'board' => $board,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create test board',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+});
+
+// Calendar routes
+Route::get('/debug/auth', function () {
+    return view('debug.auth-test');
+});
+
+// Add a debug route for direct Kanban controller access
+Route::get('/debug/direct-kanban', function () {
+    try {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'authenticated' => false,
+                'message' => 'Not authenticated'
+            ], 401);
+        }
+
+        // Directly use the controller to get boards
+        $controller = app()->make(App\Http\Controllers\API\KanbanBoardController::class);
+        $boards = $controller->index();
+
+        return response()->json([
+            'authenticated' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'message' => 'Direct controller call successful',
+            'boards' => $boards,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => explode("\n", $e->getTraceAsString()),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ], 500);
+    }
+});
+
+Route::get('/debug/kanban', [App\Http\Controllers\DebugController::class, 'kanbanTest'])->name('debug.kanban');
+Route::get('/debug/kanban-auth', [App\Http\Controllers\DebugController::class, 'testKanbanAuth'])->name('debug.kanban-auth');
+Route::get('/debug/kanban-api-test', [App\Http\Controllers\DebugController::class, 'kanbanApiTest'])->name('debug.kanban-api-test');
+Route::get('/debug/auth-test', [App\Http\Controllers\DebugController::class, 'authTest'])->name('debug.auth-test');
+
+// Authentication debug routes
+Route::get('/debug/auth-status', [App\Http\Controllers\AuthDebugController::class, 'getAuthStatus']);
+Route::get('/debug/refresh-auth', [App\Http\Controllers\AuthDebugController::class, 'refreshAuth'])->middleware('auth');
+
+// Add a debug route for Kanban testing
+Route::get('/debug/kanban-test', function (Request $request) {
+    $user = Auth::user();
+
+    // Check if user is authenticated
+    if (!$user) {
+        return response()->json([
+            'authenticated' => false,
+            'message' => 'Not authenticated'
+        ], 401);
+    }
+
+    // Try to create a test board
+    try {
+        $board = App\Models\KanbanBoard::create([
+            'name' => 'Test Board ' . now()->format('Y-m-d H:i'),
+            'description' => 'Created via debug route',
+            'created_by' => $user->id,
+            'is_active' => true,
+        ]);
+
+        // Create default columns
+        $columns = [
+            ['name' => 'To Do', 'color' => '#3B82F6', 'position' => 1, 'is_default' => true],
+            ['name' => 'In Progress', 'color' => '#F59E0B', 'position' => 2, 'is_default' => false],
+            ['name' => 'Done', 'color' => '#10B981', 'position' => 3, 'is_default' => false],
+        ];
+
+        foreach ($columns as $column) {
+            $board->columns()->create([
+                'name' => $column['name'],
+                'color' => $column['color'],
+                'position' => $column['position'],
+                'is_default' => $column['is_default'],
+                'settings' => [],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test Kanban board created',
+            'board' => $board,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create test board',
+            'error' => $e->getMessage(),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+        ], 500);
+    }
 });

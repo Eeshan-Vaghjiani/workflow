@@ -53,6 +53,14 @@ class AuthenticatedSessionController extends Controller
                 $user->save();
             }
 
+            // Add debug logging for user role
+            Log::info('User authenticated', [
+                'user_id' => $user->id,
+                'is_admin_raw' => $user->is_admin,
+                'is_admin_cast' => (bool)$user->is_admin,
+                'is_admin_method' => $user->isAdmin(),
+            ]);
+
             // Return JSON response ONLY for API requests, not for Inertia requests
             if (($request->expectsJson() || $request->is('api/*')) && !$request->header('X-Inertia')) {
                 return response()->json([
@@ -64,12 +72,23 @@ class AuthenticatedSessionController extends Controller
                 ]);
             }
 
-            // Redirect admin users to the admin dashboard
-            if ($user->isAdmin()) {
+            // Check if user has 2FA enabled
+            if ($user->hasTwoFactorEnabled() && !session('two_factor_authenticated')) {
+                // Store the intended URL based on user role
+                if ((bool)$user->is_admin === true) {
+                    session(['url.intended' => route('admin.dashboard')]);
+                } else {
+                    session(['url.intended' => route('dashboard')]);
+                }
+                return redirect()->route('two-factor.verify');
+            }
+
+            // If no 2FA or already verified, redirect based on role
+            if ((bool)$user->is_admin === true) {
                 return redirect()->intended(route('admin.dashboard'));
             }
 
-            // For Inertia requests or regular web requests, redirect to dashboard
+            // For regular users, redirect to dashboard
             return redirect()->intended(route('dashboard'));
         } catch (\Exception $e) {
             Log::error('Login Error', [

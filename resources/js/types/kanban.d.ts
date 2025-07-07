@@ -46,24 +46,3 @@ export interface KanbanTask {
   assigned_user?: User;
   created_user?: User;
 }
-
-export interface DragEndEvent {
-  active: {
-    id: string;
-    data: {
-      current: {
-        type: 'task';
-        task: KanbanTask;
-      };
-    };
-  };
-  over?: {
-    id: string;
-    data: {
-      current: {
-        type: 'column';
-        column: KanbanColumn;
-      };
-    };
-  };
-}

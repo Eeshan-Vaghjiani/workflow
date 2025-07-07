@@ -83,10 +83,9 @@ class KanbanTaskController extends Controller
     /**
      * Move a task to a different column.
      */
-    public function move(Request $request): JsonResponse|KanbanTaskResource
+    public function move(Request $request, KanbanTask $task): JsonResponse|KanbanTaskResource
     {
         $validator = Validator::make($request->all(), [
-            'task_id' => 'required|exists:kanban_tasks,id',
             'column_id' => 'required|exists:kanban_columns,id',
             'position' => 'required|integer|min:0',
         ]);
@@ -95,7 +94,6 @@ class KanbanTaskController extends Controller
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $task = KanbanTask::findOrFail($request->task_id);
         $task->update([
             'column_id' => $request->column_id,
             'position' => $request->position,

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use App\Models\User;
 
 class TwoFactorAuthVerificationController extends Controller
 {
@@ -51,18 +52,25 @@ class TwoFactorAuthVerificationController extends Controller
             Session::put('two_factor_authenticated', true);
             Log::info('Two-factor authentication successful', ['user_id' => $user->id]);
 
-            // Get the intended URL from the session, fallback to dashboard
-            $intendedUrl = Session::get('url.intended', route('dashboard'));
+            // Get the intended URL from the session, fallback to appropriate dashboard based on role
+            $intendedUrl = Session::get('url.intended');
+            if (!$intendedUrl) {
+                $intendedUrl = $user->isAdmin() ? route('admin.dashboard') : route('dashboard');
+            }
 
             // Log redirect information
             Log::info('Redirecting after 2FA', [
                 'intended_url' => $intendedUrl,
                 'session_id' => Session::getId(),
-                'session_has_intended' => Session::has('url.intended')
+                'session_has_intended' => Session::has('url.intended'),
+                'is_admin' => $user->isAdmin()
             ]);
 
-            // Always redirect to the dashboard for now to avoid potential issues
-            return redirect()->route('dashboard');
+            // Clear the intended URL from session
+            Session::forget('url.intended');
+
+            // Redirect to the intended URL or appropriate dashboard
+            return redirect()->to($intendedUrl);
         } catch (ValidationException $e) {
             Log::error('Two-factor validation error', [
                 'errors' => $e->errors(),
@@ -100,7 +108,7 @@ class TwoFactorAuthVerificationController extends Controller
                         'has_recoveryCodes' => method_exists($user, 'recoveryCodes'),
                         'has_replaceRecoveryCodes' => method_exists($user, 'replaceRecoveryCodes')
                     ]);
-                    return redirect()->route('dashboard');
+                    return redirect()->route($user->isAdmin() ? 'admin.dashboard' : 'dashboard');
                 }
 
                 // Get the recovery codes
@@ -128,8 +136,17 @@ class TwoFactorAuthVerificationController extends Controller
             Session::put('two_factor_authenticated', true);
             Log::info('Recovery code authentication successful', ['user_id' => $user->id]);
 
-            // Always redirect to dashboard for consistency
-            return redirect()->route('dashboard');
+            // Get the intended URL from the session, fallback to appropriate dashboard based on role
+            $intendedUrl = Session::get('url.intended');
+            if (!$intendedUrl) {
+                $intendedUrl = $user->isAdmin() ? route('admin.dashboard') : route('dashboard');
+            }
+
+            // Clear the intended URL from session
+            Session::forget('url.intended');
+
+            // Redirect to the intended URL or appropriate dashboard
+            return redirect()->to($intendedUrl);
         } catch (ValidationException $e) {
             Log::error('Recovery code validation error', [
                 'errors' => $e->errors(),

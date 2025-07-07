@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AIPrompt;
+use App\Models\ApiLog;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Config;
@@ -108,6 +109,11 @@ class AIService
 
     public function processTaskPrompt(string $prompt, int $userId, int $groupId): array
     {
+        $startTime = microtime(true);
+        $modelToUse = null;
+        $response = null;
+        $payload = [];
+
         try {
             // Check if API key is missing
             if (empty($this->apiKey) || $this->apiKey === 'sk-or-v1-1234567890abcdef1234567890abcdef') {
@@ -269,7 +275,7 @@ class AIService
             ]);
 
             // Make API call to OpenRouter
-            $response = $http->post($this->baseUrl . '/chat/completions', [
+            $payload = [
                 'model' => $modelToUse,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemMessage],
@@ -277,7 +283,9 @@ class AIService
                 ],
                 'temperature' => 1,
                 'response_format' => ["type" => "json_object"],
-            ]);
+            ];
+
+            $response = $http->post($this->baseUrl . '/chat/completions', $payload);
 
             Log::info('DEBUG: OpenRouter response status:', ['status' => $response->status()]);
 
@@ -361,6 +369,16 @@ class AIService
                 'success' => false,
                 'error' => 'An error occurred while processing your request: ' . $e->getMessage()
             ];
+        } finally {
+            ApiLog::create([
+                'service' => 'OpenRouter',
+                'model' => $modelToUse,
+                'user_id' => $userId,
+                'status_code' => $response ? $response->status() : 500,
+                'response_time_ms' => (microtime(true) - $startTime) * 1000,
+                'request_payload' => json_encode($payload),
+                'response_payload' => $response ? $response->body() : null,
+            ]);
         }
     }
 

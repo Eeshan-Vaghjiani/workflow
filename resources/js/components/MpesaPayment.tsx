@@ -163,7 +163,7 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({
     return (
         <div className="w-full max-w-md mx-auto">
             {!isSuccess ? (
-                <Card className="border-border bg-card text-card-foreground">
+                <Card className="border-border text-card-foreground">
                     <CardHeader>
                         <CardTitle className="text-center">{title}</CardTitle>
                         <CardDescription className="text-center">
@@ -232,7 +232,7 @@ const MpesaPayment: React.FC<MpesaPaymentProps> = ({
                     </form>
                 </Card>
             ) : (
-                <Card className="border-border bg-card text-card-foreground">
+                <Card className="border-border text-card-foreground">
                     <CardHeader>
                         <CardTitle className="text-center">Payment Status</CardTitle>
                     </CardHeader>

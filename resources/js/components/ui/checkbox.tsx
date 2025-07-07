@@ -1,30 +1,43 @@
-import * as React from "react"
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { CheckIcon } from "lucide-react"
+import React, { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
-import { cn } from "@/lib/utils"
-
-function Checkbox({
-  className,
-  ...props
-}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
-  return (
-    <CheckboxPrimitive.Root
-      data-slot="checkbox"
-      className={cn(
-        "peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      {...props}
-    >
-      <CheckboxPrimitive.Indicator
-        data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-current transition-none"
-      >
-        <CheckIcon className="size-3.5" />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
-  )
+export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
 }
 
-export { Checkbox }
+export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
+  ({ className, checked, onCheckedChange, ...props }, ref) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (onCheckedChange) {
+        onCheckedChange(e.target.checked);
+      }
+    };
+
+    return (
+      <div className="relative flex items-center">
+        <input
+          type="checkbox"
+          className="sr-only"
+          ref={ref}
+          checked={checked}
+          onChange={handleChange}
+          {...props}
+        />
+        <div
+          className={cn(
+            "h-4 w-4 rounded border border-gray-300 dark:border-gray-600 flex items-center justify-center",
+            "focus-within:ring-2 focus-within:ring-[#00887A] focus-within:ring-offset-2 dark:focus-within:ring-[#00ccb4] dark:focus-within:ring-offset-gray-900",
+            checked && "bg-[#00887A] dark:bg-[#00887A] border-[#00887A] dark:border-[#00887A]",
+            className
+          )}
+        >
+          {checked && (
+            <Check className="h-3 w-3 text-white" />
+          )}
+        </div>
+      </div>
+    );
+  }
+);

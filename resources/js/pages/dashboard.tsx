@@ -110,7 +110,7 @@ function AIUsageStats({ promptsRemaining, totalPrompts, isPaidUser }: { promptsR
                     </span>
 
                     <Link
-                        href="/pricing"
+                        href="/#pricing"
                         className="text-sm text-primary hover:text-primary/90 hover:underline flex items-center gap-1"
                     >
                         <Lightbulb className="h-3.5 w-3.5" />

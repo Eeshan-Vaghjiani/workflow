@@ -154,33 +154,50 @@ const HomePage = () => {
     useEffect(() => {
         const checkAuth = async () => {
             try {
+                // Try the primary authentication status endpoint
                 const response = await axios.get('/auth/status');
                 const data = response.data;
-                setIsAuthenticated(data.authenticated);
 
-                // Explicitly cast is_admin to boolean for consistency
                 if (data.authenticated && data.user) {
-                    setIsAdmin(Boolean(data.user.is_admin));
+                    setIsAuthenticated(true);
+                    // Ensure is_admin is properly cast to boolean
+                    const isAdminUser = data.user.is_admin === 1 || data.user.is_admin === true;
+                    setIsAdmin(isAdminUser);
                     console.log('Auth status:', {
-                        authenticated: data.authenticated,
+                        authenticated: true,
                         is_admin_raw: data.user.is_admin,
-                        is_admin_cast: Boolean(data.user.is_admin)
+                        is_admin_cast: isAdminUser
                     });
+                } else {
+                    setIsAuthenticated(false);
+                    setIsAdmin(false);
                 }
             } catch (error) {
                 console.error('Error checking auth status:', error);
+
                 // Fallback to another endpoint if the first one fails
                 try {
                     const fallbackResponse = await axios.get('/api/auth-quick');
                     const fallbackData = fallbackResponse.data;
-                    setIsAuthenticated(fallbackData.authenticated);
 
                     if (fallbackData.authenticated && fallbackData.user) {
-                        setIsAdmin(Boolean(fallbackData.user.is_admin));
-                        console.log('Fallback auth status:', fallbackData);
+                        setIsAuthenticated(true);
+                        // Ensure is_admin is properly cast to boolean
+                        const isAdminUser = fallbackData.user.is_admin === 1 || fallbackData.user.is_admin === true;
+                        setIsAdmin(isAdminUser);
+                        console.log('Fallback auth status:', {
+                            authenticated: true,
+                            is_admin_raw: fallbackData.user.is_admin,
+                            is_admin_cast: isAdminUser
+                        });
+                    } else {
+                        setIsAuthenticated(false);
+                        setIsAdmin(false);
                     }
                 } catch (fallbackError) {
                     console.error('Fallback auth check failed:', fallbackError);
+                    setIsAuthenticated(false);
+                    setIsAdmin(false);
                 }
             }
         };
@@ -384,16 +401,16 @@ const HomePage = () => {
                                     className="flex items-center gap-4 pt-6"
                                 >
                                     <div className="flex -space-x-2">
-                                        {[1, 2, 3, 4].map((i) => (
+                                        {[1, 2,].map((i) => (
                                             <div
                                                 key={i}
                                                 className="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 bg-[#D3E3FC] dark:bg-[#1e3a60] flex items-center justify-center text-xs font-medium"
                                             >
-                                                {['JD', 'AK', 'MN', 'RW'][i - 1]}
+                                                {['JD', 'AK'][i - 1]}
                                             </div>
                                         ))}
                                     </div>
-                                    <span className="text-sm text-gray-600 dark:text-gray-400">Join <b>2,500+</b> students already using WorkFlow</span>
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Join <b>25+</b> students already using WorkFlow</span>
                                 </motion.div>
                             </motion.div>
 

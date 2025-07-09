@@ -1,7 +1,7 @@
-import { type BreadcrumbItem, type SharedData } from '@/types';
+import { type BreadcrumbItem, type PageProps } from '@/types';
 import { Transition } from '@headlessui/react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { FormEventHandler, Fragment } from 'react';
 
 import DeleteUser from '@/components/delete-user';
 import HeadingSmall from '@/components/heading-small';
@@ -25,7 +25,7 @@ type ProfileForm = {
 }
 
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth } = usePage<PageProps>().props;
 
     const { data, setData, patch, errors, processing, recentlySuccessful } = useForm<Required<ProfileForm>>({
         name: auth.user.name,
@@ -108,10 +108,13 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                             <Button disabled={processing}>Save</Button>
 
                             <Transition
+                                as={Fragment}
                                 show={recentlySuccessful}
-                                enter="transition ease-in-out"
+                                enter="transition ease-in-out duration-300"
                                 enterFrom="opacity-0"
-                                leave="transition ease-in-out"
+                                enterTo="opacity-100"
+                                leave="transition ease-in-out duration-300"
+                                leaveFrom="opacity-100"
                                 leaveTo="opacity-0"
                             >
                                 <p className="text-sm text-neutral-600 dark:text-gray-400">Saved</p>

@@ -1,22 +1,12 @@
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import { type BreadcrumbItem } from '@/types';
-import { type ReactNode, useEffect } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
-import { useAppearance } from '@/hooks/use-appearance';
-import MouseFollower from '@/components/ui/mouse-follower';
 
 interface AppLayoutProps {
     children: ReactNode;
     breadcrumbs?: BreadcrumbItem[];
 }
-
-// const navigation = [
-//     { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-//     { name: 'Tasks', href: '/tasks', icon: CheckSquareIcon },
-//     { name: 'Groups', href: '/groups', icon: UsersIcon },
-//     { name: 'Calendar', href: '/calendar', icon: CalendarIcon },
-//     { name: 'Settings', href: '/settings', icon: SettingsIcon },
-// ];
 
 // Define animation variants
 const pageVariants: Variants = {
@@ -59,76 +49,79 @@ const childVariants: Variants = {
 };
 
 export default function AppLayout({ children, breadcrumbs, ...props }: AppLayoutProps) {
-    // Get theme from appearance hook
-    const { theme } = useAppearance();
+    const [isMounted, setIsMounted] = useState(false);
 
     // Apply additional settings from localStorage
     useEffect(() => {
-        // Apply color scheme
-        const colorScheme = localStorage.getItem('colorScheme') || 'teal';
-        const colorMap: Record<string, { primary: string, secondary: string, accent: string, neon: string }> = {
-            teal: {
-                primary: '#00887A',
-                secondary: '#D3E3FC',
-                accent: '#FFCCBC',
-                neon: '#00FFA3'
-            },
-            blue: {
-                primary: '#2563EB',
-                secondary: '#DBEAFE',
-                accent: '#C7D2FE',
-                neon: '#00D4FF'
-            },
-            purple: {
-                primary: '#7C3AED',
-                secondary: '#EDE9FE',
-                accent: '#DDD6FE',
-                neon: '#C4B5FD'
-            },
-            emerald: {
-                primary: '#059669',
-                secondary: '#D1FAE5',
-                accent: '#A7F3D0',
-                neon: '#6EE7B7'
-            },
-            amber: {
-                primary: '#D97706',
-                secondary: '#FEF3C7',
-                accent: '#FDE68A',
-                neon: '#FBBF24'
-            },
-            cyber: {
-                primary: '#FF0080',
-                secondary: '#0C0032',
-                accent: '#00FFFF',
-                neon: '#FF00FF'
-            },
-        };
+        setIsMounted(true);
 
-        if (colorMap[colorScheme]) {
-            document.documentElement.style.setProperty('--primary-color', colorMap[colorScheme].primary);
-            document.documentElement.style.setProperty('--secondary-color', colorMap[colorScheme].secondary);
-            document.documentElement.style.setProperty('--accent-color', colorMap[colorScheme].accent);
-            document.documentElement.style.setProperty('--neon-color', colorMap[colorScheme].neon);
-        }
+        try {
+            // Apply color scheme
+            const colorScheme = localStorage.getItem('colorScheme') || 'teal';
+            const colorMap: Record<string, { primary: string, secondary: string, accent: string, neon: string }> = {
+                teal: {
+                    primary: '#00887A',
+                    secondary: '#D3E3FC',
+                    accent: '#FFCCBC',
+                    neon: '#00FFA3'
+                },
+                blue: {
+                    primary: '#2563EB',
+                    secondary: '#DBEAFE',
+                    accent: '#C7D2FE',
+                    neon: '#00D4FF'
+                },
+                purple: {
+                    primary: '#7C3AED',
+                    secondary: '#EDE9FE',
+                    accent: '#DDD6FE',
+                    neon: '#C4B5FD'
+                },
+                emerald: {
+                    primary: '#059669',
+                    secondary: '#D1FAE5',
+                    accent: '#A7F3D0',
+                    neon: '#6EE7B7'
+                },
+                amber: {
+                    primary: '#D97706',
+                    secondary: '#FEF3C7',
+                    accent: '#FDE68A',
+                    neon: '#FBBF24'
+                },
+                cyber: {
+                    primary: '#FF0080',
+                    secondary: '#0C0032',
+                    accent: '#00FFFF',
+                    neon: '#FF00FF'
+                },
+            };
 
-        // Apply motion settings
-        if (localStorage.getItem('reduceMotion') === 'true') {
-            document.body.classList.add('reduce-motion');
-        } else {
-            document.body.classList.remove('reduce-motion');
+            if (colorMap[colorScheme]) {
+                document.documentElement.style.setProperty('--primary-color', colorMap[colorScheme].primary);
+                document.documentElement.style.setProperty('--secondary-color', colorMap[colorScheme].secondary);
+                document.documentElement.style.setProperty('--accent-color', colorMap[colorScheme].accent);
+                document.documentElement.style.setProperty('--neon-color', colorMap[colorScheme].neon);
+            }
+
+            // Apply motion settings
+            if (localStorage.getItem('reduceMotion') === 'true') {
+                document.body.classList.add('reduce-motion');
+            } else {
+                document.body.classList.remove('reduce-motion');
+            }
+        } catch (error) {
+            console.error('Error applying theme settings:', error);
         }
     }, []);
 
-    // Determine if we should use the mouse follower (not on touch or reduce motion devices)
-    const shouldUseMouseFollower =
-        typeof window !== 'undefined' &&
-        !('ontouchstart' in window) &&
-        localStorage.getItem('reduceMotion') !== 'true';
+    // Handle server-side rendering
+    if (!isMounted && typeof window === 'undefined') {
+        return null;
+    }
 
     return (
         <div className="flex h-screen bg-background text-foreground">
-
             <AnimatePresence mode="wait">
                 <motion.div
                     key={window.location.pathname}

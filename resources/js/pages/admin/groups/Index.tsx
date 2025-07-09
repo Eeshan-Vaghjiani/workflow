@@ -22,7 +22,7 @@ interface Group {
     owner: {
         name: string;
         email: string;
-    };
+    } | null;
 }
 
 interface GroupsPageProps {
@@ -120,7 +120,7 @@ const GroupsIndex: React.FC<GroupsPageProps> = ({ groups, filters }) => {
                                         groups.data.map((group) => (
                                             <TableRow key={group.id}>
                                                 <TableCell className="font-medium">{group.name}</TableCell>
-                                                <TableCell>{group.owner.name}</TableCell>
+                                                <TableCell>{group.owner?.name || 'No Owner'}</TableCell>
                                                 <TableCell>{group.members_count}</TableCell>
                                                 <TableCell><Badge variant={group.deleted_at ? 'danger' : 'success'}>{group.deleted_at ? 'Deleted' : 'Active'}</Badge></TableCell>
                                                 <TableCell>{format(new Date(group.created_at), 'PPP')}</TableCell>

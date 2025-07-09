@@ -9,13 +9,15 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, X, UserPlus, Users, Info, MessageSquare, Plus } from 'lucide-react';
+import { Search, X, UserPlus, Users, Info, MessageSquare, Plus, Loader2, Upload } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassContainer } from '@/components/ui/glass-container';
 import { EnhancedButton } from '@/components/ui/enhanced-button';
 import { containerVariants, itemVariants } from '@/lib/theme-constants';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 // Enhanced animation variants
 const messageVariants = {
@@ -37,6 +39,26 @@ const messageVariants = {
         transition: {
             duration: 0.3,
             ease: "easeInOut"
+        }
+    }
+};
+
+const slideInVariants = {
+    hidden: { x: -300, opacity: 0 },
+    visible: { 
+        x: 0, 
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30
+        }
+    },
+    exit: { 
+        x: -300, 
+        opacity: 0,
+        transition: {
+            duration: 0.2
         }
     }
 };
@@ -79,6 +101,13 @@ interface MessageData {
     group_id?: number;
     created_at?: string;
     user?: User;
+    attachments?: Array<{
+        id: number;
+        file_name: string;
+        file_type: string;
+        file_size: number;
+        file_url: string;
+    }>;
 }
 
 interface ChatData {
@@ -114,6 +143,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+    const [isSending, setIsSending] = useState(false);
 
     // New chat modal state
     const [showNewChatModal, setShowNewChatModal] = useState(false);
@@ -125,6 +155,13 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     const [showNewGroupModal, setShowNewGroupModal] = useState(false);
     const [groupName, setGroupName] = useState('');
     const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
+
+    // Reply state
+    const [replyingTo, setReplyingTo] = useState<{
+        id: number | string;
+        content: string;
+        sender?: string;
+    } | null>(null);
 
     const { toast } = useToast();
 
@@ -168,7 +205,8 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                     group_id: data.group_id,
                     created_at: data.created_at || new Date().toISOString(),
                     user: data.user,
-                    is_from_me: data.sender_id === currentUser.id
+                    is_from_me: data.sender_id === currentUser.id,
+                    attachments: data.attachments || []
                 };
 
                 // Add to messages
@@ -269,7 +307,8 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                 timestamp: msg.timestamp,
                 user: msg.user,
                 status: msg.status || 'delivered',
-                is_from_me: (msg.sender_id || msg.user_id) === currentUser.id
+                is_from_me: (msg.sender_id || msg.user_id) === currentUser.id,
+                attachments: msg.attachments || []
             }));
 
             setMessages(formattedMessages);
@@ -291,22 +330,27 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         }
     };
 
-    // Send a message
+    // Send a message with enhanced attachment support
     const sendMessage = async (content: string, attachments?: File[]) => {
         if (!selectedChat || (!content.trim() && (!attachments || attachments.length === 0))) return;
 
         try {
+            setIsSending(true);
+
             // Create form data for attachments
             const formData = new FormData();
             formData.append('message', content);
 
             if (attachments && attachments.length > 0) {
-                attachments.forEach(file => {
-                    formData.append('attachments[]', file);
+                attachments.forEach((file, index) => {
+                    formData.append(`attachments[${index}]`, file);
                 });
             }
 
-            let response;
+            // Add reply reference if replying
+            if (replyingTo) {
+                formData.append('parent_id', replyingTo.id.toString());
+            }
 
             // Optimistically add message to UI
             const tempId = `temp-${Date.now()}`;
@@ -315,13 +359,20 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                 content: content,
                 sender_id: currentUser.id,
                 created_at: new Date().toISOString(),
-                status: 'sent',
+                status: 'sending',
                 is_from_me: true,
                 user: {
                     id: currentUser.id,
                     name: currentUser.name,
                     avatar: currentUser.avatar
-                }
+                },
+                attachments: attachments ? attachments.map((file, index) => ({
+                    id: -index, // Temporary ID
+                    file_name: file.name,
+                    file_type: file.type,
+                    file_size: file.size,
+                    file_url: URL.createObjectURL(file) // Temporary URL
+                })) : []
             };
 
             if (selectedChat.type === 'direct') {
@@ -332,6 +383,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
             setMessages(prev => [...prev, tempMessage]);
 
+            let response;
             // Send to server
             if (selectedChat.type === 'direct') {
                 response = await axios.post(`/api/direct-messages/${selectedChat.id}`, formData, {
@@ -358,22 +410,66 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
                 )
             );
 
+            // Clear reply state
+            setReplyingTo(null);
+
             // Update chat list
             updateChatWithSentMessage(selectedChat.id, content);
 
+            setIsSending(false);
+
         } catch (error) {
             console.error('Error sending message:', error);
+            setIsSending(false);
 
             // Mark the message as failed
             setMessages(prev =>
                 prev.map(msg =>
-                    msg.id === `temp-${Date.now()}` ? { ...msg, status: 'failed' } : msg
+                    msg.id.toString().startsWith('temp-') ? { ...msg, status: 'failed' } : msg
                 )
             );
 
             toast({
                 title: 'Error',
                 description: 'Failed to send message. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    };
+
+    // Handle reply
+    const handleReply = (messageId: number | string) => {
+        const message = messages.find(m => m.id === messageId);
+        if (message) {
+            setReplyingTo({
+                id: messageId,
+                content: message.content,
+                sender: message.user?.name || 'Unknown'
+            });
+        }
+    };
+
+    // Handle delete message
+    const handleDeleteMessage = async (messageId: number | string) => {
+        try {
+            if (selectedChat?.type === 'direct') {
+                await axios.delete(`/api/direct-messages/${messageId}`);
+            } else {
+                await axios.delete(`/api/groups/${selectedChat?.id}/messages/${messageId}`);
+            }
+
+            // Remove from local state
+            setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
+            toast({
+                title: 'Success',
+                description: 'Message deleted successfully.',
+            });
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete message.',
                 variant: 'destructive',
             });
         }
@@ -460,7 +556,7 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
 
         try {
             setIsSearching(true);
-            const response = await axios.get(`/api/chat/search-users?query=${query}`);
+            const response = await axios.get(`/api/chat/search-users?name=${encodeURIComponent(query)}`);
             setSearchResults(response.data.filter((user: User) => user.id !== currentUser.id));
             setIsSearching(false);
         } catch (error) {
@@ -537,32 +633,6 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
         }
     };
 
-    // Handle message deletion
-    const handleDeleteMessage = async (messageId: number | string) => {
-        try {
-            if (selectedChat?.type === 'direct') {
-                await axios.delete(`/api/direct-messages/${messageId}`);
-            } else {
-                await axios.delete(`/api/groups/${selectedChat?.id}/messages/${messageId}`);
-            }
-
-            // Remove message from UI
-            setMessages(prev => prev.filter(msg => msg.id !== messageId));
-
-            toast({
-                title: 'Success',
-                description: 'Message deleted successfully.',
-            });
-        } catch (error) {
-            console.error('Error deleting message:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to delete message. Please try again.',
-                variant: 'destructive',
-            });
-        }
-    };
-
     // Handle message reaction
     const handleMessageReaction = async (messageId: string | number, emoji: string) => {
         try {
@@ -617,213 +687,167 @@ export default function ChatInterface({ currentUser }: ChatInterfaceProps) {
     };
 
     return (
-        <div className="flex h-[calc(100vh-7rem)] bg-background/95 dark:bg-gray-900/95">
-            {/* Chat Sidebar */}
-            <div className="w-80 flex-shrink-0 border-r border-border bg-card">
-                <div className="h-full flex flex-col">
-                    {/* Search and New Chat */}
-                    <div className="p-4 border-b border-border">
-                        <div className="flex items-center gap-2">
-                            <Input
-                                placeholder="Search chats..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex-1"
-                            />
-                            <EnhancedButton
-                                variant="outline"
-                                onClick={() => setShowNewChatModal(true)}
-                                className="h-10 w-10 p-0"
-                            >
-                                <Plus className="h-4 w-4" />
-                            </EnhancedButton>
-                        </div>
-                    </div>
+        <div className="h-screen flex bg-gradient-to-br from-background via-background to-muted/20">
+            {/* Sidebar */}
+            <motion.div
+                variants={slideInVariants}
+                initial="hidden"
+                animate="visible"
+                className="w-80 border-r border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+            >
+                <ChatSidebar
+                    chats={chats}
+                    selectedChat={selectedChat}
+                    onChatSelect={setSelectedChat}
+                    onNewChat={() => setShowNewChatModal(true)}
+                    onNewGroup={() => setShowNewGroupModal(true)}
+                    currentUserId={currentUser.id}
+                    isLoading={isLoading}
+                />
+            </motion.div>
 
-                    {/* Chats List */}
-                    <ScrollArea className="flex-1 p-2">
-                        {isLoading ? (
-                            <div className="flex justify-center p-4">
-                                <div className="animate-pulse flex space-x-4">
-                                    <div className="h-3 w-3 bg-muted-foreground/20 rounded-full"></div>
-                                    <div className="h-3 w-3 bg-muted-foreground/20 rounded-full"></div>
-                                    <div className="h-3 w-3 bg-muted-foreground/20 rounded-full"></div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {chats.map((chat) => (
-                                    <button
-                                        key={`${chat.type}-${chat.id}`}
-                                        onClick={() => setSelectedChat(chat)}
-                                        className={cn(
-                                            "w-full p-3 rounded-lg flex items-center gap-3 transition-colors",
-                                            selectedChat?.id === chat.id
-                                                ? "bg-primary/10 hover:bg-primary/15"
-                                                : "hover:bg-muted/50"
-                                        )}
-                                    >
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={chat.avatar} />
-                                            <AvatarFallback>{chat.name[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <div className="flex-1 min-w-0 text-left">
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-medium truncate">{chat.name}</span>
-                                                {chat.lastMessage && (
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {new Date(chat.lastMessage.timestamp).toLocaleTimeString([], {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit'
-                                                        })}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {chat.lastMessage && (
-                                                <p className="text-sm text-muted-foreground truncate">
-                                                    {chat.lastMessage.content}
-                                                </p>
-                                            )}
-                                        </div>
-                                        {chat.unreadCount && chat.unreadCount > 0 && (
-                                            <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                                                {chat.unreadCount}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </ScrollArea>
-                </div>
-            </div>
-
-            {/* Chat Main Area */}
-            <div className="flex-1 flex flex-col h-full min-w-0">
+            {/* Main Chat Area */}
+            <div className="flex-1 flex flex-col">
                 {selectedChat ? (
                     <>
-                        <div className="p-4 border-b border-border/10 dark:border-gray-800 bg-background/95 dark:bg-gray-900/90">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
-                                    <AvatarImage src={selectedChat.avatar} />
-                                    <AvatarFallback>{selectedChat.name[0]}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <h2 className="font-semibold text-foreground">{selectedChat.name}</h2>
-                                    <p className="text-xs text-muted-foreground">
-                                        {selectedChat.status || (selectedChat.type === 'group' ?
-                                            `${selectedChat.participants?.length || 0} members` : 'Offline')}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
+                        {/* Chat Header */}
+                        <motion.div
+                            initial={{ y: -20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <ChatHeader
+                                chat={{
+                                    id: selectedChat.id,
+                                    name: selectedChat.name,
+                                    avatar: selectedChat.avatar,
+                                    type: selectedChat.type,
+                                    status: selectedChat.status,
+                                    participants: selectedChat.participants
+                                }}
+                            />
+                        </motion.div>
+
+                        {/* Messages Area */}
+                        <motion.div
+                            className="flex-1 flex flex-col"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.2 }}
+                        >
                             <ChatList
                                 messages={messages}
                                 currentUserId={currentUser.id}
                                 isLoading={isLoadingMessages}
-                                onMessageDelete={handleDeleteMessage}
-                                onMessageReaction={handleMessageReaction}
-                                conversationType={selectedChat.type}
+                                onReply={handleReply}
+                                onDelete={handleDeleteMessage}
                             />
-                        </div>
-                        <div className="p-4 bg-background/95 dark:bg-gray-900/90 border-t border-border/10 dark:border-gray-800">
+                        </motion.div>
+
+                        {/* Chat Input */}
+                        <motion.div
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
                             <ChatInput
                                 onSendMessage={sendMessage}
-                                onTyping={() => { }}
-                                isDisabled={false}
-                                placeholder="Type a message..."
+                                isDisabled={isSending}
+                                placeholder={`Message ${selectedChat.name}...`}
+                                replyingTo={replyingTo}
+                                onCancelReply={() => setReplyingTo(null)}
                             />
-                        </div>
+                        </motion.div>
                     </>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                            <h3 className="text-lg font-medium mb-2">No chat selected</h3>
-                            <p className="text-muted-foreground">
-                                Select a chat from the sidebar or start a new conversation
+                    <motion.div
+                        className="flex-1 flex items-center justify-center"
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <Card className="p-12 text-center bg-gradient-to-br from-muted/30 to-muted/10 border-dashed">
+                            <div className="text-6xl mb-6">💬</div>
+                            <h2 className="text-2xl font-bold mb-4">Welcome to Chat!</h2>
+                            <p className="text-muted-foreground mb-6">
+                                Select a conversation to start messaging or create a new one.
                             </p>
-                        </div>
-                    </div>
+                            <Button onClick={() => setShowNewChatModal(true)} className="gap-2">
+                                <Plus className="h-4 w-4" />
+                                Start New Conversation
+                            </Button>
+                        </Card>
+                    </motion.div>
                 )}
             </div>
 
             {/* New Chat Modal */}
             <Dialog open={showNewChatModal} onOpenChange={setShowNewChatModal}>
-                <DialogContent>
-                    <div className="space-y-4">
-                        <div className="text-xl font-semibold">New Chat</div>
-
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                            <Input
-                                placeholder="Search users..."
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    if (e.target.value.length >= 2) {
+                <DialogContent className="sm:max-w-md">
+                    <Card className="border-0 shadow-none">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5" />
+                                New Conversation
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Input
+                                    placeholder="Search users..."
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
                                         searchUsers(e.target.value);
-                                    }
-                                }}
-                                className="pl-10 pr-4"
-                            />
-                        </div>
-
-                        <div className="relative">
-                            {isSearching ? (
-                                <div className="flex justify-center py-4">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 dark:border-neon-green"></div>
+                                    }}
+                                    className="w-full"
+                                />
+                            </div>
+                            
+                            <ScrollArea className="h-64">
+                                <div className="space-y-2">
+                                    {isSearching ? (
+                                        <div className="flex items-center justify-center py-8">
+                                            <Loader2 className="h-6 w-6 animate-spin" />
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        searchResults.map((user) => (
+                                            <motion.div
+                                                key={user.id}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                            >
+                                                <Button
+                                                    variant="ghost"
+                                                    className="w-full justify-start gap-3 h-auto p-3"
+                                                    onClick={() => handleCreateDirectChat(user)}
+                                                >
+                                                    <Avatar className="h-8 w-8">
+                                                        <AvatarImage src={user.avatar} alt={user.name} />
+                                                        <AvatarFallback>
+                                                            {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1 text-left">
+                                                        <div className="font-medium">{user.name}</div>
+                                                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                                                    </div>
+                                                </Button>
+                                            </motion.div>
+                                        ))
+                                    ) : searchQuery ? (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            No users found
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            Start typing to search for users
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <ScrollArea className="h-60">
-                                    <AnimatePresence>
-                                        {searchResults.length > 0 ? (
-                                            <div className="space-y-2">
-                                                {searchResults.map((user) => (
-                                                    <motion.div
-                                                        key={user.id}
-                                                        className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md cursor-pointer"
-                                                        onClick={() => handleCreateDirectChat(user)}
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0, y: -10 }}
-                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                        whileHover={{ scale: 1.02 }}
-                                                    >
-                                                        <div className="flex items-center">
-                                                            <Avatar className="h-10 w-10">
-                                                                <AvatarImage src={user.avatar} alt={user.name} />
-                                                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="ml-3">
-                                                                <div className="font-medium">{user.name}</div>
-                                                                {user.email && <div className="text-xs text-gray-500">{user.email}</div>}
-                                                            </div>
-                                                        </div>
-                                                        <EnhancedButton size="sm" variant="ghost">Chat</EnhancedButton>
-                                                    </motion.div>
-                                                ))}
-                                            </div>
-                                        ) : searchQuery.length >= 2 ? (
-                                            <div className="text-center py-4 text-gray-500">
-                                                No users found
-                                            </div>
-                                        ) : null}
-                                    </AnimatePresence>
-                                </ScrollArea>
-                            )}
-                        </div>
-
-                        <div className="mt-4 flex justify-end">
-                            <EnhancedButton
-                                variant="outline"
-                                onClick={() => setShowNewChatModal(false)}
-                            >
-                                Cancel
-                            </EnhancedButton>
-                        </div>
-                    </div>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
                 </DialogContent>
             </Dialog>
 

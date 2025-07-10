@@ -33,20 +33,22 @@ interface Chat {
 
 interface ChatSidebarProps {
     chats: Chat[];
-    selectedChatId?: number;
+    selectedChat?: Chat | null;
     onChatSelect: (chat: Chat) => void;
     onNewChat: () => void;
     onNewGroup: () => void;
-    onSettingsClick: () => void;
+    currentUserId: number;
+    isLoading?: boolean;
 }
 
 export function ChatSidebar({
     chats,
-    selectedChatId,
+    selectedChat,
     onChatSelect,
     onNewChat,
     onNewGroup,
-    onSettingsClick,
+    currentUserId,
+    isLoading = false,
 }: ChatSidebarProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,6 +77,11 @@ export function ChatSidebar({
             .toUpperCase();
     };
 
+    const handleSettingsClick = () => {
+        // Settings functionality to be implemented
+        console.log('Settings clicked');
+    };
+
     return (
         <motion.div
             className="flex flex-col h-full"
@@ -92,7 +99,7 @@ export function ChatSidebar({
                     <EnhancedButton variant="ghost" size="sm" onClick={onNewGroup}>
                         <Users className="h-5 w-5" />
                     </EnhancedButton>
-                    <EnhancedButton variant="ghost" size="sm" onClick={onSettingsClick}>
+                    <EnhancedButton variant="ghost" size="sm" onClick={handleSettingsClick}>
                         <Settings className="h-5 w-5" />
                     </EnhancedButton>
                 </div>
@@ -113,9 +120,25 @@ export function ChatSidebar({
 
             {/* Chat List */}
             <ScrollArea className="flex-1 px-2">
-                <AnimatePresence>
-                    {filteredChats.length === 0 ? (
+                <AnimatePresence mode="wait">
+                    {isLoading ? (
                         <motion.div
+                            key="loading"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className="p-4 text-center"
+                        >
+                            <GlassContainer className="p-4">
+                                <p className="text-gray-500 dark:text-gray-400">
+                                    Loading conversations...
+                                </p>
+                            </GlassContainer>
+                        </motion.div>
+                    ) : filteredChats.length === 0 ? (
+                        <motion.div
+                            key="empty"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
@@ -130,18 +153,22 @@ export function ChatSidebar({
                         </motion.div>
                     ) : (
                         <motion.div
+                            key="chatList"
                             variants={containerVariants}
                             initial="hidden"
                             animate="visible"
                             className="space-y-2 py-2"
                         >
-                            {filteredChats.map((chat) => {
-                                const isSelected = chat.id === selectedChatId;
+                            {filteredChats.map((chat, index) => {
+                                const isSelected = selectedChat?.id === chat.id;
                                 const isOnline = chat.type === 'direct' && chat.status === 'online';
+                                
+                                // Create unique key using chat id and type to prevent duplicates
+                                const uniqueKey = `${chat.type}-${chat.id}-${index}`;
 
                                 return (
                                     <motion.div
-                                        key={chat.id}
+                                        key={uniqueKey}
                                         variants={itemVariants}
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}

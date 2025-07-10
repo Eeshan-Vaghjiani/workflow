@@ -84,4 +84,28 @@ class DirectMessage extends Model
         return $this->hasMany(PinnedMessage::class, 'message_id')
             ->where('message_type', 'direct');
     }
+
+    /**
+     * Check if the message has attachments.
+     */
+    public function hasAttachments()
+    {
+        return $this->attachments()->exists();
+    }
+
+    /**
+     * Get attachment URLs.
+     */
+    public function getAttachmentUrlsAttribute()
+    {
+        return $this->attachments->map(function ($attachment) {
+            return [
+                'id' => $attachment->id,
+                'file_name' => $attachment->file_name,
+                'file_type' => $attachment->file_type,
+                'file_size' => $attachment->file_size,
+                'file_url' => \Storage::url($attachment->file_path),
+            ];
+        });
+    }
 }

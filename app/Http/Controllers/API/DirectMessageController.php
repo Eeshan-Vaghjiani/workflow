@@ -4,10 +4,12 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\DirectMessage;
+use App\Models\MessageAttachment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use App\Events\NewDirectMessage;
 use App\Events\MessageDeleted;
 
@@ -113,10 +115,20 @@ class DirectMessageController extends Controller
                     $query->where('sender_id', $userId)
                         ->where('receiver_id', $currentUser->id);
                 })
-                ->with('sender:id,name,avatar')
+                ->with(['sender:id,name,avatar', 'attachments'])
                 ->orderBy('created_at', 'asc')
                 ->get()
                 ->map(function ($message) use ($currentUser) {
+                    $attachmentData = $message->attachments->map(function ($attachment) {
+                        return [
+                            'id' => $attachment->id,
+                            'file_name' => $attachment->file_name,
+                            'file_type' => $attachment->file_type,
+                            'file_size' => $attachment->file_size,
+                            'file_url' => Storage::url($attachment->file_path),
+                        ];
+                    });
+
                     return [
                         'id' => $message->id,
                         'content' => $message->message,
@@ -127,6 +139,7 @@ class DirectMessageController extends Controller
                         'is_from_me' => $message->sender_id == $currentUser->id,
                         'user_id' => $message->sender_id,
                         'user' => $message->sender,
+                        'attachments' => $attachmentData,
                     ];
                 });
 
@@ -167,7 +180,9 @@ class DirectMessageController extends Controller
     {
         try {
             $validated = $request->validate([
-                'message' => 'required|string|max:1000',
+                'message' => 'nullable|string|max:1000',
+                'attachments' => 'nullable|array|max:5',
+                'attachments.*' => 'file|max:10240', // 10MB max per file
             ]);
 
             $currentUser = auth()->user();
@@ -187,13 +202,46 @@ class DirectMessageController extends Controller
                 ], 404);
             }
 
+            // Must have either message or attachments
+            if (empty($validated['message']) && empty($validated['attachments'])) {
+                return response()->json([
+                    'error' => 'Message or attachments required'
+                ], 400);
+            }
+
             // Create the message
             $message = DirectMessage::create([
                 'sender_id' => $currentUser->id,
                 'receiver_id' => $userId,
-                'message' => $validated['message'],
+                'message' => $validated['message'] ?? '',
                 'read' => false,
             ]);
+
+            // Handle attachments
+            $attachmentData = [];
+            if (!empty($validated['attachments'])) {
+                foreach ($validated['attachments'] as $file) {
+                    $filename = time() . '_' . $file->getClientOriginalName();
+                    $path = $file->storeAs('message-attachments', $filename, 'public');
+                    
+                    $attachment = MessageAttachment::create([
+                        'message_id' => $message->id,
+                        'message_type' => 'direct',
+                        'file_path' => $path,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_type' => $file->getMimeType(),
+                        'file_size' => $file->getSize(),
+                    ]);
+
+                    $attachmentData[] = [
+                        'id' => $attachment->id,
+                        'file_name' => $attachment->file_name,
+                        'file_type' => $attachment->file_type,
+                        'file_size' => $attachment->file_size,
+                        'file_url' => Storage::url($attachment->file_path),
+                    ];
+                }
+            }
 
             // Load sender relationship
             $message->load('sender:id,name,avatar');
@@ -210,6 +258,7 @@ class DirectMessageController extends Controller
                 'user_id' => $currentUser->id,
                 'sender_id' => $currentUser->id,
                 'receiver_id' => $userId,
+                'attachments' => $attachmentData,
                 'user' => [
                     'id' => $currentUser->id,
                     'name' => $currentUser->name,
@@ -222,7 +271,7 @@ class DirectMessageController extends Controller
                 'message_id' => $message->id,
                 'sender_id' => $currentUser->id,
                 'receiver_id' => $userId,
-                'data' => $messageData,
+                'attachments_count' => count($attachmentData),
                 'timestamp' => $message->created_at,
             ]);
 
@@ -244,6 +293,95 @@ class DirectMessageController extends Controller
 
             return response()->json([
                 'error' => 'Failed to send message',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload attachment for a direct message
+     */
+    public function uploadAttachment(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'file' => 'required|file|max:10240', // 10MB max
+                'receiver_id' => 'required|exists:users,id',
+            ]);
+
+            $currentUser = auth()->user();
+            $receiverId = $validated['receiver_id'];
+
+            // Store the file
+            $file = $request->file('file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('message-attachments', $filename, 'public');
+
+            // Create a message with just the attachment
+            $message = DirectMessage::create([
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $receiverId,
+                'message' => '', // Empty message for attachment-only
+                'read' => false,
+            ]);
+
+            // Create the attachment record
+            $attachment = MessageAttachment::create([
+                'message_id' => $message->id,
+                'message_type' => 'direct',
+                'file_path' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+            ]);
+
+            // Format response
+            $attachmentData = [
+                'id' => $attachment->id,
+                'file_name' => $attachment->file_name,
+                'file_type' => $attachment->file_type,
+                'file_size' => $attachment->file_size,
+                'file_url' => Storage::url($attachment->file_path),
+            ];
+
+            // Load sender relationship
+            $message->load('sender:id,name,avatar');
+
+            $messageData = [
+                'id' => $message->id,
+                'content' => '',
+                'message' => '',
+                'timestamp' => $message->created_at->format('g:i A'),
+                'date' => $message->created_at->format('M j, Y'),
+                'created_at' => $message->created_at,
+                'is_from_me' => false,
+                'user_id' => $currentUser->id,
+                'sender_id' => $currentUser->id,
+                'receiver_id' => $receiverId,
+                'attachments' => [$attachmentData],
+                'user' => [
+                    'id' => $currentUser->id,
+                    'name' => $currentUser->name,
+                    'avatar' => $currentUser->avatar
+                ],
+            ];
+
+            // Broadcast the message
+            broadcast(new NewDirectMessage($message, $messageData))->toOthers();
+
+            return response()->json([
+                'message' => $messageData,
+                'attachment' => $attachmentData
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error uploading attachment', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to upload attachment',
                 'message' => $e->getMessage()
             ], 500);
         }

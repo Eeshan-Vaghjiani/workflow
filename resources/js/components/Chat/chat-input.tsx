@@ -261,38 +261,40 @@ export function ChatInput({
                 <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className={cn(
-                                            "text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200",
-                                            isEmojiPickerOpen && "text-primary bg-primary/10"
-                                        )}
+                            <div>
+                                <Popover open={isEmojiPickerOpen} onOpenChange={setIsEmojiPickerOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className={cn(
+                                                "text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all duration-200",
+                                                isEmojiPickerOpen && "text-primary bg-primary/10"
+                                            )}
+                                        >
+                                            <Smile className="h-5 w-5" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent 
+                                        className="w-auto p-0 border-0 shadow-2xl"
+                                        side="top"
+                                        align="start"
                                     >
-                                        <Smile className="h-5 w-5" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent 
-                                    className="w-auto p-0 border-0 shadow-2xl"
-                                    side="top"
-                                    align="start"
-                                >
-                                    <div className="rounded-lg overflow-hidden">
-                                        <Picker
-                                            data={data}
-                                            onEmojiSelect={handleEmojiSelect}
-                                            theme="auto"
-                                            set="native"
-                                            searchPosition="sticky"
-                                            skinTonePosition="search"
-                                            previewPosition="none"
-                                        />
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
+                                        <div className="rounded-lg overflow-hidden">
+                                            <Picker
+                                                data={data}
+                                                onEmojiSelect={handleEmojiSelect}
+                                                theme="auto"
+                                                set="native"
+                                                searchPosition="sticky"
+                                                skinTonePosition="search"
+                                                previewPosition="none"
+                                            />
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                         </TooltipTrigger>
                         <TooltipContent>
                             <p>Add emoji</p>

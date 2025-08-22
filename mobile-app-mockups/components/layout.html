@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner Mobile App</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" id="notification-btn">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <button class="btn-icon" id="profile-btn">
+                        <i class="fas fa-user"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content" id="main-content">
+                <!-- Page content will be inserted here -->
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item" data-page="groups">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item" data-page="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item" data-page="calendar">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item" data-page="chat">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navItems = document.querySelectorAll('.nav-item');
+            const pageTitle = document.getElementById('page-title');
+            const mainContent = document.getElementById('main-content');
+
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all items
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Update page title
+                    const pageName = this.querySelector('span').textContent;
+                    pageTitle.textContent = pageName;
+                    
+                    // Load page content (in a real app, this would be AJAX)
+                    const page = this.getAttribute('data-page');
+                    loadPage(page);
+                });
+            });
+
+            function loadPage(page) {
+                // This would typically load content via AJAX
+                // For now, we'll just show a placeholder
+                mainContent.innerHTML = `
+                    <div class="fade-in">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">${page.charAt(0).toUpperCase() + page.slice(1)}</h2>
+                            </div>
+                            <p>Loading ${page} content...</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Notification button
+            document.getElementById('notification-btn').addEventListener('click', function() {
+                alert('Notifications panel would open here');
+            });
+
+            // Profile button
+            document.getElementById('profile-btn').addEventListener('click', function() {
+                alert('Profile settings would open here');
+            });
+        });
+    </script>
+</body>
+</html>

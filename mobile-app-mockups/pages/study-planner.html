@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .study-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .session-item {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #007aff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .session-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .session-item.completed {
+            border-left-color: #34c759;
+            opacity: 0.7;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .session-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .session-time {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+        
+        .session-subject {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-bottom: 8px;
+        }
+        
+        .session-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .progress-mini {
+            flex: 1;
+            height: 4px;
+            background: #e5e5ea;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-mini-bar {
+            height: 100%;
+            background: #007aff;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        .progress-mini-bar.completed {
+            background: #34c759;
+        }
+        
+        .progress-text {
+            font-size: 12px;
+            color: #8e8e93;
+            min-width: 40px;
+        }
+        
+        .task-list {
+            margin-top: 12px;
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 14px;
+        }
+        
+        .task-checkbox {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e5e5ea;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .task-checkbox.checked {
+            background: #007aff;
+            border-color: #007aff;
+        }
+        
+        .task-text {
+            flex: 1;
+            color: #1d1d1f;
+        }
+        
+        .task-text.completed {
+            text-decoration: line-through;
+            color: #8e8e93;
+        }
+        
+        .subject-filter {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+        
+        .subject-chip {
+            padding: 8px 16px;
+            background: #f2f2f7;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #8e8e93;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .subject-chip.active {
+            background: #007aff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Study Planner</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showStats()">
+                        <i class="fas fa-chart-bar"></i>
+                    </button>
+                    <button class="btn-icon" onclick="addSession()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Study Stats -->
+                <div class="card fade-in">
+                    <div class="study-stats">
+                        <div class="stat-card">
+                            <div class="stat-number">12</div>
+                            <div class="stat-label">Sessions This Week</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #34c759, #30d158);">
+                            <div class="stat-number">8.5</div>
+                            <div class="stat-label">Hours Studied</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #ff9500, #ff9f0a);">
+                            <div class="stat-number">85%</div>
+                            <div class="stat-label">Completion Rate</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #5856d6, #af52de);">
+                            <div class="stat-number">4</div>
+                            <div class="stat-label">Subjects</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subject Filter -->
+                <div class="card fade-in">
+                    <div class="subject-filter">
+                        <div class="subject-chip active" onclick="filterSubject('all')">All</div>
+                        <div class="subject-chip" onclick="filterSubject('math')">Mathematics</div>
+                        <div class="subject-chip" onclick="filterSubject('cs')">Computer Science</div>
+                        <div class="subject-chip" onclick="filterSubject('chemistry')">Chemistry</div>
+                        <div class="subject-chip" onclick="filterSubject('english')">English</div>
+                    </div>
+                </div>
+
+                <!-- Today's Sessions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Today's Study Sessions</h3>
+                        <button class="btn-icon" onclick="viewAllSessions()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Morning Session -->
+                    <div class="session-item" onclick="openSession(1)">
+                        <div class="session-header">
+                            <div class="session-title">Morning Review</div>
+                            <div class="session-time">9:00 AM - 10:30 AM</div>
+                        </div>
+                        <div class="session-subject">Mathematics • Calculus Review</div>
+                        <div class="session-progress">
+                            <div class="progress-mini">
+                                <div class="progress-mini-bar" style="width: 75%;"></div>
+                            </div>
+                            <div class="progress-text">75%</div>
+                        </div>
+                        <div class="task-list">
+                            <div class="task-item">
+                                <div class="task-checkbox checked"></div>
+                                <div class="task-text completed">Review derivatives</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox checked"></div>
+                                <div class="task-text completed">Practice integration</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox"></div>
+                                <div class="task-text">Solve word problems</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Afternoon Session -->
+                    <div class="session-item" onclick="openSession(2)">
+                        <div class="session-header">
+                            <div class="session-title">Programming Practice</div>
+                            <div class="session-time">2:00 PM - 4:00 PM</div>
+                        </div>
+                        <div class="session-subject">Computer Science • Data Structures</div>
+                        <div class="session-progress">
+                            <div class="progress-mini">
+                                <div class="progress-mini-bar" style="width: 30%;"></div>
+                            </div>
+                            <div class="progress-text">30%</div>
+                        </div>
+                        <div class="task-list">
+                            <div class="task-item">
+                                <div class="task-checkbox checked"></div>
+                                <div class="task-text completed">Implement linked list</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox"></div>
+                                <div class="task-text">Binary tree traversal</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox"></div>
+                                <div class="task-text">Graph algorithms</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evening Session -->
+                    <div class="session-item" onclick="openSession(3)">
+                        <div class="session-header">
+                            <div class="session-title">Chemistry Lab Prep</div>
+                            <div class="session-time">7:00 PM - 8:30 PM</div>
+                        </div>
+                        <div class="session-subject">Chemistry • Organic Chemistry</div>
+                        <div class="session-progress">
+                            <div class="progress-mini">
+                                <div class="progress-mini-bar" style="width: 0%;"></div>
+                            </div>
+                            <div class="progress-text">0%</div>
+                        </div>
+                        <div class="task-list">
+                            <div class="task-item">
+                                <div class="task-checkbox"></div>
+                                <div class="task-text">Read lab manual</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox"></div>
+                                <div class="task-text">Prepare safety checklist</div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox"></div>
+                                <div class="task-text">Review chemical formulas</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Sessions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Upcoming Sessions</h3>
+                        <button class="btn-icon" onclick="viewAllSessions()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item" onclick="openSession(4)">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Literature Review</div>
+                                <div class="list-item-subtitle">Tomorrow • 10:00 AM - 11:30 AM • English</div>
+                            </div>
+                            <span class="badge badge-primary">Planned</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openSession(5)">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Math Problem Solving</div>
+                                <div class="list-item-subtitle">Dec 26 • 2:00 PM - 3:30 PM • Mathematics</div>
+                            </div>
+                            <span class="badge badge-success">Scheduled</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openSession(6)">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Web Development</div>
+                                <div class="list-item-subtitle">Dec 27 • 4:00 PM - 6:00 PM • Computer Science</div>
+                            </div>
+                            <span class="badge badge-warning">Planned</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="addSession()">
+                            <i class="fas fa-plus"></i>
+                            New Session
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('pomodoro')">
+                            <i class="fas fa-play"></i>
+                            Start Timer
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('tasks')">
+                            <i class="fas fa-tasks"></i>
+                            View Tasks
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportPlan()">
+                            <i class="fas fa-download"></i>
+                            Export Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addSession() {
+            alert('Add study session form would open here');
+        }
+
+        function openSession(sessionId) {
+            alert(`Opening study session ${sessionId}`);
+        }
+
+        function showStats() {
+            alert('Study statistics would open here');
+        }
+
+        function filterSubject(subject) {
+            const chips = document.querySelectorAll('.subject-chip');
+            chips.forEach(chip => chip.classList.remove('active'));
+            event.target.classList.add('active');
+            alert(`Filtering by subject: ${subject}`);
+        }
+
+        function viewAllSessions() {
+            alert('View all sessions interface would open here');
+        }
+
+        function navigateTo(page) {
+            alert(`Navigating to ${page} page`);
+        }
+
+        function exportPlan() {
+            alert('Exporting study plan...');
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Add click effects to session items
+            const sessionItems = document.querySelectorAll('.session-item');
+            sessionItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+
+            // Add click effects to task checkboxes
+            const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+            taskCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    this.classList.toggle('checked');
+                    const taskText = this.nextElementSibling;
+                    taskText.classList.toggle('completed');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

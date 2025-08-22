@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Planner Mobile App Mockups</title>
+    <link rel="stylesheet" href="assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .mockups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .mockup-item {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .mockup-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .mockup-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mockup-description {
+            color: #8e8e93;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .mockup-preview {
+            width: 100%;
+            height: 300px;
+            background: #f2f2f7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mockup-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .mockup-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .mockup-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-view {
+            flex: 1;
+            padding: 12px 20px;
+            background: #007aff;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        
+        .btn-view:hover {
+            background: #0056cc;
+        }
+        
+        .btn-secondary {
+            background: #f2f2f7;
+            color: #007aff;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e5ea;
+        }
+        
+        .features-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .features-section h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #1d1d1f;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 24px;
+        }
+        
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+        
+        .feature-description {
+            color: #8e8e93;
+            line-height: 1.4;
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+        
+        @media (max-width: 768px) {
+            .mockups-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Study Planner Mobile App Mockups</h1>
+            <p>Interactive mobile app mockups showcasing the conversion of your Laravel + React web application to a modern mobile interface. All pages have been redesigned with mobile-first principles and touch-friendly interactions.</p>
+        </div>
+
+        <div class="mockups-grid">
+            <!-- Dashboard -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-home" style="color: #007aff;"></i>
+                    Dashboard
+                </div>
+                <div class="mockup-description">
+                    Main dashboard with quick stats, upcoming tasks, recent groups, and today's schedule. Features AI usage tracking and quick action buttons.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/dashboard.html" class="btn-view">View Mockup</a>
+                    <a href="pages/dashboard.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+
+            <!-- Tasks -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-tasks" style="color: #34c759;"></i>
+                    Tasks Management
+                </div>
+                <div class="mockup-description">
+                    Task management with categories, priority levels, due dates, and completion tracking. Includes list and kanban view options.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/tasks.html" class="btn-view">View Mockup</a>
+                    <a href="pages/tasks.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+
+            <!-- Groups -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-users" style="color: #ff9500;"></i>
+                    Groups & Collaboration
+                </div>
+                <div class="mockup-description">
+                    Group management with member lists, assignments, recent activity, and discoverable groups. Features group creation and joining.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/groups.html" class="btn-view">View Mockup</a>
+                    <a href="pages/groups.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+
+            <!-- Calendar -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-calendar" style="color: #5856d6;"></i>
+                    Calendar & Events
+                </div>
+                <div class="mockup-description">
+                    Interactive calendar with event management, timeline view, and upcoming events. Supports different event types and scheduling.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/calendar.html" class="btn-view">View Mockup</a>
+                    <a href="pages/calendar.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+
+            <!-- Chat -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-comments" style="color: #ff3b30;"></i>
+                    Chat & Messaging
+                </div>
+                <div class="mockup-description">
+                    Real-time messaging with direct messages and group chats. Features message status, online indicators, and recent activity.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/chat.html" class="btn-view">View Mockup</a>
+                    <a href="pages/chat.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+
+            <!-- Study Planner -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-book" style="color: #af52de;"></i>
+                    Study Planner
+                </div>
+                <div class="mockup-description">
+                    Study session management with progress tracking, subject filtering, and task lists. Includes session statistics and planning tools.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/study-planner.html" class="btn-view">View Mockup</a>
+                    <a href="pages/study-planner.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+
+            <!-- Pomodoro Timer -->
+            <div class="mockup-item">
+                <div class="mockup-title">
+                    <i class="fas fa-clock" style="color: #ff9500;"></i>
+                    Pomodoro Timer
+                </div>
+                <div class="mockup-description">
+                    Interactive timer with focus, short break, and long break modes. Features progress tracking, session stats, and customizable settings.
+                </div>
+                <div class="mockup-preview">
+                    <i class="fas fa-mobile-alt" style="font-size: 48px; color: #8e8e93;"></i>
+                </div>
+                <div class="mockup-actions">
+                    <a href="pages/pomodoro.html" class="btn-view">View Mockup</a>
+                    <a href="pages/pomodoro.html" class="btn-view btn-secondary" target="_blank">Open New Tab</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="features-section">
+            <h2>Mobile App Features</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <div class="feature-title">Mobile-First Design</div>
+                    <div class="feature-description">
+                        Optimized for mobile devices with touch-friendly interfaces and responsive layouts
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <div class="feature-title">Modern UI/UX</div>
+                    <div class="feature-description">
+                        Clean, intuitive design with smooth animations and consistent visual language
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-touch"></i>
+                    </div>
+                    <div class="feature-title">Touch Interactions</div>
+                    <div class="feature-description">
+                        Gesture-based navigation with haptic feedback and intuitive touch controls
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-sync"></i>
+                    </div>
+                    <div class="feature-title">Real-time Sync</div>
+                    <div class="feature-description">
+                        Synchronized data across devices with offline support and cloud backup
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="feature-title">Smart Notifications</div>
+                    <div class="feature-description">
+                        Intelligent notifications for tasks, events, and study reminders
+                    </div>
+                </div>
+                
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="feature-title">Progress Tracking</div>
+                    <div class="feature-description">
+                        Visual progress indicators and analytics for study sessions and task completion
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 Study Planner Mobile App Mockups. All mockups are interactive HTML prototypes designed for easy modification and future development.</p>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactivity to the mockup items
+        document.addEventListener('DOMContentLoaded', function() {
+            const mockupItems = document.querySelectorAll('.mockup-item');
+            
+            mockupItems.forEach((item, index) => {
+                // Add staggered animation on load
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

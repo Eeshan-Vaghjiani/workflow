@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .calendar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #e5e5ea;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .calendar-day-header {
+            background: #f2f2f7;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8e8e93;
+        }
+        
+        .calendar-day {
+            background: #fff;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1d1d1f;
+            min-height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .calendar-day:hover {
+            background: #f8f9fa;
+        }
+        
+        .calendar-day.today {
+            background: #007aff;
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        .calendar-day.other-month {
+            color: #c7c7cc;
+        }
+        
+        .calendar-day.has-events::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            width: 4px;
+            height: 4px;
+            background: #ff3b30;
+            border-radius: 50%;
+        }
+        
+        .calendar-day.today.has-events::after {
+            background: #fff;
+        }
+        
+        .event-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin: 1px;
+        }
+        
+        .event-dot.assignment { background: #ff3b30; }
+        .event-dot.lecture { background: #007aff; }
+        .event-dot.study { background: #34c759; }
+        .event-dot.group { background: #ff9500; }
+        
+        .timeline {
+            margin-top: 20px;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #fff;
+            border-radius: 12px;
+            border-left: 4px solid #007aff;
+        }
+        
+        .timeline-time {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8e8e93;
+            min-width: 60px;
+        }
+        
+        .timeline-content {
+            flex: 1;
+        }
+        
+        .timeline-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+        
+        .timeline-subtitle {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Calendar</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showFilters()">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button class="btn-icon" onclick="addEvent()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Calendar Navigation -->
+                <div class="card fade-in">
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button class="btn-icon" onclick="previousMonth()">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="calendar-title">December 2024</div>
+                            <button class="btn-icon" onclick="nextMonth()">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-secondary" onclick="today()">
+                            Today
+                        </button>
+                    </div>
+                    
+                    <!-- Calendar Grid -->
+                    <div class="calendar-grid">
+                        <!-- Day Headers -->
+                        <div class="calendar-day-header">Sun</div>
+                        <div class="calendar-day-header">Mon</div>
+                        <div class="calendar-day-header">Tue</div>
+                        <div class="calendar-day-header">Wed</div>
+                        <div class="calendar-day-header">Thu</div>
+                        <div class="calendar-day-header">Fri</div>
+                        <div class="calendar-day-header">Sat</div>
+                        
+                        <!-- Previous Month Days -->
+                        <div class="calendar-day other-month">24</div>
+                        <div class="calendar-day other-month">25</div>
+                        <div class="calendar-day other-month">26</div>
+                        <div class="calendar-day other-month">27</div>
+                        <div class="calendar-day other-month">28</div>
+                        <div class="calendar-day other-month">29</div>
+                        <div class="calendar-day other-month">30</div>
+                        
+                        <!-- Current Month Days -->
+                        <div class="calendar-day">1</div>
+                        <div class="calendar-day has-events">2</div>
+                        <div class="calendar-day">3</div>
+                        <div class="calendar-day has-events">4</div>
+                        <div class="calendar-day">5</div>
+                        <div class="calendar-day has-events">6</div>
+                        <div class="calendar-day">7</div>
+                        <div class="calendar-day">8</div>
+                        <div class="calendar-day has-events">9</div>
+                        <div class="calendar-day">10</div>
+                        <div class="calendar-day has-events">11</div>
+                        <div class="calendar-day">12</div>
+                        <div class="calendar-day">13</div>
+                        <div class="calendar-day">14</div>
+                        <div class="calendar-day has-events">15</div>
+                        <div class="calendar-day">16</div>
+                        <div class="calendar-day has-events">17</div>
+                        <div class="calendar-day">18</div>
+                        <div class="calendar-day">19</div>
+                        <div class="calendar-day has-events">20</div>
+                        <div class="calendar-day">21</div>
+                        <div class="calendar-day">22</div>
+                        <div class="calendar-day has-events">23</div>
+                        <div class="calendar-day today has-events">24</div>
+                        <div class="calendar-day">25</div>
+                        <div class="calendar-day has-events">26</div>
+                        <div class="calendar-day">27</div>
+                        <div class="calendar-day">28</div>
+                        <div class="calendar-day has-events">29</div>
+                        <div class="calendar-day">30</div>
+                        <div class="calendar-day">31</div>
+                        
+                        <!-- Next Month Days -->
+                        <div class="calendar-day other-month">1</div>
+                        <div class="calendar-day other-month">2</div>
+                        <div class="calendar-day other-month">3</div>
+                        <div class="calendar-day other-month">4</div>
+                        <div class="calendar-day other-month">5</div>
+                        <div class="calendar-day other-month">6</div>
+                        <div class="calendar-day other-month">7</div>
+                    </div>
+                </div>
+
+                <!-- Today's Events -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Today's Events</h3>
+                        <button class="btn-icon" onclick="viewAllEvents()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="timeline">
+                        <div class="timeline-item" onclick="openEvent(1)">
+                            <div class="timeline-time">10:00</div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Computer Science Lecture</div>
+                                <div class="timeline-subtitle">Room 301 • Prof. Smith</div>
+                            </div>
+                            <div class="event-dot lecture"></div>
+                        </div>
+                        
+                        <div class="timeline-item" onclick="openEvent(2)">
+                            <div class="timeline-time">14:00</div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Study Group Meeting</div>
+                                <div class="timeline-subtitle">Library • Math Study Group</div>
+                            </div>
+                            <div class="event-dot group"></div>
+                        </div>
+                        
+                        <div class="timeline-item" onclick="openEvent(3)">
+                            <div class="timeline-time">19:00</div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Study Session</div>
+                                <div class="timeline-subtitle">Home • Chemistry Review</div>
+                            </div>
+                            <div class="event-dot study"></div>
+                        </div>
+                        
+                        <div class="timeline-item" onclick="openEvent(4)">
+                            <div class="timeline-time">23:59</div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">Math Assignment Due</div>
+                                <div class="timeline-subtitle">Calculus Problem Set #5</div>
+                            </div>
+                            <div class="event-dot assignment"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="addEvent()">
+                            <i class="fas fa-plus"></i>
+                            Add Event
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('tasks')">
+                            <i class="fas fa-tasks"></i>
+                            View Tasks
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('study-planner')">
+                            <i class="fas fa-book"></i>
+                            Study Plan
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportCalendar()">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Upcoming Events</h3>
+                        <button class="btn-icon" onclick="viewAllEvents()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item" onclick="openEvent(5)">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Physics Lab</div>
+                                <div class="list-item-subtitle">Tomorrow • 2:00 PM • Lab Building</div>
+                            </div>
+                            <span class="badge badge-primary">Lab</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openEvent(6)">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Literature Circle</div>
+                                <div class="list-item-subtitle">Dec 26 • 4:00 PM • Library</div>
+                            </div>
+                            <span class="badge badge-success">Group</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openEvent(7)">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Research Paper Due</div>
+                                <div class="list-item-subtitle">Dec 29 • 11:59 PM • Online</div>
+                            </div>
+                            <span class="badge badge-warning">Due</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item active">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addEvent() {
+            alert('Add event form would open here');
+        }
+
+        function openEvent(eventId) {
+            alert(`Opening event ${eventId} details`);
+        }
+
+        function showFilters() {
+            alert('Calendar filters would open here');
+        }
+
+        function previousMonth() {
+            alert('Navigate to previous month');
+        }
+
+        function nextMonth() {
+            alert('Navigate to next month');
+        }
+
+        function today() {
+            alert('Navigate to today');
+        }
+
+        function viewAllEvents() {
+            alert('View all events interface would open here');
+        }
+
+        function navigateTo(page) {
+            alert(`Navigating to ${page} page`);
+        }
+
+        function exportCalendar() {
+            alert('Exporting calendar...');
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Add click effects to calendar days
+            const calendarDays = document.querySelectorAll('.calendar-day');
+            calendarDays.forEach(day => {
+                day.addEventListener('click', function() {
+                    if (!this.classList.contains('other-month')) {
+                        alert(`Selected date: ${this.textContent} December 2024`);
+                    }
+                });
+            });
+
+            // Add click effects to timeline items
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .timer-container {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        
+        .timer-display {
+            font-size: 48px;
+            font-weight: 700;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .timer-label {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .timer-progress {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(#fff 0deg, transparent 0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        
+        .timer-progress::before {
+            content: '';
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: absolute;
+        }
+        
+        .timer-controls {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .timer-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .timer-btn.primary {
+            background: #fff;
+            color: #667eea;
+        }
+        
+        .timer-btn.secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .timer-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .timer-modes {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        .mode-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #e5e5ea;
+            background: #fff;
+            color: #8e8e93;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .mode-btn.active {
+            background: #007aff;
+            color: #fff;
+            border-color: #007aff;
+        }
+        
+        .session-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-item {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #007aff;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+        
+        .settings-section {
+            margin-top: 20px;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f2f2f7;
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-label {
+            font-size: 16px;
+            color: #1d1d1f;
+        }
+        
+        .setting-value {
+            font-size: 16px;
+            color: #8e8e93;
+        }
+        
+        .time-input {
+            width: 60px;
+            padding: 8px;
+            border: 2px solid #e5e5ea;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+        }
+        
+        .time-input:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Pomodoro Timer</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showSettings()">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="btn-icon" onclick="showStats()">
+                        <i class="fas fa-chart-bar"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Timer Modes -->
+                <div class="card fade-in">
+                    <div class="timer-modes">
+                        <button class="mode-btn active" onclick="switchMode('focus')">Focus</button>
+                        <button class="mode-btn" onclick="switchMode('short-break')">Short Break</button>
+                        <button class="mode-btn" onclick="switchMode('long-break')">Long Break</button>
+                    </div>
+                </div>
+
+                <!-- Timer Display -->
+                <div class="card fade-in">
+                    <div class="timer-container">
+                        <div class="timer-label" id="timer-label">Focus Time</div>
+                        <div class="timer-progress" id="timer-progress">
+                            <div class="timer-display" id="timer-display">25:00</div>
+                        </div>
+                        <div class="timer-controls">
+                            <button class="timer-btn secondary" onclick="resetTimer()">
+                                <i class="fas fa-redo"></i>
+                            </button>
+                            <button class="timer-btn primary" onclick="toggleTimer()" id="play-btn">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="timer-btn secondary" onclick="skipTimer()">
+                                <i class="fas fa-forward"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Stats -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Today's Progress</h3>
+                    </div>
+                    <div class="session-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">4</div>
+                            <div class="stat-label">Pomodoros</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">2:00</div>
+                            <div class="stat-label">Hours Focused</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">3</div>
+                            <div class="stat-label">Short Breaks</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">1</div>
+                            <div class="stat-label">Long Breaks</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Task -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Current Task</h3>
+                        <button class="btn-icon" onclick="changeTask()">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 16px;">
+                        <div style="font-size: 16px; font-weight: 600; color: #1d1d1f; margin-bottom: 8px;">
+                            Research Paper Draft
+                        </div>
+                        <div style="font-size: 14px; color: #8e8e93;">
+                            Working on introduction and methodology sections
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="startFocus()">
+                            <i class="fas fa-play"></i>
+                            Start Focus
+                        </button>
+                        <button class="btn btn-secondary" onclick="startBreak()">
+                            <i class="fas fa-coffee"></i>
+                            Take Break
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('tasks')">
+                            <i class="fas fa-tasks"></i>
+                            View Tasks
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('study-planner')">
+                            <i class="fas fa-book"></i>
+                            Study Plan
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div class="card fade-in settings-section" id="settings-section" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Timer Settings</h3>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">Focus Duration</div>
+                        <input type="number" class="time-input" value="25" min="1" max="60" id="focus-time">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">Short Break</div>
+                        <input type="number" class="time-input" value="5" min="1" max="30" id="short-break-time">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">Long Break</div>
+                        <input type="number" class="time-input" value="15" min="1" max="60" id="long-break-time">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">Auto-start Breaks</div>
+                        <div class="setting-value">
+                            <input type="checkbox" id="auto-break" checked>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">Auto-start Pomodoros</div>
+                        <div class="setting-value">
+                            <input type="checkbox" id="auto-pomodoro">
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">Sound Notifications</div>
+                        <div class="setting-value">
+                            <input type="checkbox" id="sound-notifications" checked>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timerRunning = false;
+        let currentMode = 'focus';
+        let timeLeft = 25 * 60; // 25 minutes in seconds
+        let timerInterval;
+
+        function switchMode(mode) {
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            modeBtns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentMode = mode;
+            resetTimer();
+            
+            const labels = {
+                'focus': 'Focus Time',
+                'short-break': 'Short Break',
+                'long-break': 'Long Break'
+            };
+            
+            const times = {
+                'focus': 25,
+                'short-break': 5,
+                'long-break': 15
+            };
+            
+            document.getElementById('timer-label').textContent = labels[mode];
+            timeLeft = times[mode] * 60;
+            updateTimerDisplay();
+        }
+
+        function toggleTimer() {
+            const playBtn = document.getElementById('play-btn');
+            
+            if (timerRunning) {
+                pauseTimer();
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            } else {
+                startTimer();
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            }
+        }
+
+        function startTimer() {
+            timerRunning = true;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timerComplete();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            timerRunning = false;
+            clearInterval(timerInterval);
+        }
+
+        function resetTimer() {
+            pauseTimer();
+            const playBtn = document.getElementById('play-btn');
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            
+            const times = {
+                'focus': 25,
+                'short-break': 5,
+                'long-break': 15
+            };
+            
+            timeLeft = times[currentMode] * 60;
+            updateTimerDisplay();
+        }
+
+        function skipTimer() {
+            timerComplete();
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('timer-display').textContent = display;
+            
+            // Update progress circle
+            const totalTime = currentMode === 'focus' ? 25 * 60 : currentMode === 'short-break' ? 5 * 60 : 15 * 60;
+            const progress = ((totalTime - timeLeft) / totalTime) * 360;
+            document.getElementById('timer-progress').style.background = `conic-gradient(#fff ${progress}deg, transparent ${progress}deg)`;
+        }
+
+        function timerComplete() {
+            timerRunning = false;
+            clearInterval(timerInterval);
+            
+            // Show notification
+            if (Notification.permission === 'granted') {
+                new Notification('Pomodoro Timer', {
+                    body: `${currentMode === 'focus' ? 'Focus session' : 'Break'} completed!`,
+                    icon: '/path/to/icon.png'
+                });
+            }
+            
+            // Auto-start next timer if enabled
+            if (currentMode === 'focus' && document.getElementById('auto-break').checked) {
+                switchMode('short-break');
+                setTimeout(() => toggleTimer(), 1000);
+            } else if (currentMode !== 'focus' && document.getElementById('auto-pomodoro').checked) {
+                switchMode('focus');
+                setTimeout(() => toggleTimer(), 1000);
+            }
+        }
+
+        function startFocus() {
+            switchMode('focus');
+            toggleTimer();
+        }
+
+        function startBreak() {
+            switchMode('short-break');
+            toggleTimer();
+        }
+
+        function showSettings() {
+            const settingsSection = document.getElementById('settings-section');
+            settingsSection.style.display = settingsSection.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showStats() {
+            alert('Timer statistics would open here');
+        }
+
+        function changeTask() {
+            alert('Change current task interface would open here');
+        }
+
+        function navigateTo(page) {
+            alert(`Navigating to ${page} page`);
+        }
+
+        // Request notification permission
+        if ('Notification' in window) {
+            Notification.requestPermission();
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Initialize timer display
+            updateTimerDisplay();
+        });
+    </script>
+</body>
+</html>

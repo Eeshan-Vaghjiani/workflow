@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .profile-header {
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            color: white;
+            padding: 20px 20px 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 20px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .avatar-edit {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 32px;
+            height: 32px;
+            background: #34c759;
+            border-radius: 50%;
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .avatar-edit:hover {
+            background: #30a251;
+            transform: scale(1.1);
+        }
+
+        .avatar-edit i {
+            font-size: 14px;
+            color: white;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .profile-email {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .profile-level {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            display: inline-block;
+        }
+
+        .profile-content {
+            flex: 1;
+            padding: 0;
+            background: #f8f9fa;
+        }
+
+        .section {
+            background: white;
+            margin-bottom: 12px;
+        }
+
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e5ea;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin: 0;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #8e8e93;
+            margin: 4px 0 0;
+        }
+
+        .profile-option {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e5ea;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .profile-option:last-child {
+            border-bottom: none;
+        }
+
+        .profile-option:hover {
+            background: #f8f9fa;
+        }
+
+        .option-icon {
+            width: 40px;
+            height: 40px;
+            background: #f2f2f7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .option-icon i {
+            font-size: 20px;
+            color: #007aff;
+        }
+
+        .option-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .option-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1d1d1f;
+            margin-bottom: 2px;
+        }
+
+        .option-subtitle {
+            font-size: 14px;
+            color: #8e8e93;
+        }
+
+        .option-action {
+            margin-left: 12px;
+            flex-shrink: 0;
+        }
+
+        .option-arrow {
+            color: #c7c7cc;
+            font-size: 16px;
+        }
+
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 32px;
+            background: #e5e5ea;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle.dark {
+            background: #007aff;
+        }
+
+        .theme-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 28px;
+            height: 28px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-toggle.dark::after {
+            transform: translateX(28px);
+        }
+
+        .theme-icons {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 8px;
+            pointer-events: none;
+        }
+
+        .theme-icons i {
+            font-size: 12px;
+            color: #8e8e93;
+            transition: color 0.3s ease;
+        }
+
+        .theme-toggle.dark .theme-icons .fa-moon {
+            color: white;
+        }
+
+        .theme-toggle:not(.dark) .theme-icons .fa-sun {
+            color: #ff9500;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 20px;
+            background: white;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 16px 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #007aff;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+
+        .edit-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+        }
+
+        .edit-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            width: 320px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px;
+        }
+
+        .modal-header {
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e5e5ea;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 44px;
+            background: #f2f2f7;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #007aff;
+            background: white;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid #e5e5ea;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            height: 44px;
+            background: #f2f2f7;
+            color: #007aff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-save {
+            flex: 1;
+            height: 44px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Dark mode styles */
+        [data-theme="dark"] body {
+            background: #000;
+        }
+
+        [data-theme="dark"] .profile-content {
+            background: #1c1c1e;
+        }
+
+        [data-theme="dark"] .section {
+            background: #2c2c2e;
+        }
+
+        [data-theme="dark"] .section-header {
+            background: #1c1c1e;
+        }
+
+        [data-theme="dark"] .section-title {
+            color: #fff;
+        }
+
+        [data-theme="dark"] .option-title {
+            color: #fff;
+        }
+
+        [data-theme="dark"] .option-subtitle {
+            color: #a1a1a6;
+        }
+
+        [data-theme="dark"] .profile-option:hover {
+            background: #3a3a3c;
+        }
+
+        [data-theme="dark"] .option-icon {
+            background: #3a3a3c;
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: #3a3a3c;
+        }
+
+        [data-theme="dark"] .modal-content {
+            background: #2c2c2e;
+        }
+
+        [data-theme="dark"] .modal-header {
+            background: #1c1c1e;
+        }
+
+        [data-theme="dark"] .modal-title {
+            color: #fff;
+        }
+
+        [data-theme="dark"] .form-label {
+            color: #fff;
+        }
+
+        [data-theme="dark"] .form-input {
+            background: #3a3a3c;
+            border-color: #48484a;
+            color: #fff;
+        }
+
+        [data-theme="dark"] .form-input:focus {
+            background: #48484a;
+            border-color: #007aff;
+        }
+
+        [data-theme="dark"] .btn-cancel {
+            background: #3a3a3c;
+            color: #007aff;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <span class="time">9:41</span>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- Header -->
+                <div class="app-header">
+                    <button class="btn-icon" onclick="navigateTo('dashboard')">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1>Profile</h1>
+                    <button class="btn-icon" onclick="openEditModal()">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+
+                <!-- Profile Header -->
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user"></i>
+                        <div class="avatar-edit" onclick="changeAvatar()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    </div>
+                    <h2 class="profile-name" id="profileName">Alex Johnson</h2>
+                    <p class="profile-email" id="profileEmail">alex.johnson@email.com</p>
+                    <span class="profile-level" id="profileLevel">Undergraduate</span>
+                </div>
+
+                <!-- Content -->
+                <div class="content profile-content">
+                    <!-- Stats Section -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">42</div>
+                            <div class="stat-label">Tasks Done</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">8</div>
+                            <div class="stat-label">Study Groups</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">156</div>
+                            <div class="stat-label">Study Hours</div>
+                        </div>
+                    </div>
+
+                    <!-- Preferences Section -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3 class="section-title">Preferences</h3>
+                            <p class="section-subtitle">Customize your app experience</p>
+                        </div>
+                        
+                        <div class="profile-option" onclick="toggleTheme()">
+                            <div class="option-icon">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Theme</div>
+                                <div class="option-subtitle">Dark mode</div>
+                            </div>
+                            <div class="option-action">
+                                <div class="theme-toggle" id="themeToggle">
+                                    <div class="theme-icons">
+                                        <i class="fas fa-sun"></i>
+                                        <i class="fas fa-moon"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="openNotificationSettings()">
+                            <div class="option-icon">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Notifications</div>
+                                <div class="option-subtitle">Manage notification preferences</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="openLanguageSettings()">
+                            <div class="option-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Language</div>
+                                <div class="option-subtitle">English</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Section -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3 class="section-title">Account</h3>
+                            <p class="section-subtitle">Manage your account settings</p>
+                        </div>
+                        
+                        <div class="profile-option" onclick="openPasswordChange()">
+                            <div class="option-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Change Password</div>
+                                <div class="option-subtitle">Update your password</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="openPrivacySettings()">
+                            <div class="option-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Privacy</div>
+                                <div class="option-subtitle">Control your privacy settings</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="exportData()">
+                            <div class="option-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Export Data</div>
+                                <div class="option-subtitle">Download your data</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Support Section -->
+                    <div class="section">
+                        <div class="section-header">
+                            <h3 class="section-title">Support</h3>
+                            <p class="section-subtitle">Get help and information</p>
+                        </div>
+                        
+                        <div class="profile-option" onclick="navigateTo('help')">
+                            <div class="option-icon">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Help Center</div>
+                                <div class="option-subtitle">FAQ and support articles</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="navigateTo('feedback')">
+                            <div class="option-icon">
+                                <i class="fas fa-comment-alt"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Send Feedback</div>
+                                <div class="option-subtitle">Help us improve the app</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="navigateTo('about')">
+                            <div class="option-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">About</div>
+                                <div class="option-subtitle">Version 1.0.0</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="profile-option" onclick="logout()" style="color: #ff3b30;">
+                            <div class="option-icon" style="background: #fff5f5;">
+                                <i class="fas fa-sign-out-alt" style="color: #ff3b30;"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title" style="color: #ff3b30;">Sign Out</div>
+                                <div class="option-subtitle">Sign out of your account</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <a href="../pages/dashboard.html" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="../pages/tasks.html" class="nav-item">
+                        <i class="fas fa-check-square"></i>
+                        <span>Tasks</span>
+                    </a>
+                    <a href="../pages/groups.html" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="../pages/calendar.html" class="nav-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                    <a href="../pages/profile.html" class="nav-item active">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="edit-modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Profile</h3>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">First Name</label>
+                    <input type="text" class="form-input" id="editFirstName" value="Alex">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" class="form-input" id="editLastName" value="Johnson">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-input" id="editEmail" value="alex.johnson@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Education Level</label>
+                    <select class="form-input" id="editLevel">
+                        <option value="high-school">High School</option>
+                        <option value="undergraduate" selected>Undergraduate</option>
+                        <option value="graduate">Graduate</option>
+                        <option value="postgraduate">Postgraduate</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button class="btn-save" onclick="saveProfile()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Profile management
+        function openEditModal() {
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        function saveProfile() {
+            const firstName = document.getElementById('editFirstName').value;
+            const lastName = document.getElementById('editLastName').value;
+            const email = document.getElementById('editEmail').value;
+            const level = document.getElementById('editLevel').value;
+
+            // Update profile display
+            document.getElementById('profileName').textContent = `${firstName} ${lastName}`;
+            document.getElementById('profileEmail').textContent = email;
+            document.getElementById('profileLevel').textContent = level.charAt(0).toUpperCase() + level.slice(1).replace('-', ' ');
+
+            closeEditModal();
+
+            // Show success feedback
+            const header = document.querySelector('.app-header h1');
+            const originalText = header.textContent;
+            header.textContent = 'Profile Updated!';
+            header.style.color = '#34c759';
+            setTimeout(() => {
+                header.textContent = originalText;
+                header.style.color = '';
+            }, 2000);
+        }
+
+        function changeAvatar() {
+            // In a real app, this would open camera/gallery
+            alert('📷 Camera/gallery selection would open here');
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            const themeToggle = document.getElementById('themeToggle');
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            themeToggle.classList.toggle('dark', newTheme === 'dark');
+            
+            // Update subtitle
+            const subtitle = document.querySelector('.profile-option .option-subtitle');
+            subtitle.textContent = newTheme === 'dark' ? 'Dark mode' : 'Light mode';
+        }
+
+        // Settings functions
+        function openNotificationSettings() {
+            alert('🔔 Notification settings would open here');
+        }
+
+        function openLanguageSettings() {
+            alert('🌍 Language settings would open here');
+        }
+
+        function openPasswordChange() {
+            alert('🔒 Password change form would open here');
+        }
+
+        function openPrivacySettings() {
+            alert('🛡️ Privacy settings would open here');
+        }
+
+        function exportData() {
+            alert('📊 Data export would start here');
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Initialize theme on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            
+            const themeToggle = document.getElementById('themeToggle');
+            themeToggle.classList.toggle('dark', savedTheme === 'dark');
+            
+            // Update theme subtitle
+            const subtitle = document.querySelector('.profile-option .option-subtitle');
+            subtitle.textContent = savedTheme === 'dark' ? 'Dark mode' : 'Light mode';
+        });
+
+        // Close modal on outside click
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
+            }
+        });
+    </script>
+    <script src="../assets/js/theme.js"></script>
+</body>
+</html>

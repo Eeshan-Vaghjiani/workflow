@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - Study Planner</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .welcome-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #007aff 0%, #34c759 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slides-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 30px;
+            color: white;
+            text-align: center;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease-in-out;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .slide.prev {
+            transform: translateX(-100%);
+        }
+
+        .slide-icon {
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .slide-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .slide-description {
+            font-size: 18px;
+            opacity: 0.9;
+            line-height: 1.5;
+            max-width: 280px;
+            margin-bottom: 40px;
+        }
+
+        .slide-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .navigation-controls {
+            padding: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+        }
+
+        .skip-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .skip-btn:hover {
+            opacity: 1;
+        }
+
+        .dots-indicator {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .dot.active {
+            background: white;
+            transform: scale(1.2);
+        }
+
+        .next-btn, .get-started-btn {
+            background: white;
+            color: #007aff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .next-btn:hover, .get-started-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .get-started-btn {
+            background: #34c759;
+            color: white;
+            padding: 14px 28px;
+            font-size: 18px;
+        }
+
+        .get-started-btn:hover {
+            background: #30a251;
+        }
+
+        /* Slide-specific backgrounds */
+        .slide1 {
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+        }
+
+        .slide2 {
+            background: linear-gradient(135deg, #ff9500 0%, #ff6b6b 100%);
+        }
+
+        .slide3 {
+            background: linear-gradient(135deg, #34c759 0%, #32d74b 100%);
+        }
+
+        .slide4 {
+            background: linear-gradient(135deg, #af52de 0%, #ff2d92 100%);
+        }
+
+        /* Animations for slide entrance */
+        .slide-enter {
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feature-item {
+            animation: fadeInLeft 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .feature-item:nth-child(1) { animation-delay: 0.1s; }
+        .feature-item:nth-child(2) { animation-delay: 0.2s; }
+        .feature-item:nth-child(3) { animation-delay: 0.3s; }
+        .feature-item:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Dark mode styles */
+        [data-theme="dark"] .navigation-controls {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .next-btn {
+            background: #2c2c2e;
+            color: #007aff;
+        }
+
+        [data-theme="dark"] .next-btn:hover {
+            background: #3a3a3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <span class="time">9:41</span>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <div class="welcome-container">
+                    <!-- Slides Container -->
+                    <div class="slides-container">
+                        <!-- Slide 1: Welcome -->
+                        <div class="slide slide1 active">
+                            <div class="slide-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <h1 class="slide-title">Welcome to Study Planner!</h1>
+                            <p class="slide-description">
+                                Your personal AI-powered study companion that helps you achieve academic excellence through smart planning and collaboration.
+                            </p>
+                        </div>
+
+                        <!-- Slide 2: Smart Planning -->
+                        <div class="slide slide2">
+                            <div class="slide-icon">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <h1 class="slide-title">Smart Study Planning</h1>
+                            <p class="slide-description">
+                                AI-powered study schedules, personalized recommendations, and intelligent task management.
+                            </p>
+                            <ul class="slide-features">
+                                <li class="feature-item">
+                                    <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                                    <span class="feature-text">AI Study Assistant</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon"><i class="fas fa-calendar"></i></div>
+                                    <span class="feature-text">Smart Scheduling</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                                    <span class="feature-text">Progress Tracking</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Slide 3: Collaboration -->
+                        <div class="slide slide3">
+                            <div class="slide-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h1 class="slide-title">Study Together</h1>
+                            <p class="slide-description">
+                                Join study groups, collaborate on projects, and learn together with your classmates.
+                            </p>
+                            <ul class="slide-features">
+                                <li class="feature-item">
+                                    <div class="feature-icon"><i class="fas fa-comments"></i></div>
+                                    <span class="feature-text">Group Chat</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon"><i class="fas fa-share-alt"></i></div>
+                                    <span class="feature-text">Share Resources</span>
+                                </li>
+                                <li class="feature-item">
+                                    <div class="feature-icon"><i class="fas fa-video"></i></div>
+                                    <span class="feature-text">Video Study Sessions</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Slide 4: Ready to Start -->
+                        <div class="slide slide4">
+                            <div class="slide-icon">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <h1 class="slide-title">Ready to Excel?</h1>
+                            <p class="slide-description">
+                                Everything is set up! Let's start your journey to academic success with smart study planning and collaboration tools.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="navigation-controls">
+                        <button class="skip-btn" onclick="skipToEnd()" id="skipBtn">Skip</button>
+                        
+                        <div class="dots-indicator">
+                            <div class="dot active" onclick="goToSlide(0)"></div>
+                            <div class="dot" onclick="goToSlide(1)"></div>
+                            <div class="dot" onclick="goToSlide(2)"></div>
+                            <div class="dot" onclick="goToSlide(3)"></div>
+                        </div>
+                        
+                        <button class="next-btn" onclick="nextSlide()" id="nextBtn">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const totalSlides = 4;
+        let autoSlideInterval;
+
+        function updateSlideDisplay() {
+            const slides = document.querySelectorAll('.slide');
+            const dots = document.querySelectorAll('.dot');
+            const nextBtn = document.getElementById('nextBtn');
+            const skipBtn = document.getElementById('skipBtn');
+
+            // Update slides
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            // Update dots
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            // Update button
+            if (currentSlide === totalSlides - 1) {
+                nextBtn.textContent = 'Get Started';
+                nextBtn.className = 'get-started-btn';
+                skipBtn.style.opacity = '0';
+            } else {
+                nextBtn.textContent = 'Next';
+                nextBtn.className = 'next-btn';
+                skipBtn.style.opacity = '0.8';
+            }
+
+            // Add entrance animation to current slide
+            setTimeout(() => {
+                const currentSlideElement = slides[currentSlide];
+                currentSlideElement.classList.add('slide-enter');
+                
+                // Remove animation class after animation completes
+                setTimeout(() => {
+                    currentSlideElement.classList.remove('slide-enter');
+                }, 800);
+            }, 100);
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlideDisplay();
+                resetAutoSlide();
+            } else {
+                // Get started - navigate to dashboard
+                finishOnboarding();
+            }
+        }
+
+        function goToSlide(slideIndex) {
+            if (slideIndex >= 0 && slideIndex < totalSlides) {
+                currentSlide = slideIndex;
+                updateSlideDisplay();
+                resetAutoSlide();
+            }
+        }
+
+        function skipToEnd() {
+            currentSlide = totalSlides - 1;
+            updateSlideDisplay();
+            clearAutoSlide();
+        }
+
+        function finishOnboarding() {
+            // Add completion animation
+            const container = document.querySelector('.welcome-container');
+            container.style.transform = 'scale(0.95)';
+            container.style.opacity = '0.8';
+            
+            setTimeout(() => {
+                // Navigate to dashboard
+                window.location.href = 'dashboard.html';
+            }, 500);
+        }
+
+        function startAutoSlide() {
+            autoSlideInterval = setInterval(() => {
+                if (currentSlide < totalSlides - 1) {
+                    nextSlide();
+                } else {
+                    clearAutoSlide();
+                }
+            }, 5000); // 5 seconds per slide
+        }
+
+        function resetAutoSlide() {
+            clearAutoSlide();
+            startAutoSlide();
+        }
+
+        function clearAutoSlide() {
+            if (autoSlideInterval) {
+                clearInterval(autoSlideInterval);
+                autoSlideInterval = null;
+            }
+        }
+
+        // Touch/swipe support
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swiped left - next slide
+                    nextSlide();
+                } else {
+                    // Swiped right - previous slide
+                    if (currentSlide > 0) {
+                        currentSlide--;
+                        updateSlideDisplay();
+                        resetAutoSlide();
+                    }
+                }
+            }
+        }
+
+        // Keyboard navigation
+        function handleKeyDown(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                    if (currentSlide > 0) {
+                        currentSlide--;
+                        updateSlideDisplay();
+                        resetAutoSlide();
+                    }
+                    break;
+                case 'ArrowRight':
+                case ' ':
+                    e.preventDefault();
+                    nextSlide();
+                    break;
+                case 'Escape':
+                    skipToEnd();
+                    break;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSlideDisplay();
+            startAutoSlide();
+
+            // Add event listeners
+            const slidesContainer = document.querySelector('.slides-container');
+            slidesContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+            slidesContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+            
+            document.addEventListener('keydown', handleKeyDown);
+
+            // Pause auto-slide when user interacts
+            const interactiveElements = document.querySelectorAll('button, .dot');
+            interactiveElements.forEach(element => {
+                element.addEventListener('click', () => {
+                    clearAutoSlide();
+                });
+            });
+        });
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', clearAutoSlide);
+    </script>
+    <script src="../assets/js/theme.js"></script>
+</body>
+</html>

@@ -9,12 +9,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Side Controls -->
-        <div class="side-controls">
-            <div class="theme-toggle" title="Toggle Dark/Light Mode">
-            </div>
-            <div class="theme-label">Light Mode</div>
-        </div>
+
         
         <div class="phone-frame">
         <div class="phone-screen">
@@ -236,35 +231,52 @@
 
     <script>
         function addNewTask() {
-            alert('New task form would open here');
+            window.location.href = 'add-task.html';
         }
 
         function openTask(taskId) {
-            alert(`Opening task ${taskId} details`);
+            window.location.href = `task-details.html?id=${taskId}`;
         }
 
         function filterByCategory(category) {
-            alert(`Filtering by category: ${category}`);
+            // Implement actual filtering logic
+            const tasks = document.querySelectorAll('.list-item');
+            tasks.forEach(task => {
+                if (category === 'all' || task.dataset.category === category) {
+                    task.style.display = 'block';
+                } else {
+                    task.style.display = 'none';
+                }
+            });
         }
 
         function toggleView(view) {
-            alert(`Switching to ${view} view`);
+            window.location.href = `tasks-${view}.html`;
         }
 
         function showFilters() {
-            alert('Filter options would open here');
+            window.location.href = 'task-filters.html';
         }
 
         function showSearch() {
-            alert('Search interface would open here');
+            window.location.href = 'task-search.html';
         }
 
         function navigateTo(page) {
-            alert(`Navigating to ${page} page`);
+            window.location.href = `${page}.html`;
         }
 
         function exportTasks() {
-            alert('Exporting tasks...');
+            // Show loading and then success
+            const button = event.currentTarget;
+            const originalText = button.textContent;
+            button.textContent = 'Exporting...';
+            setTimeout(() => {
+                button.textContent = 'Downloaded!';
+                setTimeout(() => {
+                    button.textContent = originalText;
+                }, 2000);
+            }, 1500);
         }
 
         // Add some interactivity

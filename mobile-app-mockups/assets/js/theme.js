@@ -56,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Navigation functionality
 function navigateTo(page) {
     if (page === 'ai-tasks') {
-        // Show AI chat interface instead of alert
-        showAIChat();
+        // Navigate to AI assistant page
+        window.location.href = '../pages/ai-assistant.html';
         return;
     }
     
@@ -76,39 +76,8 @@ function navigateTo(page) {
 
 // AI Chat functionality
 function showAIChat() {
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'ai-chat-overlay';
-    overlay.innerHTML = `
-        <div class="ai-chat-container">
-            <div class="ai-chat-header">
-                <div class="ai-chat-title">
-                    <i class="fas fa-brain"></i>
-                    AI Assistant
-                </div>
-                <button class="ai-chat-close" onclick="closeAIChat()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="ai-chat-messages">
-                <div class="ai-message">
-                    <div class="ai-avatar">🤖</div>
-                    <div class="ai-text">Hello! I'm your AI study assistant. How can I help you today?</div>
-                </div>
-            </div>
-            <div class="ai-chat-input">
-                <input type="text" placeholder="Ask me anything about your studies..." />
-                <button class="ai-send-btn"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(overlay);
-    
-    // Focus input
-    setTimeout(() => {
-        overlay.querySelector('input').focus();
-    }, 100);
+    // Navigate to AI assistant page instead of overlay
+    window.location.href = '../pages/ai-assistant.html';
 }
 
 function closeAIChat() {
@@ -120,15 +89,15 @@ function closeAIChat() {
 
 // Utility functions for existing functionality
 function showNotifications() {
-    alert('Notifications feature coming soon!');
+    window.location.href = '../pages/notifications.html';
 }
 
 function showProfile() {
-    alert('Profile page coming soon!');
+    window.location.href = '../pages/profile.html';
 }
 
 function createTask() {
-    alert('Create task functionality coming soon!');
+    window.location.href = '../pages/add-task.html';
 }
 
 function shareStudyPlan() {

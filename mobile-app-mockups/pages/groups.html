@@ -6,6 +6,206 @@
     <title>Groups - Study Planner Mobile</title>
     <link rel="stylesheet" href="../assets/css/mobile-app.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-container {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid #e5e5ea;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .modal-content {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            font-size: 16px;
+            background: #f8f9fa;
+            transition: all 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #007aff;
+            background: white;
+        }
+
+        .form-hint {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .form-divider {
+            text-align: center;
+            margin: 20px 0;
+            color: #8e8e93;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .form-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e5e5ea;
+            z-index: 1;
+        }
+
+        .form-divider span {
+            background: white;
+            padding: 0 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .radio-item:hover {
+            background: #f8f9fa;
+        }
+
+        .radio-item input[type="radio"] {
+            margin: 0;
+        }
+
+        .group-join-preview {
+            margin-bottom: 20px;
+        }
+
+        .group-join-preview h4 {
+            margin: 8px 0 4px;
+            font-size: 18px;
+            color: #1d1d1f;
+        }
+
+        .text-muted {
+            color: #8e8e93;
+        }
+
+        .full-width {
+            width: 100%;
+        }
+
+        .success-notification {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #34c759;
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+            z-index: 1001;
+            animation: notificationSlideIn 0.3s ease-out;
+        }
+
+        .success-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        @keyframes notificationSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -270,15 +470,202 @@
 
     <script>
         function createGroup() {
-            alert('Create group form would open here');
+            showCreateGroupForm();
         }
 
         function joinGroup(groupId) {
             if (groupId) {
-                alert(`Joining group ${groupId}`);
+                confirmJoinGroup(groupId);
             } else {
-                alert('Join group interface would open here');
+                showJoinGroupInterface();
             }
+        }
+
+        function showCreateGroupForm() {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Create New Group</h3>
+                        <button class="btn-icon" onclick="closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content">
+                        <div class="form-group">
+                            <label>Group Name</label>
+                            <input type="text" id="groupName" placeholder="Enter group name..." class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="groupDescription" placeholder="Describe your group..." class="form-input" rows="3"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Subject</label>
+                            <select id="groupSubject" class="form-input">
+                                <option value="">Select a subject</option>
+                                <option value="computer-science">Computer Science</option>
+                                <option value="mathematics">Mathematics</option>
+                                <option value="chemistry">Chemistry</option>
+                                <option value="physics">Physics</option>
+                                <option value="literature">Literature</option>
+                                <option value="art">Art & Design</option>
+                                <option value="music">Music</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Privacy</label>
+                            <div class="radio-group">
+                                <label class="radio-item">
+                                    <input type="radio" name="privacy" value="public" checked>
+                                    <span>Public - Anyone can join</span>
+                                </label>
+                                <label class="radio-item">
+                                    <input type="radio" name="privacy" value="private">
+                                    <span>Private - Invite only</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="createNewGroup()">Create Group</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function showJoinGroupInterface() {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Join Group</h3>
+                        <button class="btn-icon" onclick="closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content">
+                        <div class="form-group">
+                            <label>Group Code</label>
+                            <input type="text" id="groupCode" placeholder="Enter 6-digit group code..." class="form-input" maxlength="6">
+                            <small class="form-hint">Ask your group admin for the 6-digit code</small>
+                        </div>
+                        <div class="form-divider">OR</div>
+                        <div class="form-group">
+                            <label>Browse Public Groups</label>
+                            <button class="btn btn-secondary full-width" onclick="closeModal(); scrollToDiscover();">Browse Available Groups</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="joinGroupByCode()">Join Group</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function confirmJoinGroup(groupId) {
+            // Get group info based on ID
+            const groups = {
+                6: { name: 'Art & Design Club', subject: 'Art & Design' },
+                7: { name: 'Music Theory Study', subject: 'Music' }
+            };
+            
+            const group = groups[groupId];
+            if (!group) return;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h3>Join Group</h3>
+                        <button class="btn-icon" onclick="closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content text-center">
+                        <div class="group-join-preview">
+                            <div class="list-item-icon" style="background: #007aff; color: white; margin: 0 auto 16px;">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <h4>${group.name}</h4>
+                            <p class="text-muted">${group.subject}</p>
+                        </div>
+                        <p>Are you sure you want to join this group?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button class="btn btn-primary" onclick="processJoinGroup(${groupId})">Join Group</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function createNewGroup() {
+            const name = document.getElementById('groupName').value;
+            const description = document.getElementById('groupDescription').value;
+            const subject = document.getElementById('groupSubject').value;
+            const privacy = document.querySelector('input[name="privacy"]:checked').value;
+            
+            if (!name.trim()) {
+                alert('Please enter a group name');
+                return;
+            }
+            
+            // Simulate group creation
+            closeModal();
+            showSuccessMessage(`Group "${name}" created successfully!`);
+        }
+
+        function joinGroupByCode() {
+            const code = document.getElementById('groupCode').value;
+            if (!code || code.length !== 6) {
+                alert('Please enter a valid 6-digit group code');
+                return;
+            }
+            
+            closeModal();
+            showSuccessMessage('Successfully joined the group!');
+        }
+
+        function processJoinGroup(groupId) {
+            closeModal();
+            showSuccessMessage('Successfully joined the group!');
+        }
+
+        function scrollToDiscover() {
+            document.querySelector('.card:last-of-type').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeModal() {
+            const overlay = document.querySelector('.modal-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+
+        function showSuccessMessage(message) {
+            const notification = document.createElement('div');
+            notification.className = 'success-notification';
+            notification.innerHTML = `
+                <div class="success-content">
+                    <i class="fas fa-check-circle"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
 
         function openGroup(groupId) {
@@ -298,7 +685,11 @@
         }
 
         function navigateTo(page) {
-            alert(`Navigating to ${page} page`);
+            if (page === 'assignments') {
+                window.location.href = 'assignments.html';
+            } else {
+                window.location.href = `${page}.html`;
+            }
         }
 
         // Add some interactivity

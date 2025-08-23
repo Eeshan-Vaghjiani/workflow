@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignments - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .assignment-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #007aff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+        }
+
+        .assignment-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .assignment-item.overdue {
+            border-left-color: #ff3b30;
+        }
+
+        .assignment-item.due-soon {
+            border-left-color: #ff9500;
+        }
+
+        .assignment-item.completed {
+            border-left-color: #34c759;
+            opacity: 0.7;
+        }
+
+        .assignment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .assignment-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .assignment-group {
+            font-size: 14px;
+            color: #007aff;
+            font-weight: 500;
+        }
+
+        .assignment-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-in-progress {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .status-completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .status-overdue {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .assignment-description {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .assignment-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .assignment-due {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .assignment-priority {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .priority-high {
+            color: #ff3b30;
+        }
+
+        .priority-medium {
+            color: #ff9500;
+        }
+
+        .priority-low {
+            color: #34c759;
+        }
+
+        .filter-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8e8e93;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+        }
+
+        .filter-tab.active {
+            background: white;
+            color: #007aff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .assignments-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #8e8e93;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8e8e93;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #1d1d1f;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .add-assignment-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #007aff;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .add-assignment-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
+        }
+
+        .assignment-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e5e5ea;
+            border-radius: 8px;
+            background: white;
+            color: #007aff;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .action-btn.primary {
+            background: #007aff;
+            color: white;
+            border-color: #007aff;
+        }
+
+        .action-btn.primary:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="time">9:41</div>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- App Header -->
+                <div class="app-header">
+                    <h1>Assignments</h1>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="showFilter()">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button class="btn-icon" onclick="showAddAssignment()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="content">
+                    <!-- Assignment Stats -->
+                    <div class="assignments-stats fade-in">
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #007aff;">12</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #ff9500;">5</div>
+                            <div class="stat-label">Due Soon</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #ff3b30;">2</div>
+                            <div class="stat-label">Overdue</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" style="color: #34c759;">5</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+
+                    <!-- Filter Tabs -->
+                    <div class="filter-tabs fade-in">
+                        <button class="filter-tab active" onclick="filterAssignments('all')">All</button>
+                        <button class="filter-tab" onclick="filterAssignments('pending')">Pending</button>
+                        <button class="filter-tab" onclick="filterAssignments('overdue')">Overdue</button>
+                        <button class="filter-tab" onclick="filterAssignments('completed')">Completed</button>
+                    </div>
+
+                    <!-- Assignments List -->
+                    <div class="assignments-list" id="assignmentsList">
+                        <!-- Overdue Assignment -->
+                        <div class="assignment-item overdue" data-status="overdue">
+                            <div class="assignment-header">
+                                <div>
+                                    <div class="assignment-title">Research Paper Draft</div>
+                                    <div class="assignment-group">Computer Science Team</div>
+                                </div>
+                                <div class="assignment-status status-overdue">Overdue</div>
+                            </div>
+                            <div class="assignment-description">
+                                Submit the first draft of your research paper on AI in education. Minimum 3000 words with proper citations.
+                            </div>
+                            <div class="assignment-meta">
+                                <div class="assignment-due">
+                                    <i class="fas fa-calendar-times"></i>
+                                    <span>Due: 2 days ago</span>
+                                </div>
+                                <div class="assignment-priority priority-high">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>High Priority</span>
+                                </div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="action-btn primary" onclick="startAssignment(1)">Start Now</button>
+                                <button class="action-btn" onclick="viewDetails(1)">View Details</button>
+                                <button class="action-btn" onclick="markComplete(1)">Mark Complete</button>
+                            </div>
+                        </div>
+
+                        <!-- Due Soon Assignment -->
+                        <div class="assignment-item due-soon" data-status="pending">
+                            <div class="assignment-header">
+                                <div>
+                                    <div class="assignment-title">Calculus Problem Set #5</div>
+                                    <div class="assignment-group">Math Study Group</div>
+                                </div>
+                                <div class="assignment-status status-pending">Pending</div>
+                            </div>
+                            <div class="assignment-description">
+                                Complete problems 1-25 from Chapter 8. Focus on integration by parts and substitution methods.
+                            </div>
+                            <div class="assignment-meta">
+                                <div class="assignment-due">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Due: In 3 days</span>
+                                </div>
+                                <div class="assignment-priority priority-medium">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Medium Priority</span>
+                                </div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="action-btn primary" onclick="startAssignment(2)">Start Now</button>
+                                <button class="action-btn" onclick="viewDetails(2)">View Details</button>
+                                <button class="action-btn" onclick="markComplete(2)">Mark Complete</button>
+                            </div>
+                        </div>
+
+                        <!-- In Progress Assignment -->
+                        <div class="assignment-item" data-status="in-progress">
+                            <div class="assignment-header">
+                                <div>
+                                    <div class="assignment-title">Chemistry Lab Report</div>
+                                    <div class="assignment-group">Chemistry Lab Group</div>
+                                </div>
+                                <div class="assignment-status status-in-progress">In Progress</div>
+                            </div>
+                            <div class="assignment-description">
+                                Write a lab report on the acid-base titration experiment. Include methodology, results, and analysis.
+                            </div>
+                            <div class="assignment-meta">
+                                <div class="assignment-due">
+                                    <i class="fas fa-calendar-check"></i>
+                                    <span>Due: In 1 week</span>
+                                </div>
+                                <div class="assignment-priority priority-medium">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Medium Priority</span>
+                                </div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="action-btn primary" onclick="continueAssignment(3)">Continue</button>
+                                <button class="action-btn" onclick="viewDetails(3)">View Details</button>
+                                <button class="action-btn" onclick="markComplete(3)">Mark Complete</button>
+                            </div>
+                        </div>
+
+                        <!-- Regular Assignment -->
+                        <div class="assignment-item" data-status="pending">
+                            <div class="assignment-header">
+                                <div>
+                                    <div class="assignment-title">Art Portfolio Review</div>
+                                    <div class="assignment-group">Art & Design Club</div>
+                                </div>
+                                <div class="assignment-status status-pending">Pending</div>
+                            </div>
+                            <div class="assignment-description">
+                                Prepare 5 pieces for portfolio review. Include digital art, sketches, and one sculpture piece.
+                            </div>
+                            <div class="assignment-meta">
+                                <div class="assignment-due">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Due: In 2 weeks</span>
+                                </div>
+                                <div class="assignment-priority priority-low">
+                                    <i class="fas fa-minus-circle"></i>
+                                    <span>Low Priority</span>
+                                </div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="action-btn primary" onclick="startAssignment(4)">Start Now</button>
+                                <button class="action-btn" onclick="viewDetails(4)">View Details</button>
+                                <button class="action-btn" onclick="markComplete(4)">Mark Complete</button>
+                            </div>
+                        </div>
+
+                        <!-- Completed Assignment -->
+                        <div class="assignment-item completed" data-status="completed">
+                            <div class="assignment-header">
+                                <div>
+                                    <div class="assignment-title">Music Theory Quiz</div>
+                                    <div class="assignment-group">Music Theory Study</div>
+                                </div>
+                                <div class="assignment-status status-completed">Completed</div>
+                            </div>
+                            <div class="assignment-description">
+                                Complete the online quiz on chord progressions and key signatures. 20 questions, multiple choice.
+                            </div>
+                            <div class="assignment-meta">
+                                <div class="assignment-due">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Completed 2 days ago</span>
+                                </div>
+                                <div class="assignment-priority priority-low">
+                                    <i class="fas fa-minus-circle"></i>
+                                    <span>Low Priority</span>
+                                </div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="action-btn" onclick="viewDetails(5)">View Details</button>
+                                <button class="action-btn" onclick="downloadSubmission(5)">Download</button>
+                                <button class="action-btn" onclick="shareAssignment(5)">Share</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating Add Button -->
+                <button class="add-assignment-btn" onclick="showAddAssignment()">
+                    <i class="fas fa-plus"></i>
+                </button>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <a href="dashboard.html" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="groups.html" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="tasks.html" class="nav-item">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                    </a>
+                    <a href="calendar.html" class="nav-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                    <a href="chat.html" class="nav-item">
+                        <i class="fas fa-comments"></i>
+                        <span>Chat</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Filter assignments
+        function filterAssignments(status) {
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filter assignments
+            const assignments = document.querySelectorAll('.assignment-item');
+            assignments.forEach(assignment => {
+                if (status === 'all' || assignment.dataset.status === status) {
+                    assignment.style.display = 'block';
+                } else {
+                    assignment.style.display = 'none';
+                }
+            });
+
+            // Show empty state if no assignments
+            const visibleAssignments = document.querySelectorAll('.assignment-item[style="display: block;"], .assignment-item:not([style*="display: none"])');
+            if (visibleAssignments.length === 0 && status !== 'all') {
+                showEmptyState(status);
+            } else {
+                hideEmptyState();
+            }
+        }
+
+        function showEmptyState(status) {
+            const existing = document.querySelector('.empty-state');
+            if (existing) existing.remove();
+
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            
+            let icon, title, description;
+            switch(status) {
+                case 'pending':
+                    icon = 'fas fa-clock';
+                    title = 'No Pending Assignments';
+                    description = 'Great job! You have no pending assignments right now.';
+                    break;
+                case 'overdue':
+                    icon = 'fas fa-calendar-times';
+                    title = 'No Overdue Assignments';
+                    description = 'Excellent! You\'re staying on top of your deadlines.';
+                    break;
+                case 'completed':
+                    icon = 'fas fa-check-circle';
+                    title = 'No Completed Assignments';
+                    description = 'Complete some assignments to see them here.';
+                    break;
+            }
+
+            emptyState.innerHTML = `
+                <i class="${icon}"></i>
+                <h3>${title}</h3>
+                <p>${description}</p>
+            `;
+
+            document.getElementById('assignmentsList').appendChild(emptyState);
+        }
+
+        function hideEmptyState() {
+            const emptyState = document.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+        }
+
+        // Assignment actions
+        function startAssignment(id) {
+            showNotification(`Started assignment ${id}`, 'success');
+        }
+
+        function continueAssignment(id) {
+            showNotification(`Continuing assignment ${id}`, 'info');
+        }
+
+        function viewDetails(id) {
+            showNotification(`Viewing details for assignment ${id}`, 'info');
+        }
+
+        function markComplete(id) {
+            showNotification(`Assignment ${id} marked as complete!`, 'success');
+            // Update UI to show as completed
+            const assignment = document.querySelector(`[onclick*="${id}"]`).closest('.assignment-item');
+            assignment.classList.add('completed');
+            assignment.dataset.status = 'completed';
+            assignment.querySelector('.assignment-status').textContent = 'Completed';
+            assignment.querySelector('.assignment-status').className = 'assignment-status status-completed';
+        }
+
+        function downloadSubmission(id) {
+            showNotification(`Downloading submission for assignment ${id}`, 'info');
+        }
+
+        function shareAssignment(id) {
+            showNotification(`Sharing assignment ${id}`, 'info');
+        }
+
+        function showAddAssignment() {
+            showNotification('Add assignment form would open here', 'info');
+        }
+
+        function showFilter() {
+            showNotification('Advanced filter options would open here', 'info');
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas ${getIconForType(type)}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${getColorForType(type)};
+                color: white;
+                padding: 16px 20px;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                z-index: 1001;
+                animation: slideIn 0.3s ease-out;
+            `;
+
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function getIconForType(type) {
+            switch(type) {
+                case 'success': return 'fa-check-circle';
+                case 'error': return 'fa-exclamation-circle';
+                case 'warning': return 'fa-exclamation-triangle';
+                default: return 'fa-info-circle';
+            }
+        }
+
+        function getColorForType(type) {
+            switch(type) {
+                case 'success': return '#34c759';
+                case 'error': return '#ff3b30';
+                case 'warning': return '#ff9500';
+                default: return '#007aff';
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const elements = document.querySelectorAll('.fade-in, .assignment-item');
+            elements.forEach((element, index) => {
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
+                element.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                element.style.animationDelay = `${index * 0.1}s`;
+                
+                setTimeout(() => {
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+    <script src="../assets/js/theme.js"></script>
+</body>
+</html>

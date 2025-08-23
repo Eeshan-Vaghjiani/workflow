@@ -16,8 +16,13 @@
             display: none;
         }
         
+        /* Hide bottom nav in conversation view */
+        .chat-conversation-view .bottom-nav {
+            display: none;
+        }
+        
         .whatsapp-header {
-            background: #075e54;
+            background: #007aff;
             color: white;
             padding: 12px 16px;
             display: flex;
@@ -26,7 +31,7 @@
         }
         
         .chat-header {
-            background: #128c7e;
+            background: #007aff;
             color: white;
             padding: 12px 16px;
             display: flex;
@@ -39,7 +44,7 @@
             height: 40px;
             border-radius: 50%;
             background: #fff;
-            color: #075e54;
+            color: #007aff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -565,9 +570,6 @@
                         <div class="chat-actions">
                             <button onclick="openCamera()" title="Camera">
                                 <i class="fas fa-camera"></i>
-                            </button>
-                            <button onclick="makeCall()" title="Call">
-                                <i class="fas fa-phone"></i>
                             </button>
                             <button onclick="showChatMenu()" title="Menu">
                                 <i class="fas fa-ellipsis-v"></i>

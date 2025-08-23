@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Details - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .task-header {
+            background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+        }
+
+        .task-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .task-status.pending {
+            background: rgba(255, 149, 0, 0.2);
+            color: #ff9500;
+            border: 1px solid rgba(255, 149, 0, 0.3);
+        }
+
+        .task-status.completed {
+            background: rgba(52, 199, 89, 0.2);
+            color: #34c759;
+            border: 1px solid rgba(52, 199, 89, 0.3);
+        }
+
+        .task-status.overdue {
+            background: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+            border: 1px solid rgba(255, 59, 48, 0.3);
+        }
+
+        .task-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .task-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .task-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .detail-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+        }
+
+        .detail-content {
+            color: #8e8e93;
+            line-height: 1.5;
+        }
+
+        .priority-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .priority-indicator.high {
+            background: #ff3b30;
+        }
+
+        .priority-indicator.medium {
+            background: #ff9500;
+        }
+
+        .priority-indicator.low {
+            background: #34c759;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .attachment-icon {
+            width: 40px;
+            height: 40px;
+            background: #007aff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 12px;
+        }
+
+        .attachment-info {
+            flex: 1;
+        }
+
+        .attachment-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+
+        .attachment-size {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn-complete {
+            background: #34c759;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-complete:hover {
+            background: #30a251;
+        }
+
+        .btn-edit {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit:hover {
+            background: #0056cc;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e5ea;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #007aff;
+            transition: width 0.3s ease;
+        }
+
+        .subtask-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f2f2f7;
+        }
+
+        .subtask-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e5ea;
+            border-radius: 4px;
+            margin-right: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .subtask-checkbox.checked {
+            background: #34c759;
+            border-color: #34c759;
+            color: white;
+        }
+
+        .subtask-text {
+            flex: 1;
+            color: #1d1d1f;
+        }
+
+        .subtask-text.completed {
+            text-decoration: line-through;
+            color: #8e8e93;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="time">9:41</div>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- App Header -->
+                <div class="app-header">
+                    <button class="btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1>Task Details</h1>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="shareTask()">
+                            <i class="fas fa-share"></i>
+                        </button>
+                        <button class="btn-icon" onclick="deleteTask()">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="content">
+                    <!-- Task Header -->
+                    <div class="task-header fade-in">
+                        <div class="task-status pending">In Progress</div>
+                        <div class="task-title">Complete Research Paper</div>
+                        <div class="task-meta">
+                            <div class="task-meta-item">
+                                <i class="fas fa-calendar"></i>
+                                Due: Dec 20, 2024
+                            </div>
+                            <div class="task-meta-item">
+                                <i class="fas fa-clock"></i>
+                                3:00 PM
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="detail-section fade-in">
+                        <h3>Description</h3>
+                        <div class="detail-content">
+                            Write a comprehensive research paper on machine learning applications in healthcare. The paper should be 10-15 pages long and include proper citations. Focus on recent developments and future implications.
+                        </div>
+                    </div>
+
+                    <!-- Priority & Category -->
+                    <div class="detail-section fade-in">
+                        <h3>Priority & Category</h3>
+                        <div class="detail-content">
+                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                <span class="priority-indicator high"></span>
+                                High Priority
+                            </div>
+                            <div style="display: flex; align-items: center;">
+                                <i class="fas fa-tag" style="margin-right: 8px; color: #007aff;"></i>
+                                Assignment
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subtasks -->
+                    <div class="detail-section fade-in">
+                        <h3>Subtasks (3/5 completed)</h3>
+                        <div class="subtask-item">
+                            <div class="subtask-checkbox checked" onclick="toggleSubtask(this)">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="subtask-text completed">Research healthcare AI applications</div>
+                        </div>
+                        <div class="subtask-item">
+                            <div class="subtask-checkbox checked" onclick="toggleSubtask(this)">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="subtask-text completed">Create outline</div>
+                        </div>
+                        <div class="subtask-item">
+                            <div class="subtask-checkbox checked" onclick="toggleSubtask(this)">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="subtask-text completed">Write introduction</div>
+                        </div>
+                        <div class="subtask-item">
+                            <div class="subtask-checkbox" onclick="toggleSubtask(this)">
+                            </div>
+                            <div class="subtask-text">Write main content</div>
+                        </div>
+                        <div class="subtask-item">
+                            <div class="subtask-checkbox" onclick="toggleSubtask(this)">
+                            </div>
+                            <div class="subtask-text">Review and edit</div>
+                        </div>
+                    </div>
+
+                    <!-- Attachments -->
+                    <div class="detail-section fade-in">
+                        <h3>Attachments</h3>
+                        <div class="attachment-item">
+                            <div class="attachment-icon">
+                                <i class="fas fa-file-pdf"></i>
+                            </div>
+                            <div class="attachment-info">
+                                <div class="attachment-name">Research Guidelines.pdf</div>
+                                <div class="attachment-size">2.1 MB</div>
+                            </div>
+                            <button class="btn-icon" onclick="downloadAttachment('guidelines')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                        <div class="attachment-item">
+                            <div class="attachment-icon">
+                                <i class="fas fa-file-word"></i>
+                            </div>
+                            <div class="attachment-info">
+                                <div class="attachment-name">Template.docx</div>
+                                <div class="attachment-size">1.3 MB</div>
+                            </div>
+                            <button class="btn-icon" onclick="downloadAttachment('template')">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comments/Notes -->
+                    <div class="detail-section fade-in">
+                        <h3>Notes</h3>
+                        <div class="detail-content">
+                            Remember to include at least 15 credible sources. Professor mentioned focus on neural networks and deep learning applications.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons fade-in">
+                        <button class="btn-complete" onclick="markComplete()">
+                            <i class="fas fa-check"></i> Mark Complete
+                        </button>
+                        <button class="btn-edit" onclick="editTask()">
+                            <i class="fas fa-edit"></i> Edit Task
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <a href="dashboard.html" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="tasks.html" class="nav-item active">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                    </a>
+                    <a href="calendar.html" class="nav-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                    <a href="groups.html" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="profile.html" class="nav-item">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            window.location.href = 'tasks.html';
+        }
+
+        function shareTask() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Complete Research Paper',
+                    text: 'Check out this task from Study Planner',
+                    url: window.location.href
+                });
+            } else {
+                // Fallback
+                navigator.clipboard.writeText(window.location.href);
+                alert('Task link copied to clipboard!');
+            }
+        }
+
+        function deleteTask() {
+            if (confirm('Are you sure you want to delete this task?')) {
+                // Show deletion animation
+                const content = document.querySelector('.content');
+                content.style.opacity = '0.5';
+                content.style.transform = 'scale(0.95)';
+                
+                setTimeout(() => {
+                    window.location.href = 'tasks.html';
+                }, 1000);
+            }
+        }
+
+        function toggleSubtask(checkbox) {
+            checkbox.classList.toggle('checked');
+            const text = checkbox.nextElementSibling;
+            text.classList.toggle('completed');
+            
+            if (checkbox.classList.contains('checked')) {
+                checkbox.innerHTML = '<i class="fas fa-check"></i>';
+            } else {
+                checkbox.innerHTML = '';
+            }
+            
+            // Update progress
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const total = document.querySelectorAll('.subtask-checkbox').length;
+            const completed = document.querySelectorAll('.subtask-checkbox.checked').length;
+            const percentage = (completed / total) * 100;
+            
+            document.querySelector('.progress-fill').style.width = percentage + '%';
+            document.querySelector('.detail-section h3').textContent = `Subtasks (${completed}/${total} completed)`;
+        }
+
+        function downloadAttachment(type) {
+            const button = event.currentTarget;
+            const icon = button.querySelector('i');
+            
+            icon.className = 'fas fa-spinner fa-spin';
+            
+            setTimeout(() => {
+                icon.className = 'fas fa-check';
+                button.style.background = '#34c759';
+                
+                setTimeout(() => {
+                    icon.className = 'fas fa-download';
+                    button.style.background = '';
+                }, 2000);
+            }, 1500);
+        }
+
+        function markComplete() {
+            const button = document.querySelector('.btn-complete');
+            const status = document.querySelector('.task-status');
+            
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Completing...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                status.textContent = 'Completed';
+                status.className = 'task-status completed';
+                button.innerHTML = '<i class="fas fa-check"></i> Completed!';
+                button.style.background = '#34c759';
+                
+                // Update progress to 100%
+                document.querySelector('.progress-fill').style.width = '100%';
+                
+                setTimeout(() => {
+                    window.location.href = 'tasks.html';
+                }, 2000);
+            }, 2000);
+        }
+
+        function editTask() {
+            window.location.href = 'edit-task.html?id=' + new URLSearchParams(window.location.search).get('id');
+        }
+
+        // Get task ID from URL and customize content
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('id');
+        
+        if (taskId) {
+            // Customize content based on task ID
+            console.log('Loading task:', taskId);
+        }
+    </script>
+</body>
+</html>

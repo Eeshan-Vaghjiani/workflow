@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .settings-section {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .settings-header {
+            padding: 16px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e5e5ea;
+        }
+
+        .settings-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .settings-subtitle {
+            font-size: 14px;
+            color: #8e8e93;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #f2f2f7;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-item:active {
+            background: #f8f9fa;
+        }
+
+        .setting-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 18px;
+            color: white;
+        }
+
+        .setting-icon.blue {
+            background: #007aff;
+        }
+
+        .setting-icon.green {
+            background: #34c759;
+        }
+
+        .setting-icon.orange {
+            background: #ff9500;
+        }
+
+        .setting-icon.red {
+            background: #ff3b30;
+        }
+
+        .setting-icon.purple {
+            background: #5856d6;
+        }
+
+        .setting-icon.gray {
+            background: #8e8e93;
+        }
+
+        .setting-content {
+            flex: 1;
+        }
+
+        .setting-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 2px;
+        }
+
+        .setting-description {
+            font-size: 14px;
+            color: #8e8e93;
+        }
+
+        .setting-action {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .setting-toggle {
+            width: 50px;
+            height: 30px;
+            background: #e5e5ea;
+            border-radius: 15px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .setting-toggle.active {
+            background: #34c759;
+        }
+
+        .toggle-handle {
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .setting-toggle.active .toggle-handle {
+            transform: translateX(20px);
+        }
+
+        .setting-value {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-right: 8px;
+        }
+
+        .setting-arrow {
+            color: #c7c7cc;
+            font-size: 14px;
+        }
+
+        .version-info {
+            text-align: center;
+            padding: 20px;
+            color: #8e8e93;
+        }
+
+        .version-number {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .version-build {
+            font-size: 14px;
+        }
+
+        .danger-zone {
+            background: #fff8f8;
+            border: 1px solid #ffe5e5;
+        }
+
+        .danger-zone .settings-header {
+            background: #ffe5e5;
+        }
+
+        .logout-btn {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #d70015;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="time">9:41</div>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- App Header -->
+                <div class="app-header">
+                    <button class="btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1>Settings</h1>
+                    <div class="header-actions">
+                        <!-- Empty for now -->
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="content">
+                    <!-- General Settings -->
+                    <div class="settings-section fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">General</div>
+                            <div class="settings-subtitle">Basic app preferences</div>
+                        </div>
+                        
+                        <div class="setting-item" onclick="openNotificationSettings()">
+                            <div class="setting-icon blue">
+                                <i class="fas fa-bell"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Notifications</div>
+                                <div class="setting-description">Manage push notifications</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" onclick="openLanguageSettings()">
+                            <div class="setting-icon green">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Language</div>
+                                <div class="setting-description">Change app language</div>
+                            </div>
+                            <div class="setting-action">
+                                <div class="setting-value">English</div>
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-icon orange">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Dark Mode</div>
+                                <div class="setting-description">Use dark theme</div>
+                            </div>
+                            <div class="setting-action">
+                                <div class="setting-toggle" id="darkModeToggle" onclick="toggleDarkMode()">
+                                    <div class="toggle-handle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Study Settings -->
+                    <div class="settings-section fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">Study Preferences</div>
+                            <div class="settings-subtitle">Customize your study experience</div>
+                        </div>
+                        
+                        <div class="setting-item" onclick="openPomodoroSettings()">
+                            <div class="setting-icon red">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Pomodoro Timer</div>
+                                <div class="setting-description">Configure timer settings</div>
+                            </div>
+                            <div class="setting-action">
+                                <div class="setting-value">25 min</div>
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-icon purple">
+                                <i class="fas fa-volume-up"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Study Sounds</div>
+                                <div class="setting-description">Background sounds while studying</div>
+                            </div>
+                            <div class="setting-action">
+                                <div class="setting-toggle active" onclick="toggleStudySounds()">
+                                    <div class="toggle-handle"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" onclick="openCalendarSync()">
+                            <div class="setting-icon blue">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Calendar Sync</div>
+                                <div class="setting-description">Sync with external calendars</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy & Security -->
+                    <div class="settings-section fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">Privacy & Security</div>
+                            <div class="settings-subtitle">Protect your data</div>
+                        </div>
+                        
+                        <div class="setting-item" onclick="openPrivacySettings()">
+                            <div class="setting-icon gray">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Privacy</div>
+                                <div class="setting-description">Control data sharing</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" onclick="changePassword()">
+                            <div class="setting-icon orange">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Change Password</div>
+                                <div class="setting-description">Update your password</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-icon blue">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Biometric Login</div>
+                                <div class="setting-description">Use fingerprint or face ID</div>
+                            </div>
+                            <div class="setting-action">
+                                <div class="setting-toggle active" onclick="toggleBiometric()">
+                                    <div class="toggle-handle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data & Storage -->
+                    <div class="settings-section fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">Data & Storage</div>
+                            <div class="settings-subtitle">Manage your data</div>
+                        </div>
+                        
+                        <div class="setting-item" onclick="exportData()">
+                            <div class="setting-icon green">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Export Data</div>
+                                <div class="setting-description">Download your data</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" onclick="clearCache()">
+                            <div class="setting-icon orange">
+                                <i class="fas fa-trash-alt"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Clear Cache</div>
+                                <div class="setting-description">Free up storage space</div>
+                            </div>
+                            <div class="setting-action">
+                                <div class="setting-value">2.3 MB</div>
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Support -->
+                    <div class="settings-section fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">Support</div>
+                            <div class="settings-subtitle">Get help and information</div>
+                        </div>
+                        
+                        <div class="setting-item" onclick="openHelp()">
+                            <div class="setting-icon blue">
+                                <i class="fas fa-question-circle"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Help Center</div>
+                                <div class="setting-description">FAQ and guides</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" onclick="contactSupport()">
+                            <div class="setting-icon green">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Contact Support</div>
+                                <div class="setting-description">Get help from our team</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+
+                        <div class="setting-item" onclick="rateApp()">
+                            <div class="setting-icon orange">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Rate App</div>
+                                <div class="setting-description">Rate us in the app store</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About -->
+                    <div class="settings-section fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">About</div>
+                            <div class="settings-subtitle">App information</div>
+                        </div>
+                        
+                        <div class="version-info">
+                            <div class="version-number">Study Planner v2.1.0</div>
+                            <div class="version-build">Build 2024.12.15</div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="settings-section danger-zone fade-in">
+                        <div class="settings-header">
+                            <div class="settings-title">Danger Zone</div>
+                            <div class="settings-subtitle">Irreversible actions</div>
+                        </div>
+                        
+                        <div class="setting-item" onclick="deleteAccount()">
+                            <div class="setting-icon red">
+                                <i class="fas fa-user-times"></i>
+                            </div>
+                            <div class="setting-content">
+                                <div class="setting-title">Delete Account</div>
+                                <div class="setting-description">Permanently delete your account</div>
+                            </div>
+                            <div class="setting-action">
+                                <i class="fas fa-chevron-right setting-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logout Button -->
+                    <button class="logout-btn fade-in" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+                </div>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <a href="dashboard.html" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="tasks.html" class="nav-item">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                    </a>
+                    <a href="calendar.html" class="nav-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                    <a href="groups.html" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="profile.html" class="nav-item active">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            window.location.href = 'profile.html';
+        }
+
+        function toggleDarkMode() {
+            const toggle = document.getElementById('darkModeToggle');
+            toggle.classList.toggle('active');
+        }
+
+        function toggleStudySounds() {
+            event.currentTarget.classList.toggle('active');
+        }
+
+        function toggleBiometric() {
+            event.currentTarget.classList.toggle('active');
+        }
+
+        function openNotificationSettings() {
+            window.location.href = 'notification-settings.html';
+        }
+
+        function openLanguageSettings() {
+            window.location.href = 'language-settings.html';
+        }
+
+        function openPomodoroSettings() {
+            window.location.href = 'pomodoro-settings.html';
+        }
+
+        function openCalendarSync() {
+            window.location.href = 'calendar-sync.html';
+        }
+
+        function openPrivacySettings() {
+            window.location.href = 'privacy-settings.html';
+        }
+
+        function changePassword() {
+            window.location.href = 'change-password.html';
+        }
+
+        function exportData() {
+            const button = event.currentTarget;
+            const valueElement = button.querySelector('.setting-value');
+            
+            // Show loading state
+            if (valueElement) {
+                valueElement.textContent = 'Exporting...';
+            }
+            
+            setTimeout(() => {
+                if (valueElement) {
+                    valueElement.textContent = 'Downloaded!';
+                    valueElement.style.color = '#34c759';
+                }
+                
+                setTimeout(() => {
+                    if (valueElement) {
+                        valueElement.textContent = '2.3 MB';
+                        valueElement.style.color = '#8e8e93';
+                    }
+                }, 2000);
+            }, 2000);
+        }
+
+        function clearCache() {
+            const button = event.currentTarget;
+            const valueElement = button.querySelector('.setting-value');
+            
+            if (confirm('Are you sure you want to clear the cache?')) {
+                valueElement.textContent = 'Clearing...';
+                
+                setTimeout(() => {
+                    valueElement.textContent = '0 MB';
+                    valueElement.style.color = '#34c759';
+                    
+                    setTimeout(() => {
+                        valueElement.style.color = '#8e8e93';
+                    }, 2000);
+                }, 1500);
+            }
+        }
+
+        function openHelp() {
+            window.location.href = 'help.html';
+        }
+
+        function contactSupport() {
+            window.location.href = 'contact-support.html';
+        }
+
+        function rateApp() {
+            // Would open app store rating
+            console.log('Opening app store for rating');
+        }
+
+        function deleteAccount() {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                if (confirm('This will permanently delete all your data. Are you absolutely sure?')) {
+                    // Would proceed with account deletion
+                    window.location.href = 'account-deleted.html';
+                }
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                // Clear any stored data and redirect to login
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

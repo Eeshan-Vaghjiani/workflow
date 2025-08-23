@@ -145,6 +145,25 @@ body {
     background: #e5e5ea;
 }
 
+.btn-back {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #007aff;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 18px;
+}
+
+.btn-back:hover {
+    background: #f2f2f7;
+}
+
 /* Content Area */
 .content {
     height: calc(100% - 44px - 60px - 83px);

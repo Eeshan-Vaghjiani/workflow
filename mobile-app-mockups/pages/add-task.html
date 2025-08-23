@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Task - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e5ea;
+            border-radius: 12px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: #007aff;
+            outline: none;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            padding-right: 40px;
+        }
+
+        .priority-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .priority-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e5e5ea;
+            border-radius: 12px;
+            background: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .priority-btn.high {
+            border-color: #ff3b30;
+            color: #ff3b30;
+        }
+
+        .priority-btn.medium {
+            border-color: #ff9500;
+            color: #ff9500;
+        }
+
+        .priority-btn.low {
+            border-color: #34c759;
+            color: #34c759;
+        }
+
+        .priority-btn.active {
+            color: white;
+        }
+
+        .priority-btn.high.active {
+            background: #ff3b30;
+        }
+
+        .priority-btn.medium.active {
+            background: #ff9500;
+        }
+
+        .priority-btn.low.active {
+            background: #34c759;
+        }
+
+        .date-input {
+            position: relative;
+        }
+
+        .date-input input[type="date"] {
+            color-scheme: light;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid #e5e5ea;
+            border-radius: 12px;
+            background: white;
+            color: #8e8e93;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #f2f2f7;
+        }
+
+        .btn-save {
+            flex: 2;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: #007aff;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-save:hover {
+            background: #0056cc;
+        }
+
+        .btn-save:disabled {
+            background: #8e8e93;
+            cursor: not-allowed;
+        }
+
+        .attachment-area {
+            border: 2px dashed #e5e5ea;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .attachment-area:hover {
+            border-color: #007aff;
+            background: #f0f8ff;
+        }
+
+        .attachment-icon {
+            font-size: 24px;
+            color: #8e8e93;
+            margin-bottom: 8px;
+        }
+
+        .attachment-text {
+            color: #8e8e93;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="time">9:41</div>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- App Header -->
+                <div class="app-header">
+                    <button class="btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1>Add Task</h1>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="saveTask()" style="color: #007aff;">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="content">
+                    <form id="addTaskForm" class="fade-in">
+                        <!-- Task Title -->
+                        <div class="form-group">
+                            <label class="form-label" for="taskTitle">Task Title *</label>
+                            <input type="text" id="taskTitle" name="taskTitle" class="form-input" placeholder="Enter task title" required>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label class="form-label" for="taskDescription">Description</label>
+                            <textarea id="taskDescription" name="taskDescription" class="form-input form-textarea" placeholder="Add description (optional)"></textarea>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="form-group">
+                            <label class="form-label" for="taskCategory">Category</label>
+                            <select id="taskCategory" name="taskCategory" class="form-input form-select">
+                                <option value="">Select category</option>
+                                <option value="personal">Personal</option>
+                                <option value="group">Group</option>
+                                <option value="assignment">Assignment</option>
+                                <option value="project">Project</option>
+                                <option value="study">Study</option>
+                            </select>
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="form-group">
+                            <label class="form-label">Priority</label>
+                            <div class="priority-buttons">
+                                <button type="button" class="priority-btn low" onclick="setPriority('low')">
+                                    <i class="fas fa-arrow-down"></i> Low
+                                </button>
+                                <button type="button" class="priority-btn medium active" onclick="setPriority('medium')">
+                                    <i class="fas fa-minus"></i> Medium
+                                </button>
+                                <button type="button" class="priority-btn high" onclick="setPriority('high')">
+                                    <i class="fas fa-arrow-up"></i> High
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Due Date -->
+                        <div class="form-group">
+                            <label class="form-label" for="taskDueDate">Due Date</label>
+                            <div class="date-input">
+                                <input type="date" id="taskDueDate" name="taskDueDate" class="form-input">
+                            </div>
+                        </div>
+
+                        <!-- Due Time -->
+                        <div class="form-group">
+                            <label class="form-label" for="taskDueTime">Due Time</label>
+                            <input type="time" id="taskDueTime" name="taskDueTime" class="form-input">
+                        </div>
+
+                        <!-- Group Assignment (if applicable) -->
+                        <div class="form-group">
+                            <label class="form-label" for="taskGroup">Assign to Group</label>
+                            <select id="taskGroup" name="taskGroup" class="form-input form-select">
+                                <option value="">No group</option>
+                                <option value="study-group-1">Study Group Alpha</option>
+                                <option value="project-team">Project Team Beta</option>
+                                <option value="research-group">Research Group</option>
+                            </select>
+                        </div>
+
+                        <!-- Attachments -->
+                        <div class="form-group">
+                            <label class="form-label">Attachments</label>
+                            <div class="attachment-area" onclick="attachFile()">
+                                <div class="attachment-icon">
+                                    <i class="fas fa-paperclip"></i>
+                                </div>
+                                <div class="attachment-text">Tap to add attachments</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="button" class="btn-cancel" onclick="goBack()">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn-save">
+                                <i class="fas fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <a href="dashboard.html" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="tasks.html" class="nav-item active">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                    </a>
+                    <a href="calendar.html" class="nav-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                    <a href="groups.html" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="profile.html" class="nav-item">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPriority = 'medium';
+
+        function setPriority(priority) {
+            // Remove active class from all priority buttons
+            document.querySelectorAll('.priority-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Add active class to selected button
+            document.querySelector(`.priority-btn.${priority}`).classList.add('active');
+            currentPriority = priority;
+        }
+
+        function attachFile() {
+            // Create a hidden file input
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.accept = '.pdf,.doc,.docx,.txt,.jpg,.jpeg,.png';
+            
+            fileInput.onchange = function(e) {
+                const files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    showAttachedFiles(files);
+                }
+            };
+            
+            fileInput.click();
+        }
+
+        function showAttachedFiles(files) {
+            const attachmentArea = document.querySelector('.attachment-area');
+            attachmentArea.innerHTML = `
+                <div class="attachment-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="attachment-text">${files.length} file(s) attached</div>
+            `;
+            attachmentArea.style.borderColor = '#34c759';
+            attachmentArea.style.background = '#f0fff4';
+        }
+
+        function goBack() {
+            window.location.href = 'tasks.html';
+        }
+
+        function saveTask() {
+            const form = document.getElementById('addTaskForm');
+            const title = document.getElementById('taskTitle').value.trim();
+            
+            if (!title) {
+                alert('Please enter a task title');
+                return;
+            }
+
+            // Show success animation
+            const saveBtn = document.querySelector('.btn-save');
+            saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            saveBtn.style.background = '#34c759';
+            
+            setTimeout(() => {
+                // Navigate back to tasks page
+                window.location.href = 'tasks.html';
+            }, 1000);
+        }
+
+        // Form submission handler
+        document.getElementById('addTaskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveTask();
+        });
+
+        // Auto-resize textarea
+        document.getElementById('taskDescription').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = this.scrollHeight + 'px';
+        });
+
+        // Set minimum date to today
+        document.getElementById('taskDueDate').min = new Date().toISOString().split('T')[0];
+    </script>
+</body>
+</html>

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .chat-tabs {
+            display: flex;
+            background: #f2f2f7;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+        
+        .chat-tab {
+            flex: 1;
+            padding: 8px 16px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #8e8e93;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chat-tab.active {
+            background: #fff;
+            color: #007aff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message-item {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: #fff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .message-item:hover {
+            background: #f8f9fa;
+        }
+        
+        .message-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #007aff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        
+        .message-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+        
+        .message-preview {
+            font-size: 14px;
+            color: #8e8e93;
+            line-height: 1.4;
+        }
+        
+        .message-badge {
+            background: #ff3b30;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .group-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #007aff, #5856d6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .online-indicator {
+            width: 12px;
+            height: 12px;
+            background: #34c759;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+        }
+        
+        .message-status {
+            font-size: 12px;
+            color: #8e8e93;
+            margin-top: 4px;
+        }
+        
+        .message-status.sent {
+            color: #8e8e93;
+        }
+        
+        .message-status.delivered {
+            color: #007aff;
+        }
+        
+        .message-status.read {
+            color: #34c759;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Chat</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn-icon" onclick="newMessage()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Chat Tabs -->
+                <div class="card fade-in">
+                    <div class="chat-tabs">
+                        <div class="chat-tab active" onclick="switchTab('direct')">
+                            Direct Messages
+                        </div>
+                        <div class="chat-tab" onclick="switchTab('group')">
+                            Group Chats
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Direct Messages -->
+                <div class="card fade-in" id="direct-messages">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Conversations</h3>
+                        <button class="btn-icon" onclick="showAllMessages()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <!-- Sarah Johnson -->
+                        <div class="message-item" onclick="openChat('sarah')">
+                            <div style="position: relative;">
+                                <div class="message-avatar">S</div>
+                                <div class="online-indicator"></div>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">Sarah Johnson</div>
+                                    <div class="message-time">2 min ago</div>
+                                </div>
+                                <div class="message-preview">Has anyone started the research paper yet?</div>
+                                <div class="message-status delivered">
+                                    <i class="fas fa-check-double"></i> Delivered
+                                </div>
+                            </div>
+                            <div class="message-badge">2</div>
+                        </div>
+
+                        <!-- Mike Chen -->
+                        <div class="message-item" onclick="openChat('mike')">
+                            <div style="position: relative;">
+                                <div class="message-avatar">M</div>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">Mike Chen</div>
+                                    <div class="message-time">1 hour ago</div>
+                                </div>
+                                <div class="message-preview">Thanks for the study notes!</div>
+                                <div class="message-status read">
+                                    <i class="fas fa-check-double"></i> Read
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emma Wilson -->
+                        <div class="message-item" onclick="openChat('emma')">
+                            <div style="position: relative;">
+                                <div class="message-avatar">E</div>
+                                <div class="online-indicator"></div>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">Emma Wilson</div>
+                                    <div class="message-time">3 hours ago</div>
+                                </div>
+                                <div class="message-preview">When is the next study session?</div>
+                                <div class="message-status sent">
+                                    <i class="fas fa-check"></i> Sent
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- David Brown -->
+                        <div class="message-item" onclick="openChat('david')">
+                            <div style="position: relative;">
+                                <div class="message-avatar">D</div>
+                            </div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">David Brown</div>
+                                    <div class="message-time">Yesterday</div>
+                                </div>
+                                <div class="message-preview">Can you share the lab report template?</div>
+                                <div class="message-status read">
+                                    <i class="fas fa-check-double"></i> Read
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group Chats (Hidden by default) -->
+                <div class="card fade-in" id="group-chats" style="display: none;">
+                    <div class="card-header">
+                        <h3 class="card-title">Group Conversations</h3>
+                        <button class="btn-icon" onclick="showAllGroups()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <!-- Computer Science Team -->
+                        <div class="message-item" onclick="openGroupChat('cs-team')">
+                            <div class="group-avatar">CS</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">Computer Science Team</div>
+                                    <div class="message-time">30 min ago</div>
+                                </div>
+                                <div class="message-preview">Sarah: "Has anyone started the research paper yet?"</div>
+                                <div class="message-status delivered">
+                                    <i class="fas fa-check-double"></i> Delivered
+                                </div>
+                            </div>
+                            <div class="message-badge">5</div>
+                        </div>
+
+                        <!-- Math Study Group -->
+                        <div class="message-item" onclick="openGroupChat('math-group')">
+                            <div class="group-avatar">MS</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">Math Study Group</div>
+                                    <div class="message-time">2 hours ago</div>
+                                </div>
+                                <div class="message-preview">Mike: "Thanks for the study notes!"</div>
+                                <div class="message-status read">
+                                    <i class="fas fa-check-double"></i> Read
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chemistry Lab Group -->
+                        <div class="message-item" onclick="openGroupChat('chem-lab')">
+                            <div class="group-avatar">CL</div>
+                            <div class="message-content">
+                                <div class="message-header">
+                                    <div class="message-name">Chemistry Lab Group</div>
+                                    <div class="message-time">1 day ago</div>
+                                </div>
+                                <div class="message-preview">Emma: "When is the next study session?"</div>
+                                <div class="message-status read">
+                                    <i class="fas fa-check-double"></i> Read
+                                </div>
+                            </div>
+                            <div class="message-badge">1</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="newMessage()">
+                            <i class="fas fa-plus"></i>
+                            New Message
+                        </button>
+                        <button class="btn btn-secondary" onclick="createGroup()">
+                            <i class="fas fa-users"></i>
+                            Create Group
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('groups')">
+                            <i class="fas fa-user-plus"></i>
+                            Add Contacts
+                        </button>
+                        <button class="btn btn-secondary" onclick="showArchived()">
+                            <i class="fas fa-archive"></i>
+                            Archived
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Activity</h3>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">New contact added</div>
+                                <div class="list-item-subtitle">Lisa Anderson joined your contacts • 1 hour ago</div>
+                            </div>
+                        </div>
+
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Group created</div>
+                                <div class="list-item-subtitle">Physics Study Group was created • 2 hours ago</div>
+                            </div>
+                        </div>
+
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-file"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">File shared</div>
+                                <div class="list-item-subtitle">Study_Notes.pdf shared in Math Group • 3 hours ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item active">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.chat-tab');
+            const directMessages = document.getElementById('direct-messages');
+            const groupChats = document.getElementById('group-chats');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'direct') {
+                tabs[0].classList.add('active');
+                directMessages.style.display = 'block';
+                groupChats.style.display = 'none';
+            } else {
+                tabs[1].classList.add('active');
+                directMessages.style.display = 'none';
+                groupChats.style.display = 'block';
+            }
+        }
+
+        function openChat(userId) {
+            alert(`Opening chat with ${userId}`);
+        }
+
+        function openGroupChat(groupId) {
+            alert(`Opening group chat ${groupId}`);
+        }
+
+        function newMessage() {
+            alert('New message interface would open here');
+        }
+
+        function showSearch() {
+            alert('Search messages interface would open here');
+        }
+
+        function showAllMessages() {
+            alert('Show all messages interface would open here');
+        }
+
+        function showAllGroups() {
+            alert('Show all group chats interface would open here');
+        }
+
+        function createGroup() {
+            alert('Create group interface would open here');
+        }
+
+        function navigateTo(page) {
+            alert(`Navigating to ${page} page`);
+        }
+
+        function showArchived() {
+            alert('Show archived messages');
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Add click effects to message items
+            const messageItems = document.querySelectorAll('.message-item');
+            messageItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+
+            // Add click effects to list items
+            const listItems = document.querySelectorAll('.list-item');
+            listItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

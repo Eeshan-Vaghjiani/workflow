@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groups - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Groups</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn-icon" onclick="joinGroup()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Group Stats -->
+                <div class="card fade-in">
+                    <div class="grid grid-3">
+                        <div class="text-center">
+                            <div style="font-size: 20px; font-weight: 700; color: #007aff;">5</div>
+                            <div style="font-size: 12px; color: #8e8e93;">My Groups</div>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 20px; font-weight: 700; color: #34c759;">12</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Active Assignments</div>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 20px; font-weight: 700; color: #ff9500;">3</div>
+                            <div style="font-size: 12px; color: #8e8e93;">New Messages</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="createGroup()">
+                            <i class="fas fa-plus"></i>
+                            Create Group
+                        </button>
+                        <button class="btn btn-secondary" onclick="joinGroup()">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Join Group
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('assignments')">
+                            <i class="fas fa-file-alt"></i>
+                            Assignments
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('chat')">
+                            <i class="fas fa-comments"></i>
+                            Group Chat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- My Groups -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">My Groups</h3>
+                        <button class="btn-icon" onclick="showAllGroups()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <!-- Computer Science Team -->
+                        <div class="list-item" onclick="openGroup(1)">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-laptop-code"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Computer Science Team</div>
+                                <div class="list-item-subtitle">5 members • 3 active assignments • Last active 2 hours ago</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-primary">3</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Study Group Alpha -->
+                        <div class="list-item" onclick="openGroup(2)">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Study Group Alpha</div>
+                                <div class="list-item-subtitle">8 members • 1 active assignment • Last active 1 day ago</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-success">1</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Math Study Group -->
+                        <div class="list-item" onclick="openGroup(3)">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Math Study Group</div>
+                                <div class="list-item-subtitle">6 members • 2 active assignments • Last active 30 min ago</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-warning">2</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Literature Circle -->
+                        <div class="list-item" onclick="openGroup(4)">
+                            <div class="list-item-icon" style="background: #af52de; color: white;">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Literature Circle</div>
+                                <div class="list-item-subtitle">4 members • 0 active assignments • Last active 3 days ago</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-secondary">0</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Chemistry Lab Group -->
+                        <div class="list-item" onclick="openGroup(5)">
+                            <div class="list-item-icon" style="background: #ff3b30; color: white;">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Chemistry Lab Group</div>
+                                <div class="list-item-subtitle">7 members • 4 active assignments • Last active 1 hour ago</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-danger">4</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Activity</h3>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-comment"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">New message in Computer Science Team</div>
+                                <div class="list-item-subtitle">Sarah: "Has anyone started the research paper?" • 2 hours ago</div>
+                            </div>
+                        </div>
+
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">New assignment in Math Study Group</div>
+                                <div class="list-item-subtitle">Calculus Problem Set #5 • Due in 3 days</div>
+                            </div>
+                        </div>
+
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">New member joined Chemistry Lab Group</div>
+                                <div class="list-item-subtitle">Mike Johnson joined the group • 1 day ago</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discover Groups -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Discover Groups</h3>
+                        <button class="btn-icon" onclick="showMoreGroups()">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item" onclick="joinGroup(6)">
+                            <div class="list-item-icon" style="background: #5856d6; color: white;">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Art & Design Club</div>
+                                <div class="list-item-subtitle">15 members • Open to join • Creative projects</div>
+                            </div>
+                            <button class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;">Join</button>
+                        </div>
+
+                        <div class="list-item" onclick="joinGroup(7)">
+                            <div class="list-item-icon" style="background: #ff2d92; color: white;">
+                                <i class="fas fa-music"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Music Theory Study</div>
+                                <div class="list-item-subtitle">12 members • Open to join • Music theory practice</div>
+                            </div>
+                            <button class="btn btn-primary" style="padding: 8px 16px; font-size: 12px;">Join</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item active">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function createGroup() {
+            alert('Create group form would open here');
+        }
+
+        function joinGroup(groupId) {
+            if (groupId) {
+                alert(`Joining group ${groupId}`);
+            } else {
+                alert('Join group interface would open here');
+            }
+        }
+
+        function openGroup(groupId) {
+            alert(`Opening group ${groupId} details`);
+        }
+
+        function showSearch() {
+            alert('Search groups interface would open here');
+        }
+
+        function showAllGroups() {
+            alert('Show all groups interface would open here');
+        }
+
+        function showMoreGroups() {
+            alert('Show more discoverable groups');
+        }
+
+        function navigateTo(page) {
+            alert(`Navigating to ${page} page`);
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Add click effects to list items
+            const listItems = document.querySelectorAll('.list-item');
+            listItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

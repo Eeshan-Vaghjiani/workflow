@@ -1,0 +1,498 @@
+/* Mobile App Mockup Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Phone Frame */
+.phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #000;
+    border-radius: 40px;
+    padding: 8px;
+    margin: 20px auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.phone-screen {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Status Bar */
+.status-bar {
+    height: 44px;
+    background: #000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.status-bar .time {
+    font-weight: 700;
+}
+
+.status-bar .icons {
+    display: flex;
+    gap: 4px;
+}
+
+/* Navigation */
+.bottom-nav {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 83px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: 20px;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #8e8e93;
+    text-decoration: none;
+    font-size: 10px;
+    transition: color 0.2s;
+}
+
+.nav-item.active {
+    color: #007aff;
+}
+
+.nav-item i {
+    font-size: 24px;
+}
+
+/* Header */
+.app-header {
+    height: 60px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.app-header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1d1d1f;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f2f2f7;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #007aff;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: #e5e5ea;
+}
+
+/* Content Area */
+.content {
+    height: calc(100% - 44px - 60px - 83px);
+    overflow-y: auto;
+    padding: 20px;
+    background: #f2f2f7;
+}
+
+/* Cards */
+.card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: #007aff;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #0056cc;
+}
+
+.btn-secondary {
+    background: #f2f2f7;
+    color: #007aff;
+}
+
+.btn-secondary:hover {
+    background: #e5e5ea;
+}
+
+.btn-success {
+    background: #34c759;
+    color: #fff;
+}
+
+.btn-success:hover {
+    background: #28a745;
+}
+
+.btn-danger {
+    background: #ff3b30;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background: #dc3545;
+}
+
+/* Lists */
+.list {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.list-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f2f2f7;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.list-item:last-child {
+    border-bottom: none;
+}
+
+.list-item:hover {
+    background: #f8f9fa;
+}
+
+.list-item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f2f2f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #007aff;
+    font-size: 18px;
+}
+
+.list-item-content {
+    flex: 1;
+}
+
+.list-item-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 4px;
+}
+
+.list-item-subtitle {
+    font-size: 14px;
+    color: #8e8e93;
+}
+
+.list-item-badge {
+    background: #007aff;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 16px;
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 8px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 16px;
+    border: 2px solid #e5e5ea;
+    border-radius: 12px;
+    font-size: 16px;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #007aff;
+}
+
+.form-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Progress Bars */
+.progress {
+    width: 100%;
+    height: 8px;
+    background: #e5e5ea;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: #007aff;
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+.progress-bar.success {
+    background: #34c759;
+}
+
+.progress-bar.warning {
+    background: #ff9500;
+}
+
+.progress-bar.danger {
+    background: #ff3b30;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-primary {
+    background: #007aff;
+    color: #fff;
+}
+
+.badge-success {
+    background: #34c759;
+    color: #fff;
+}
+
+.badge-warning {
+    background: #ff9500;
+    color: #fff;
+}
+
+.badge-danger {
+    background: #ff3b30;
+    color: #fff;
+}
+
+.badge-secondary {
+    background: #8e8e93;
+    color: #fff;
+}
+
+/* Grid */
+.grid {
+    display: grid;
+    gap: 16px;
+}
+
+.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.grid-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Utilities */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+
+.mt-0 { margin-top: 0; }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+
+.p-0 { padding: 0; }
+.p-1 { padding: 8px; }
+.p-2 { padding: 16px; }
+.p-3 { padding: 24px; }
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .phone-screen {
+        background: #000;
+    }
+    
+    .app-header {
+        background: #1c1c1e;
+        border-bottom-color: #38383a;
+    }
+    
+    .app-header h1 {
+        color: #fff;
+    }
+    
+    .content {
+        background: #1c1c1e;
+    }
+    
+    .card {
+        background: #2c2c2e;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .card-title {
+        color: #fff;
+    }
+    
+    .list {
+        background: #2c2c2e;
+    }
+    
+    .list-item {
+        border-bottom-color: #38383a;
+    }
+    
+    .list-item:hover {
+        background: #3a3a3c;
+    }
+    
+    .list-item-title {
+        color: #fff;
+    }
+    
+    .form-input {
+        background: #2c2c2e;
+        border-color: #38383a;
+        color: #fff;
+    }
+    
+    .btn-secondary {
+        background: #38383a;
+        color: #0a84ff;
+    }
+    
+    .btn-secondary:hover {
+        background: #48484a;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+    .phone-frame {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .phone-screen {
+        border-radius: 0;
+    }
+}

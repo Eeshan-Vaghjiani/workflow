@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Dashboard</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge badge-danger" style="position: absolute; top: -5px; right: -5px; font-size: 10px;">3</span>
+                    </button>
+                    <button class="btn-icon" onclick="showProfile()">
+                        <i class="fas fa-user"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Welcome Section -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h2 class="card-title">Welcome back, John!</h2>
+                    </div>
+                    <p style="color: #8e8e93; margin-bottom: 16px;">Here's what's happening today</p>
+                    
+                    <!-- Quick Stats -->
+                    <div class="grid grid-3">
+                        <div class="text-center">
+                            <div style="font-size: 24px; font-weight: 700; color: #007aff;">5</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Tasks Due</div>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 24px; font-weight: 700; color: #34c759;">3</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Groups</div>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 24px; font-weight: 700; color: #ff9500;">2</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Sessions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Usage Stats -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-brain" style="color: #007aff;"></i>
+                            <h3 class="card-title">AI Prompts Usage</h3>
+                        </div>
+                        <span class="badge badge-warning">7 left</span>
+                    </div>
+                    
+                    <div class="progress">
+                        <div class="progress-bar" style="width: 30%;"></div>
+                    </div>
+                    <p style="font-size: 14px; color: #8e8e93; margin-top: 8px;">3/10 prompts used (Trial)</p>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="navigateTo('tasks')">
+                            <i class="fas fa-plus"></i>
+                            New Task
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('pomodoro')">
+                            <i class="fas fa-play"></i>
+                            Start Timer
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('study-planner')">
+                            <i class="fas fa-book"></i>
+                            Study Plan
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('ai-tasks')">
+                            <i class="fas fa-magic"></i>
+                            AI Assistant
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming Tasks -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Upcoming Tasks</h3>
+                        <button class="btn-icon" onclick="navigateTo('tasks')">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item" onclick="openTask(1)">
+                            <div class="list-item-icon">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Research Paper Draft</div>
+                                <div class="list-item-subtitle">Due in 2 hours • Computer Science</div>
+                            </div>
+                            <span class="badge badge-warning">High</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openTask(2)">
+                            <div class="list-item-icon">
+                                <i class="fas fa-calculator"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Math Assignment</div>
+                                <div class="list-item-subtitle">Due tomorrow • Mathematics</div>
+                            </div>
+                            <span class="badge badge-primary">Medium</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openTask(3)">
+                            <div class="list-item-icon">
+                                <i class="fas fa-flask"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Lab Report</div>
+                                <div class="list-item-subtitle">Due in 3 days • Chemistry</div>
+                            </div>
+                            <span class="badge badge-secondary">Low</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Groups -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Groups</h3>
+                        <button class="btn-icon" onclick="navigateTo('groups')">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item" onclick="openGroup(1)">
+                            <div class="list-item-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Computer Science Team</div>
+                                <div class="list-item-subtitle">5 members • 3 active assignments</div>
+                            </div>
+                            <span class="list-item-badge">3</span>
+                        </div>
+                        
+                        <div class="list-item" onclick="openGroup(2)">
+                            <div class="list-item-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Study Group Alpha</div>
+                                <div class="list-item-subtitle">8 members • 1 active assignment</div>
+                            </div>
+                            <span class="list-item-badge">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Today's Schedule -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Today's Schedule</h3>
+                        <button class="btn-icon" onclick="navigateTo('calendar')">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="list">
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Computer Science Lecture</div>
+                                <div class="list-item-subtitle">10:00 AM - 11:30 AM • Room 301</div>
+                            </div>
+                        </div>
+                        
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Study Group Meeting</div>
+                                <div class="list-item-subtitle">2:00 PM - 3:30 PM • Library</div>
+                            </div>
+                        </div>
+                        
+                        <div class="list-item">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Study Session</div>
+                                <div class="list-item-subtitle">7:00 PM - 9:00 PM • Home</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function navigateTo(page) {
+            // In a real app, this would navigate to the specific page
+            alert(`Navigating to ${page} page`);
+        }
+
+        function openTask(taskId) {
+            alert(`Opening task ${taskId}`);
+        }
+
+        function openGroup(groupId) {
+            alert(`Opening group ${groupId}`);
+        }
+
+        function showNotifications() {
+            alert('Notifications panel would open here');
+        }
+
+        function showProfile() {
+            alert('Profile settings would open here');
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+    </script>
+</body>
+</html>

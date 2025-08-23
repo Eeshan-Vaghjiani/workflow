@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="phone-frame">
+        <div class="phone-screen">
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="time">9:41</div>
+                <div class="icons">
+                    <i class="fas fa-signal"></i>
+                    <i class="fas fa-wifi"></i>
+                    <i class="fas fa-battery-three-quarters"></i>
+                </div>
+            </div>
+
+            <!-- App Header -->
+            <div class="app-header">
+                <h1>Tasks</h1>
+                <div class="header-actions">
+                    <button class="btn-icon" onclick="showFilters()">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                    <button class="btn-icon" onclick="showSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn-icon" onclick="addNewTask()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Task Stats -->
+                <div class="card fade-in">
+                    <div class="grid grid-3">
+                        <div class="text-center">
+                            <div style="font-size: 20px; font-weight: 700; color: #ff3b30;">8</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Overdue</div>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 20px; font-weight: 700; color: #ff9500;">12</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Due Today</div>
+                        </div>
+                        <div class="text-center">
+                            <div style="font-size: 20px; font-weight: 700; color: #34c759;">45</div>
+                            <div style="font-size: 12px; color: #8e8e93;">Completed</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Categories -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Categories</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-secondary" onclick="filterByCategory('all')">
+                            <i class="fas fa-list"></i>
+                            All Tasks
+                        </button>
+                        <button class="btn btn-secondary" onclick="filterByCategory('personal')">
+                            <i class="fas fa-user"></i>
+                            Personal
+                        </button>
+                        <button class="btn btn-secondary" onclick="filterByCategory('group')">
+                            <i class="fas fa-users"></i>
+                            Group
+                        </button>
+                        <button class="btn btn-secondary" onclick="filterByCategory('assignment')">
+                            <i class="fas fa-file-alt"></i>
+                            Assignments
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Task List -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">My Tasks</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-icon" onclick="toggleView('list')">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="btn-icon" onclick="toggleView('kanban')">
+                                <i class="fas fa-columns"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Task Items -->
+                    <div class="list" id="task-list">
+                        <!-- Overdue Task -->
+                        <div class="list-item" onclick="openTask(1)">
+                            <div class="list-item-icon" style="background: #ff3b30; color: white;">
+                                <i class="fas fa-exclamation"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Research Paper Draft</div>
+                                <div class="list-item-subtitle">Overdue • Computer Science • Due 2 days ago</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-danger">Overdue</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Due Today -->
+                        <div class="list-item" onclick="openTask(2)">
+                            <div class="list-item-icon" style="background: #ff9500; color: white;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Math Assignment</div>
+                                <div class="list-item-subtitle">Due today • Mathematics • Due in 4 hours</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-warning">Due Today</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Due Tomorrow -->
+                        <div class="list-item" onclick="openTask(3)">
+                            <div class="list-item-icon" style="background: #007aff; color: white;">
+                                <i class="fas fa-calendar"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Lab Report</div>
+                                <div class="list-item-subtitle">Due tomorrow • Chemistry • Due in 1 day</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-primary">Due Tomorrow</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Due Later -->
+                        <div class="list-item" onclick="openTask(4)">
+                            <div class="list-item-icon" style="background: #34c759; color: white;">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title">Literature Review</div>
+                                <div class="list-item-subtitle">Due in 3 days • English • Due in 3 days</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-success">Due Later</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Completed Task -->
+                        <div class="list-item" onclick="openTask(5)" style="opacity: 0.6;">
+                            <div class="list-item-icon" style="background: #8e8e93; color: white;">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="list-item-content">
+                                <div class="list-item-title" style="text-decoration: line-through;">Physics Quiz</div>
+                                <div class="list-item-subtitle">Completed • Physics • Completed yesterday</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+                                <span class="badge badge-secondary">Completed</span>
+                                <i class="fas fa-chevron-right" style="color: #8e8e93; font-size: 12px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="grid grid-2">
+                        <button class="btn btn-primary" onclick="addNewTask()">
+                            <i class="fas fa-plus"></i>
+                            New Task
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('kanban')">
+                            <i class="fas fa-columns"></i>
+                            Kanban View
+                        </button>
+                        <button class="btn btn-secondary" onclick="navigateTo('ai-tasks')">
+                            <i class="fas fa-magic"></i>
+                            AI Assistant
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportTasks()">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Navigation -->
+            <div class="bottom-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="groups.html" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    <span>Groups</span>
+                </a>
+                <a href="tasks.html" class="nav-item active">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tasks</span>
+                </a>
+                <a href="calendar.html" class="nav-item">
+                    <i class="fas fa-calendar"></i>
+                    <span>Calendar</span>
+                </a>
+                <a href="chat.html" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    <span>Chat</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addNewTask() {
+            alert('New task form would open here');
+        }
+
+        function openTask(taskId) {
+            alert(`Opening task ${taskId} details`);
+        }
+
+        function filterByCategory(category) {
+            alert(`Filtering by category: ${category}`);
+        }
+
+        function toggleView(view) {
+            alert(`Switching to ${view} view`);
+        }
+
+        function showFilters() {
+            alert('Filter options would open here');
+        }
+
+        function showSearch() {
+            alert('Search interface would open here');
+        }
+
+        function navigateTo(page) {
+            alert(`Navigating to ${page} page`);
+        }
+
+        function exportTasks() {
+            alert('Exporting tasks...');
+        }
+
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate cards on load
+            const cards = document.querySelectorAll('.card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+            });
+
+            // Add click effects to list items
+            const listItems = document.querySelectorAll('.list-item');
+            listItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

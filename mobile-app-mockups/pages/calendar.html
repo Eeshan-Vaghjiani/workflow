@@ -7,6 +7,32 @@
     <link rel="stylesheet" href="../assets/css/mobile-app.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        .google-sync-btn {
+            background: #34a853;
+            color: white;
+        }
+        
+        .google-sync-btn:hover {
+            background: #2d8a45;
+        }
+        
+        .sync-status {
+            background: #e8f5e8;
+            color: #2d8a45;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        
+        [data-theme="dark"] .sync-status {
+            background: #1a3a1a;
+            color: #66bb66;
+        }
         .calendar-header {
             display: flex;
             justify-content: space-between;
@@ -140,7 +166,15 @@
     </style>
 </head>
 <body>
-    <div class="phone-frame">
+    <div class="app-container">
+        <!-- Side Controls -->
+        <div class="side-controls">
+            <div class="theme-toggle" title="Toggle Dark/Light Mode">
+            </div>
+            <div class="theme-label">Light Mode</div>
+        </div>
+        
+        <div class="phone-frame">
         <div class="phone-screen">
             <!-- Status Bar -->
             <div class="status-bar">
@@ -306,18 +340,22 @@
                             <i class="fas fa-plus"></i>
                             Add Event
                         </button>
+                        <button class="btn google-sync-btn" onclick="syncGoogleCalendar()">
+                            <i class="fab fa-google"></i>
+                            Sync Google
+                        </button>
                         <button class="btn btn-secondary" onclick="navigateTo('tasks')">
                             <i class="fas fa-tasks"></i>
                             View Tasks
-                        </button>
-                        <button class="btn btn-secondary" onclick="navigateTo('study-planner')">
-                            <i class="fas fa-book"></i>
-                            Study Plan
                         </button>
                         <button class="btn btn-secondary" onclick="exportCalendar()">
                             <i class="fas fa-download"></i>
                             Export
                         </button>
+                    </div>
+                    <div class="sync-status" style="display: none;" id="syncStatus">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Last synced: 2 minutes ago</span>
                     </div>
                 </div>
 
@@ -458,7 +496,33 @@
                     }, 150);
                 });
             });
+            
+            // Google Calendar sync functionality
+            window.syncGoogleCalendar = function() {
+                const syncStatus = document.getElementById('syncStatus');
+                const button = event.target.closest('.google-sync-btn');
+                
+                // Show loading state
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+                button.disabled = true;
+                
+                // Simulate sync process
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fab fa-google"></i> Sync Google';
+                    button.disabled = false;
+                    
+                    // Show sync status
+                    syncStatus.style.display = 'flex';
+                    
+                    // Hide status after 5 seconds
+                    setTimeout(() => {
+                        syncStatus.style.display = 'none';
+                    }, 5000);
+                }, 2000);
+            };
         });
     </script>
+    <script src="../assets/js/theme.js"></script>
+    </div> <!-- Close app-container -->
 </body>
 </html>

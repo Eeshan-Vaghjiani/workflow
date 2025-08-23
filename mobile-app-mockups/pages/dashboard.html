@@ -9,12 +9,7 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Side Controls -->
-        <div class="side-controls">
-            <div class="theme-toggle" title="Toggle Dark/Light Mode">
-            </div>
-            <div class="theme-label">Light Mode</div>
-        </div>
+
         
         <div class="phone-frame">
         <div class="phone-screen">
@@ -259,24 +254,23 @@
 
     <script>
         function navigateTo(page) {
-            // In a real app, this would navigate to the specific page
-            alert(`Navigating to ${page} page`);
+            window.location.href = `${page}.html`;
         }
 
         function openTask(taskId) {
-            alert(`Opening task ${taskId}`);
+            window.location.href = `task-details.html?id=${taskId}`;
         }
 
         function openGroup(groupId) {
-            alert(`Opening group ${groupId}`);
+            window.location.href = `group-details.html?id=${groupId}`;
         }
 
         function showNotifications() {
-            alert('Notifications panel would open here');
+            window.location.href = 'notifications.html';
         }
 
         function showProfile() {
-            alert('Profile settings would open here');
+            window.location.href = 'settings.html';
         }
 
         // Add some interactivity

@@ -569,6 +569,19 @@
                             </div>
                         </div>
 
+                        <div class="profile-option" onclick="openSettings()">
+                            <div class="option-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="option-content">
+                                <div class="option-title">Settings</div>
+                                <div class="option-subtitle">App preferences and configuration</div>
+                            </div>
+                            <div class="option-action">
+                                <i class="fas fa-chevron-right option-arrow"></i>
+                            </div>
+                        </div>
+
                         <div class="profile-option" onclick="exportData()">
                             <div class="option-icon">
                                 <i class="fas fa-download"></i>
@@ -761,23 +774,27 @@
 
         // Settings functions
         function openNotificationSettings() {
-            alert('🔔 Notification settings would open here');
+            window.location.href = 'notification-settings.html';
         }
 
         function openLanguageSettings() {
-            alert('🌍 Language settings would open here');
+            window.location.href = 'language-settings.html';
         }
 
         function openPasswordChange() {
-            alert('🔒 Password change form would open here');
+            window.location.href = 'change-password.html';
         }
 
         function openPrivacySettings() {
-            alert('🛡️ Privacy settings would open here');
+            window.location.href = 'privacy-settings.html';
+        }
+
+        function openSettings() {
+            window.location.href = 'settings.html';
         }
 
         function exportData() {
-            alert('📊 Data export would start here');
+            window.location.href = 'data-export.html';
         }
 
         function logout() {

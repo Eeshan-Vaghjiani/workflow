@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Study Planner Mobile</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .notification-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #007aff;
+            transition: all 0.3s ease;
+        }
+
+        .notification-item:active {
+            transform: scale(0.98);
+            background: #f8f9fa;
+        }
+
+        .notification-item.unread {
+            border-left-color: #ff3b30;
+            background: #fff8f8;
+        }
+
+        .notification-item.task {
+            border-left-color: #34c759;
+        }
+
+        .notification-item.group {
+            border-left-color: #ff9500;
+        }
+
+        .notification-item.calendar {
+            border-left-color: #5856d6;
+        }
+
+        .notification-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .notification-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            margin-right: 12px;
+        }
+
+        .notification-icon.task {
+            background: #34c759;
+        }
+
+        .notification-icon.group {
+            background: #ff9500;
+        }
+
+        .notification-icon.calendar {
+            background: #5856d6;
+        }
+
+        .notification-icon.system {
+            background: #007aff;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+
+        .notification-text {
+            font-size: 14px;
+            color: #8e8e93;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .notification-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .notification-badge {
+            width: 8px;
+            height: 8px;
+            background: #ff3b30;
+            border-radius: 50%;
+        }
+
+        .filter-tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 8px 12px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #8e8e93;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tab.active {
+            background: #007aff;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8e8e93;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .mark-all-read {
+            background: #f2f2f7;
+            color: #007aff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="time">9:41</div>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <!-- App Header -->
+                <div class="app-header">
+                    <button class="btn-back" onclick="goBack()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1>Notifications</h1>
+                    <div class="header-actions">
+                        <button class="mark-all-read" onclick="markAllRead()">
+                            Mark All Read
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Content Area -->
+                <div class="content">
+                    <!-- Filter Tabs -->
+                    <div class="filter-tabs fade-in">
+                        <div class="filter-tab active" onclick="filterNotifications('all')">All</div>
+                        <div class="filter-tab" onclick="filterNotifications('tasks')">Tasks</div>
+                        <div class="filter-tab" onclick="filterNotifications('groups')">Groups</div>
+                        <div class="filter-tab" onclick="filterNotifications('calendar')">Calendar</div>
+                    </div>
+
+                    <!-- Notifications List -->
+                    <div id="notificationsList">
+                        <div class="notification-item unread task" onclick="openNotification('task1')">
+                            <div class="notification-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="notification-icon task">
+                                        <i class="fas fa-tasks"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">Task Due Soon</div>
+                                        <div class="notification-text">Complete research paper is due in 2 hours</div>
+                                    </div>
+                                </div>
+                                <div class="notification-badge"></div>
+                            </div>
+                            <div class="notification-meta">
+                                <div class="notification-time">2 hours ago</div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item group" onclick="openNotification('group1')">
+                            <div class="notification-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="notification-icon group">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">New Group Message</div>
+                                        <div class="notification-text">Sarah: "Hey everyone, let's meet at 3 PM today"</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="notification-meta">
+                                <div class="notification-time">5 minutes ago</div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item calendar" onclick="openNotification('calendar1')">
+                            <div class="notification-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="notification-icon calendar">
+                                        <i class="fas fa-calendar"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">Upcoming Event</div>
+                                        <div class="notification-text">Study session starts in 30 minutes</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="notification-meta">
+                                <div class="notification-time">15 minutes ago</div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item unread task" onclick="openNotification('task2')">
+                            <div class="notification-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="notification-icon task">
+                                        <i class="fas fa-check"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">Task Completed</div>
+                                        <div class="notification-text">John completed "Review chapter 5"</div>
+                                    </div>
+                                </div>
+                                <div class="notification-badge"></div>
+                            </div>
+                            <div class="notification-meta">
+                                <div class="notification-time">1 hour ago</div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item system" onclick="openNotification('system1')">
+                            <div class="notification-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="notification-icon system">
+                                        <i class="fas fa-info"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">App Update Available</div>
+                                        <div class="notification-text">Version 2.1.0 includes new study features</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="notification-meta">
+                                <div class="notification-time">3 hours ago</div>
+                            </div>
+                        </div>
+
+                        <div class="notification-item group" onclick="openNotification('group2')">
+                            <div class="notification-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="notification-icon group">
+                                        <i class="fas fa-user-plus"></i>
+                                    </div>
+                                    <div class="notification-content">
+                                        <div class="notification-title">New Group Member</div>
+                                        <div class="notification-text">Alex joined "Study Group Alpha"</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="notification-meta">
+                                <div class="notification-time">Yesterday</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Navigation -->
+                <div class="bottom-nav">
+                    <a href="dashboard.html" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="tasks.html" class="nav-item">
+                        <i class="fas fa-tasks"></i>
+                        <span>Tasks</span>
+                    </a>
+                    <a href="calendar.html" class="nav-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>Calendar</span>
+                    </a>
+                    <a href="groups.html" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Groups</span>
+                    </a>
+                    <a href="profile.html" class="nav-item">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            // Go back to the previous page
+            if (document.referrer) {
+                history.back();
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        function filterNotifications(type) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Filter notifications
+            const notifications = document.querySelectorAll('.notification-item');
+            notifications.forEach(notification => {
+                if (type === 'all') {
+                    notification.style.display = 'block';
+                } else if (type === 'tasks' && notification.classList.contains('task')) {
+                    notification.style.display = 'block';
+                } else if (type === 'groups' && notification.classList.contains('group')) {
+                    notification.style.display = 'block';
+                } else if (type === 'calendar' && notification.classList.contains('calendar')) {
+                    notification.style.display = 'block';
+                } else {
+                    notification.style.display = 'none';
+                }
+            });
+        }
+
+        function markAllRead() {
+            // Remove unread class and badges from all notifications
+            document.querySelectorAll('.notification-item.unread').forEach(item => {
+                item.classList.remove('unread');
+            });
+            
+            document.querySelectorAll('.notification-badge').forEach(badge => {
+                badge.remove();
+            });
+            
+            // Update button text temporarily
+            const button = document.querySelector('.mark-all-read');
+            const originalText = button.textContent;
+            button.textContent = 'Done!';
+            button.style.background = '#34c759';
+            button.style.color = 'white';
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = '#f2f2f7';
+                button.style.color = '#007aff';
+            }, 2000);
+        }
+
+        function openNotification(notificationId) {
+            // Remove unread status from clicked notification
+            event.currentTarget.classList.remove('unread');
+            const badge = event.currentTarget.querySelector('.notification-badge');
+            if (badge) {
+                badge.remove();
+            }
+            
+            // Navigate based on notification type
+            if (notificationId.includes('task')) {
+                window.location.href = 'tasks.html';
+            } else if (notificationId.includes('group')) {
+                window.location.href = 'groups.html';
+            } else if (notificationId.includes('calendar')) {
+                window.location.href = 'calendar.html';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Study Planner</title>
+    <link rel="stylesheet" href="../assets/css/mobile-app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .register-container {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #34c759 0%, #007aff 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .register-header {
+            text-align: center;
+            padding: 40px 20px 20px;
+            color: white;
+        }
+
+        .app-logo {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            backdrop-filter: blur(10px);
+        }
+
+        .register-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .register-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            margin: 20px 20px 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.5s ease;
+            border-radius: 2px;
+        }
+
+        .step-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0 0;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .step-dot.active {
+            background: white;
+            transform: scale(1.2);
+        }
+
+        .register-form {
+            flex: 1;
+            background: white;
+            border-radius: 30px 30px 0 0;
+            padding: 30px 30px 20px;
+            margin-top: 20px;
+            overflow-y: auto;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .step-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .step-description {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            height: 50px;
+            background: #f2f2f7;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #007aff;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .form-input.error {
+            border-color: #ff3b30;
+            background: #fff5f5;
+        }
+
+        .form-input.success {
+            border-color: #34c759;
+            background: #f0fff4;
+        }
+
+        .form-error {
+            color: #ff3b30;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-success {
+            color: #34c759;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .password-strength {
+            margin-top: 8px;
+        }
+
+        .strength-bar {
+            height: 4px;
+            background: #e5e5ea;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            background: #ff3b30;
+            transition: all 0.3s ease;
+            width: 0%;
+        }
+
+        .strength-fill.weak {
+            background: #ff3b30;
+            width: 25%;
+        }
+
+        .strength-fill.fair {
+            background: #ff9500;
+            width: 50%;
+        }
+
+        .strength-fill.good {
+            background: #ffcc02;
+            width: 75%;
+        }
+
+        .strength-fill.strong {
+            background: #34c759;
+            width: 100%;
+        }
+
+        .strength-text {
+            font-size: 12px;
+            color: #8e8e93;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #8e8e93;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .form-select {
+            width: 100%;
+            height: 50px;
+            background: #f2f2f7;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 0 16px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #007aff;
+            background: white;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #d1d1d6;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox.checked {
+            background: #007aff;
+            border-color: #007aff;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .checkbox-label {
+            font-size: 14px;
+            color: #6a6a6a;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
+        .checkbox-label a {
+            color: #007aff;
+            text-decoration: none;
+        }
+
+        .checkbox-label a:hover {
+            text-decoration: underline;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            height: 50px;
+            background: #f2f2f7;
+            color: #007aff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e5ea;
+        }
+
+        .btn-primary {
+            flex: 2;
+            height: 50px;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            background: #d1d1d6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary.loading {
+            position: relative;
+        }
+
+        .btn-primary.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .login-link {
+            text-align: center;
+            color: #6a6a6a;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .login-link a {
+            color: #007aff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        /* Dark mode styles */
+        [data-theme="dark"] .register-form {
+            background: #1c1c1e;
+        }
+
+        [data-theme="dark"] .step-title {
+            color: #fff;
+        }
+
+        [data-theme="dark"] .form-label {
+            color: #fff;
+        }
+
+        [data-theme="dark"] .form-input,
+        [data-theme="dark"] .form-select {
+            background: #2c2c2e;
+            color: #fff;
+            border-color: transparent;
+        }
+
+        [data-theme="dark"] .form-input:focus,
+        [data-theme="dark"] .form-select:focus {
+            background: #3a3a3c;
+            border-color: #007aff;
+        }
+
+        [data-theme="dark"] .checkbox-label,
+        [data-theme="dark"] .login-link {
+            color: #a1a1a6;
+        }
+
+        [data-theme="dark"] .btn-secondary {
+            background: #2c2c2e;
+            color: #007aff;
+        }
+
+        [data-theme="dark"] .btn-secondary:hover {
+            background: #3a3a3c;
+        }
+
+        [data-theme="dark"] .strength-bar {
+            background: #48484a;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="phone-screen">
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <span class="time">9:41</span>
+                    <div class="icons">
+                        <i class="fas fa-signal"></i>
+                        <i class="fas fa-wifi"></i>
+                        <i class="fas fa-battery-three-quarters"></i>
+                    </div>
+                </div>
+
+                <div class="register-container">
+                    <!-- Header -->
+                    <div class="register-header">
+                        <div class="app-logo">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h1 class="register-title">Create Account</h1>
+                        <p class="register-subtitle">Start your learning journey today</p>
+                        
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        
+                        <div class="step-indicators">
+                            <div class="step-dot active" id="dot1"></div>
+                            <div class="step-dot" id="dot2"></div>
+                            <div class="step-dot" id="dot3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Registration Form -->
+                    <div class="register-form">
+                        <form id="registerForm">
+                            <!-- Step 1: Basic Info -->
+                            <div class="step active" id="step1">
+                                <h2 class="step-title">Personal Information</h2>
+                                <p class="step-description">Tell us a bit about yourself</p>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="firstName">First Name</label>
+                                    <input 
+                                        type="text" 
+                                        id="firstName" 
+                                        class="form-input" 
+                                        placeholder="Enter your first name"
+                                        required
+                                    >
+                                    <div class="form-error" id="firstNameError">First name is required</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="lastName">Last Name</label>
+                                    <input 
+                                        type="text" 
+                                        id="lastName" 
+                                        class="form-input" 
+                                        placeholder="Enter your last name"
+                                        required
+                                    >
+                                    <div class="form-error" id="lastNameError">Last name is required</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="email">Email Address</label>
+                                    <input 
+                                        type="email" 
+                                        id="email" 
+                                        class="form-input" 
+                                        placeholder="Enter your email"
+                                        autocomplete="email"
+                                        required
+                                    >
+                                    <div class="form-error" id="emailError">Please enter a valid email address</div>
+                                    <div class="form-success" id="emailSuccess">Email looks good!</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="studentLevel">Education Level</label>
+                                    <select id="studentLevel" class="form-select" required>
+                                        <option value="">Select your level</option>
+                                        <option value="high-school">High School</option>
+                                        <option value="undergraduate">Undergraduate</option>
+                                        <option value="graduate">Graduate</option>
+                                        <option value="postgraduate">Postgraduate</option>
+                                        <option value="professional">Professional</option>
+                                    </select>
+                                    <div class="form-error" id="studentLevelError">Please select your education level</div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Security -->
+                            <div class="step" id="step2">
+                                <h2 class="step-title">Account Security</h2>
+                                <p class="step-description">Create a secure password for your account</p>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="password">Password</label>
+                                    <input 
+                                        type="password" 
+                                        id="password" 
+                                        class="form-input" 
+                                        placeholder="Create a password"
+                                        autocomplete="new-password"
+                                        required
+                                    >
+                                    <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                                        <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                                    </button>
+                                    <div class="form-error" id="passwordError">Password must be at least 8 characters</div>
+                                    
+                                    <div class="password-strength">
+                                        <div class="strength-bar">
+                                            <div class="strength-fill" id="strengthFill"></div>
+                                        </div>
+                                        <div class="strength-text" id="strengthText">Password strength</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                                    <input 
+                                        type="password" 
+                                        id="confirmPassword" 
+                                        class="form-input" 
+                                        placeholder="Confirm your password"
+                                        autocomplete="new-password"
+                                        required
+                                    >
+                                    <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">
+                                        <i class="fas fa-eye" id="confirmPasswordToggleIcon"></i>
+                                    </button>
+                                    <div class="form-error" id="confirmPasswordError">Passwords don't match</div>
+                                    <div class="form-success" id="confirmPasswordSuccess">Passwords match!</div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Preferences & Terms -->
+                            <div class="step" id="step3">
+                                <h2 class="step-title">Almost Done!</h2>
+                                <p class="step-description">Review your preferences and complete signup</p>
+
+                                <div class="checkbox-group">
+                                    <div class="checkbox" id="notificationsCheckbox" onclick="toggleCheckbox('notifications')"></div>
+                                    <label class="checkbox-label" onclick="toggleCheckbox('notifications')">
+                                        Send me email notifications about study reminders and updates
+                                    </label>
+                                </div>
+
+                                <div class="checkbox-group">
+                                    <div class="checkbox" id="marketingCheckbox" onclick="toggleCheckbox('marketing')"></div>
+                                    <label class="checkbox-label" onclick="toggleCheckbox('marketing')">
+                                        Send me tips and resources to improve my studying (optional)
+                                    </label>
+                                </div>
+
+                                <div class="checkbox-group">
+                                    <div class="checkbox" id="termsCheckbox" onclick="toggleCheckbox('terms')"></div>
+                                    <label class="checkbox-label" onclick="toggleCheckbox('terms')">
+                                        I agree to the <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button type="button" class="btn-secondary" id="backBtn" onclick="previousStep()" style="display: none;">
+                                    Back
+                                </button>
+                                <button type="button" class="btn-primary" id="nextBtn" onclick="nextStep()">
+                                    Next
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="login-link">
+                            Already have an account? <a href="login.html">Sign in</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 3;
+        let formData = {
+            notifications: false,
+            marketing: false,
+            terms: false
+        };
+
+        // Update progress bar and indicators
+        function updateProgress() {
+            const progress = (currentStep / totalSteps) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            
+            // Update step dots
+            for (let i = 1; i <= totalSteps; i++) {
+                const dot = document.getElementById('dot' + i);
+                dot.classList.toggle('active', i <= currentStep);
+            }
+            
+            // Update button visibility
+            const backBtn = document.getElementById('backBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            backBtn.style.display = currentStep > 1 ? 'block' : 'none';
+            nextBtn.textContent = currentStep === totalSteps ? 'Create Account' : 'Next';
+        }
+
+        // Step navigation
+        function nextStep() {
+            if (validateCurrentStep()) {
+                if (currentStep === totalSteps) {
+                    submitForm();
+                } else {
+                    currentStep++;
+                    showStep(currentStep);
+                    updateProgress();
+                }
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+                updateProgress();
+            }
+        }
+
+        function showStep(step) {
+            // Hide all steps
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById('step' + i).classList.remove('active');
+            }
+            // Show current step
+            document.getElementById('step' + step).classList.add('active');
+        }
+
+        // Validation functions
+        function validateEmail(email) {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailPattern.test(email);
+        }
+
+        function validatePassword(password) {
+            return password.length >= 8;
+        }
+
+        function calculatePasswordStrength(password) {
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
+            return strength;
+        }
+
+        function updatePasswordStrength() {
+            const password = document.getElementById('password').value;
+            const strengthFill = document.getElementById('strengthFill');
+            const strengthText = document.getElementById('strengthText');
+            
+            const strength = calculatePasswordStrength(password);
+            
+            strengthFill.className = 'strength-fill';
+            
+            if (password.length === 0) {
+                strengthText.textContent = 'Password strength';
+                return;
+            }
+            
+            switch (strength) {
+                case 0:
+                case 1:
+                    strengthFill.classList.add('weak');
+                    strengthText.textContent = 'Weak password';
+                    break;
+                case 2:
+                    strengthFill.classList.add('fair');
+                    strengthText.textContent = 'Fair password';
+                    break;
+                case 3:
+                case 4:
+                    strengthFill.classList.add('good');
+                    strengthText.textContent = 'Good password';
+                    break;
+                case 5:
+                    strengthFill.classList.add('strong');
+                    strengthText.textContent = 'Strong password';
+                    break;
+            }
+        }
+
+        function showError(fieldId, show = true) {
+            const field = document.getElementById(fieldId);
+            const error = document.getElementById(fieldId + 'Error');
+            const success = document.getElementById(fieldId + 'Success');
+            
+            if (show) {
+                field.classList.add('error');
+                field.classList.remove('success');
+                if (error) error.style.display = 'block';
+                if (success) success.style.display = 'none';
+            } else {
+                field.classList.remove('error');
+                if (error) error.style.display = 'none';
+            }
+        }
+
+        function showSuccess(fieldId, show = true) {
+            const field = document.getElementById(fieldId);
+            const success = document.getElementById(fieldId + 'Success');
+            
+            if (show) {
+                field.classList.add('success');
+                field.classList.remove('error');
+                if (success) success.style.display = 'block';
+            } else {
+                field.classList.remove('success');
+                if (success) success.style.display = 'none';
+            }
+        }
+
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    return validateStep1();
+                case 2:
+                    return validateStep2();
+                case 3:
+                    return validateStep3();
+                default:
+                    return false;
+            }
+        }
+
+        function validateStep1() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const studentLevel = document.getElementById('studentLevel').value;
+            
+            let isValid = true;
+            
+            if (!firstName) {
+                showError('firstName', true);
+                isValid = false;
+            } else {
+                showError('firstName', false);
+            }
+            
+            if (!lastName) {
+                showError('lastName', true);
+                isValid = false;
+            } else {
+                showError('lastName', false);
+            }
+            
+            if (!validateEmail(email)) {
+                showError('email', true);
+                isValid = false;
+            } else {
+                showError('email', false);
+                showSuccess('email', true);
+            }
+            
+            if (!studentLevel) {
+                showError('studentLevel', true);
+                isValid = false;
+            } else {
+                showError('studentLevel', false);
+            }
+            
+            return isValid;
+        }
+
+        function validateStep2() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            let isValid = true;
+            
+            if (!validatePassword(password)) {
+                showError('password', true);
+                isValid = false;
+            } else {
+                showError('password', false);
+            }
+            
+            if (password !== confirmPassword) {
+                showError('confirmPassword', true);
+                isValid = false;
+            } else if (password && confirmPassword) {
+                showError('confirmPassword', false);
+                showSuccess('confirmPassword', true);
+            }
+            
+            return isValid;
+        }
+
+        function validateStep3() {
+            if (!formData.terms) {
+                alert('Please accept the Terms of Service and Privacy Policy to continue.');
+                return false;
+            }
+            return true;
+        }
+
+        // Password toggle
+        function togglePassword(fieldId) {
+            const passwordField = document.getElementById(fieldId);
+            const toggleIcon = document.getElementById(fieldId + 'ToggleIcon');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // Checkbox toggle
+        function toggleCheckbox(type) {
+            const checkbox = document.getElementById(type + 'Checkbox');
+            formData[type] = !formData[type];
+            
+            if (formData[type]) {
+                checkbox.classList.add('checked');
+            } else {
+                checkbox.classList.remove('checked');
+            }
+        }
+
+        // Form submission
+        function submitForm() {
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.classList.add('loading');
+            nextBtn.textContent = '';
+            
+            // Simulate registration process
+            setTimeout(() => {
+                // Navigate to welcome/onboarding
+                window.location.href = 'welcome.html';
+            }, 2000);
+        }
+
+        // Event listeners
+        document.getElementById('password').addEventListener('input', updatePasswordStrength);
+        
+        document.getElementById('confirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                showError('confirmPassword', true);
+            } else if (confirmPassword && password === confirmPassword) {
+                showError('confirmPassword', false);
+                showSuccess('confirmPassword', true);
+            }
+        });
+
+        // Real-time validation for step 1
+        document.getElementById('email').addEventListener('input', function() {
+            if (this.value) {
+                if (validateEmail(this.value)) {
+                    showError('email', false);
+                    showSuccess('email', true);
+                } else {
+                    showError('email', true);
+                    showSuccess('email', false);
+                }
+            }
+        });
+
+        // Initialize
+        updateProgress();
+    </script>
+    <script src="../assets/js/theme.js"></script>
+</body>
+</html>

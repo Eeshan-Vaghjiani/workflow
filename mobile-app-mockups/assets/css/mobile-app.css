@@ -10,6 +10,18 @@ body {
     background: linear-gradient(135deg, #376cbd 0%, #000157 100%);
     min-height: 100vh;
     overflow-x: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+/* App Container for Phone + Side Controls */
+.app-container {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    position: relative;
 }
 
 /* Phone Frame */
@@ -19,9 +31,9 @@ body {
     background: #000;
     border-radius: 40px;
     padding: 8px;
-    margin: 20px auto;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     position: relative;
+    margin: 0;
 }
 
 .phone-screen {
@@ -422,7 +434,172 @@ body {
     animation: fadeIn 0.3s ease-out;
 }
 
-/* Dark Mode Support */
+/* Side Controls */
+.side-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.theme-toggle {
+    width: 60px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    position: relative;
+    cursor: pointer;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.theme-toggle::before {
+    content: '☀️';
+    position: absolute;
+    top: 50%;
+    left: 5px;
+    transform: translateY(-50%);
+    font-size: 14px;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.theme-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle.dark {
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.theme-toggle.dark::before {
+    content: '🌙';
+    left: auto;
+    right: 5px;
+}
+
+.theme-toggle.dark::after {
+    transform: translateX(28px);
+    background: #2c2c2e;
+}
+
+.theme-label {
+    color: white;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 5px;
+    opacity: 0.8;
+}
+
+/* Dark Mode - Manual Toggle */
+[data-theme="dark"] .phone-screen {
+    background: #000;
+}
+
+[data-theme="dark"] .app-header {
+    background: #1c1c1e;
+    border-bottom-color: #38383a;
+}
+
+[data-theme="dark"] .app-header h1 {
+    color: #fff;
+}
+
+[data-theme="dark"] .content {
+    background: #1c1c1e;
+}
+
+[data-theme="dark"] .card {
+    background: #2c2c2e;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .list-item-title {
+    color: #fff;
+}
+
+[data-theme="dark"] .list {
+    background: #2c2c2e;
+}
+
+[data-theme="dark"] .list-item {
+    border-bottom-color: #38383a;
+    background: #2c2c2e;
+}
+
+[data-theme="dark"] .list-item:hover {
+    background: #3a3a3c;
+}
+
+[data-theme="dark"] .form-input {
+    background: #2c2c2e;
+    border-color: #38383a;
+    color: #fff;
+}
+
+[data-theme="dark"] .btn-secondary {
+    background: #38383a;
+    color: #0a84ff;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background: #48484a;
+}
+
+[data-theme="dark"] .status-bar {
+    background: #000;
+}
+
+[data-theme="dark"] .bottom-nav {
+    background: rgba(28, 28, 30, 0.95);
+    border-top-color: #38383a;
+}
+
+[data-theme="dark"] .message-item,
+[data-theme="dark"] .task-item,
+[data-theme="dark"] .event-item {
+    background: #2c2c2e;
+    border-color: #38383a;
+}
+
+[data-theme="dark"] .message-item:hover,
+[data-theme="dark"] .task-item:hover {
+    background: #3a3a3c;
+}
+
+[data-theme="dark"] .calendar-day {
+    background: #2c2c2e;
+    color: #fff;
+}
+
+[data-theme="dark"] .calendar-day.today {
+    background: #007aff;
+    color: #fff;
+}
+
+[data-theme="dark"] .calendar-day-header {
+    background: #1c1c1e;
+    color: #8e8e93;
+}
+
+[data-theme="dark"] .calendar-grid {
+    background: #38383a;
+}
+
+/* Auto Dark Mode Support (fallback) */
 @media (prefers-color-scheme: dark) {
     .phone-screen {
         background: #000;
@@ -482,6 +659,161 @@ body {
     }
 }
 
+/* AI Chat Overlay */
+.ai-chat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.ai-chat-container {
+    width: 320px;
+    height: 500px;
+    background: #fff;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.ai-chat-header {
+    background: #007aff;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ai-chat-title {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ai-chat-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.ai-chat-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.ai-chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    background: #f8f9fa;
+}
+
+.ai-message {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.ai-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #007aff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.ai-text {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 80%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ai-chat-input {
+    padding: 15px 20px;
+    background: white;
+    border-top: 1px solid #e5e5ea;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.ai-chat-input input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #e5e5ea;
+    border-radius: 20px;
+    outline: none;
+    font-size: 14px;
+}
+
+.ai-chat-input input:focus {
+    border-color: #007aff;
+}
+
+.ai-send-btn {
+    width: 40px;
+    height: 40px;
+    background: #007aff;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.ai-send-btn:hover {
+    background: #0056cc;
+}
+
+/* Dark mode for AI chat */
+[data-theme="dark"] .ai-chat-container {
+    background: #1c1c1e;
+}
+
+[data-theme="dark"] .ai-chat-messages {
+    background: #2c2c2e;
+}
+
+[data-theme="dark"] .ai-text {
+    background: #3a3a3c;
+    color: #fff;
+}
+
+[data-theme="dark"] .ai-chat-input {
+    background: #1c1c1e;
+    border-top-color: #38383a;
+}
+
+[data-theme="dark"] .ai-chat-input input {
+    background: #2c2c2e;
+    border-color: #38383a;
+    color: #fff;
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
     .phone-frame {
@@ -495,4 +827,23 @@ body {
     .phone-screen {
         border-radius: 0;
     }
+<<<<<<< HEAD
 }
+=======
+    
+    .app-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .side-controls {
+        flex-direction: row;
+        gap: 15px;
+    }
+    
+    .ai-chat-container {
+        width: 90%;
+        height: 80%;
+    }
+}
+>>>>>>> e97d4219e8caf0c8991c8b7b112d5ef0432c6a22

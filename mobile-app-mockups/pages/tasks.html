@@ -8,7 +8,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="phone-frame">
+    <div class="app-container">
+        <!-- Side Controls -->
+        <div class="side-controls">
+            <div class="theme-toggle" title="Toggle Dark/Light Mode">
+            </div>
+            <div class="theme-label">Light Mode</div>
+        </div>
+        
+        <div class="phone-frame">
         <div class="phone-screen">
             <!-- Status Bar -->
             <div class="status-bar">
@@ -279,5 +287,7 @@
             });
         });
     </script>
+    <script src="../assets/js/theme.js"></script>
+    </div> <!-- Close app-container -->
 </body>
 </html>

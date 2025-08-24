@@ -479,7 +479,7 @@ const HomePage = () => {
                                                 <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                                                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
                                             </div>
-                                            <div className="mx-auto text-xs font-medium text-gray-500 dark:text-gray-400">Academic Workflow Dashboard</div>
+                                            <div className="mx-auto text-xs font-medium text-gray-500 dark:text-gray-400">UNIFLOW</div>
                                         </div>
                                         <div className="flex-1 p-4 overflow-hidden">
                                             <div className="grid grid-cols-2 gap-4 h-full">

@@ -12,6 +12,7 @@
             flex-direction: column;
             height: calc(100vh - 44px - 60px - 83px); /* Status bar, header, bottom nav */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 360px;
         }
 
         .ai-header {
@@ -20,6 +21,7 @@
             padding: 20px;
             text-align: center;
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
         }
 
         .ai-avatar-large {
@@ -81,7 +83,7 @@
         .ai-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 0px;
             background: rgba(255, 255, 255, 0.1);
         }
 
@@ -337,32 +339,7 @@
                     </div>
                 </div>
 
-                <!-- AI Chat Container -->
-                <div class="ai-chat-container">
-                    <!-- AI Header -->
-                    <div class="ai-header">
-                        <div class="ai-avatar-large">
-                            <i class="fas fa-brain"></i>
-                        </div>
-                        <div class="ai-title">Study Assistant</div>
-                        <div class="ai-subtitle">Your AI-powered study companion. Ask me anything about your assignments, schedule, or study tips!</div>
-                    </div>
 
-                    <!-- AI Stats -->
-                    <div class="ai-stats">
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: #007aff;">7</div>
-                            <div class="stat-label">Prompts Left</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: #34c759;">12</div>
-                            <div class="stat-label">Helped Today</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: #ff9500;">85%</div>
-                            <div class="stat-label">Accuracy</div>
-                        </div>
-                    </div>
 
                     <!-- Messages Area -->
                     <div class="ai-messages" id="messagesContainer">
@@ -424,9 +401,9 @@
                             <div class="quick-prompt" onclick="sendQuickPrompt('Create a study plan')">📚 Study plan</div>
                         </div>
                         <div class="ai-input-wrapper">
-                            <input 
-                                type="text" 
-                                class="ai-input" 
+                            <input
+                                type="text"
+                                class="ai-input"
                                 id="aiInput"
                                 placeholder="Ask me anything about your studies..."
                                 onkeypress="handleKeyPress(event)"
@@ -477,16 +454,16 @@
         function sendMessage() {
             const input = document.getElementById('aiInput');
             const message = input.value.trim();
-            
+
             if (!message) return;
-            
+
             // Add user message
             addUserMessage(message);
             input.value = '';
-            
+
             // Show typing indicator
             showTypingIndicator();
-            
+
             // Simulate AI response
             setTimeout(() => {
                 hideTypingIndicator();
@@ -503,7 +480,7 @@
             const messagesContainer = document.getElementById('messagesContainer');
             const messageGroup = document.createElement('div');
             messageGroup.className = 'message-group';
-            
+
             messageGroup.innerHTML = `
                 <div class="ai-message user-message">
                     <div class="message-avatar user-avatar">
@@ -515,7 +492,7 @@
                     </div>
                 </div>
             `;
-            
+
             messagesContainer.appendChild(messageGroup);
             scrollToBottom();
         }
@@ -524,9 +501,9 @@
             const messagesContainer = document.getElementById('messagesContainer');
             const messageGroup = document.createElement('div');
             messageGroup.className = 'message-group';
-            
+
             const response = generateAIResponse(userMessage);
-            
+
             messageGroup.innerHTML = `
                 <div class="ai-message">
                     <div class="message-avatar">
@@ -538,10 +515,10 @@
                     </div>
                 </div>
             `;
-            
+
             messagesContainer.appendChild(messageGroup);
             scrollToBottom();
-            
+
             // Update prompt count
             updatePromptCount();
         }
@@ -555,7 +532,7 @@
                 "Good thinking! This is a common area where students need support. Here's my recommendation based on proven study techniques.",
                 "I can definitely help with that! Let me break this down into actionable steps that you can implement right away."
             ];
-            
+
             return responses[Math.floor(Math.random() * responses.length)];
         }
 
@@ -582,7 +559,7 @@
             messageCount++;
             const promptsLeft = Math.max(0, 7 - Math.floor(messageCount / 2));
             document.querySelector('.stat-card .stat-number').textContent = promptsLeft;
-            
+
             if (promptsLeft === 0) {
                 showUpgradePrompt();
             }
@@ -592,7 +569,7 @@
             const messagesContainer = document.getElementById('messagesContainer');
             const messageGroup = document.createElement('div');
             messageGroup.className = 'message-group';
-            
+
             messageGroup.innerHTML = `
                 <div class="ai-message">
                     <div class="message-avatar">
@@ -609,7 +586,7 @@
                     </div>
                 </div>
             `;
-            
+
             messagesContainer.appendChild(messageGroup);
             scrollToBottom();
         }
@@ -620,11 +597,11 @@
             const welcomeMessage = messagesContainer.querySelector('.message-group');
             messagesContainer.innerHTML = '';
             messagesContainer.appendChild(welcomeMessage);
-            
+
             // Reset counter
             messageCount = 0;
             document.querySelector('.stat-card .stat-number').textContent = '7';
-            
+
             showNotification('Chat cleared successfully!', 'success');
         }
 
@@ -653,9 +630,9 @@
                 animation: slideIn 0.3s ease-out;
             `;
             notification.textContent = message;
-            
+
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 notification.remove();
             }, 3000);

@@ -119,7 +119,7 @@
         }
 
         .navigation-controls {
-            padding: 30px;
+            padding: 50px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -351,14 +351,14 @@
                     <!-- Navigation Controls -->
                     <div class="navigation-controls">
                         <button class="skip-btn" onclick="skipToEnd()" id="skipBtn">Skip</button>
-                        
+
                         <div class="dots-indicator">
                             <div class="dot active" onclick="goToSlide(0)"></div>
                             <div class="dot" onclick="goToSlide(1)"></div>
                             <div class="dot" onclick="goToSlide(2)"></div>
                             <div class="dot" onclick="goToSlide(3)"></div>
                         </div>
-                        
+
                         <button class="next-btn" onclick="nextSlide()" id="nextBtn">Next</button>
                     </div>
                 </div>
@@ -380,7 +380,7 @@
             // Update slides
             slides.forEach((slide, index) => {
                 slide.classList.remove('active', 'prev');
-                
+
                 if (index === currentSlide) {
                     slide.classList.add('active');
                 } else if (index < currentSlide) {
@@ -408,7 +408,7 @@
             setTimeout(() => {
                 const currentSlideElement = slides[currentSlide];
                 currentSlideElement.classList.add('slide-enter');
-                
+
                 // Remove animation class after animation completes
                 setTimeout(() => {
                     currentSlideElement.classList.remove('slide-enter');
@@ -446,7 +446,7 @@
             const container = document.querySelector('.welcome-container');
             container.style.transform = 'scale(0.95)';
             container.style.opacity = '0.8';
-            
+
             setTimeout(() => {
                 // Navigate to login page
                 window.location.href = 'login.html';
@@ -537,7 +537,7 @@
             const slidesContainer = document.querySelector('.slides-container');
             slidesContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
             slidesContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
-            
+
             document.addEventListener('keydown', handleKeyDown);
 
             // Pause auto-slide when user interacts

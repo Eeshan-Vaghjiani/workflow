@@ -132,5 +132,10 @@ export function useAppearance() {
         setThemeState(newTheme);
     };
 
-    return { theme, setTheme };
+    return { 
+        theme, 
+        setTheme,
+        appearance: theme, // alias for compatibility
+        updateAppearance: setTheme // alias for compatibility
+    };
 }

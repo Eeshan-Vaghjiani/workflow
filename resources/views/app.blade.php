@@ -1,15 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark' || (($appearance ?? 'system') == 'system' && (isset($system_prefers_dark) ? $system_prefers_dark : false))])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+      @class(['dark' => ($appearance ?? 'system') == 'dark' 
+                || (($appearance ?? 'system') == 'system' 
+                && (isset($system_prefers_dark) ? $system_prefers_dark : false))])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        {{-- Inline script to detect system dark mode preference and apply it immediately --}}
+        {{-- Inline script to handle system dark mode preference --}}
         <script>
             (function() {
                 const appearance = '{{ $appearance ?? "system" }}';
-
                 if (appearance === 'system') {
                     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -19,29 +21,23 @@
                         document.documentElement.classList.remove('dark');
                     }
 
-                    // Listen for changes in system theme
-                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                        if (e.matches) {
-                            document.documentElement.classList.add('dark');
-                        } else {
-                            document.documentElement.classList.remove('dark');
-                        }
-                    });
+                    window.matchMedia('(prefers-color-scheme: dark)')
+                        .addEventListener('change', e => {
+                            if (e.matches) {
+                                document.documentElement.classList.add('dark');
+                            } else {
+                                document.documentElement.classList.remove('dark');
+                            }
+                        });
                 }
-
-                // Debug info
-                console.log('Appearance:', appearance);
-                console.log('System prefers dark:', window.matchMedia('(prefers-color-scheme: dark)').matches);
-                console.log('Is dark class applied:', document.documentElement.classList.contains('dark'));
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Inline fallback background color --}}
         <style>
             html {
                 background-color: oklch(1 0 0);
             }
-
             html.dark {
                 background-color: oklch(0.145 0 0);
             }
@@ -56,11 +52,13 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
+        {{-- Inertia & Vite --}}
         @routes
         @viteReactRefresh
-        @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @vite('resources/js/app.tsx')
         @inertiaHead
     </head>
+
     <body class="font-sans antialiased">
         @inertia
     </body>

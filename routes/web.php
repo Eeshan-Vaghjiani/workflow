@@ -110,6 +110,35 @@ Route::get('/auth-debug', function () {
     return Inertia::render('AuthDebug');
 })->name('auth.debug');
 
+// Debug route to check auth status after login
+Route::get('/debug-user', function () {
+    $user = Auth::user();
+    
+    if (!$user) {
+        return response()->json([
+            'authenticated' => false,
+            'message' => 'Not authenticated'
+        ]);
+    }
+    
+    return response()->json([
+        'authenticated' => true,
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'is_admin' => $user->is_admin,
+            'workos_id' => $user->workos_id,
+        ],
+        'session' => [
+            'two_factor_authenticated' => session('two_factor_authenticated'),
+            'session_id' => session()->getId(),
+        ],
+        'groups_count' => $user->groups()->count(),
+        'can_access_dashboard' => true,
+    ]);
+})->middleware(['web'])->name('debug.user');
+
 Route::middleware([
     'auth',
     'verified',

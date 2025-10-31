@@ -1,36 +1,14 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-      @class(['dark' => ($appearance ?? 'system') == 'dark' 
-                || (($appearance ?? 'system') == 'system' 
-                && (isset($system_prefers_dark) ? $system_prefers_dark : false))])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        {{-- Inline script to handle system dark mode preference --}}
+        {{-- Force light mode for now - dark mode detection disabled --}}
         <script>
-            (function() {
-                const appearance = '{{ $appearance ?? "system" }}';
-                if (appearance === 'system') {
-                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                    if (prefersDark) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
-
-                    window.matchMedia('(prefers-color-scheme: dark)')
-                        .addEventListener('change', e => {
-                            if (e.matches) {
-                                document.documentElement.classList.add('dark');
-                            } else {
-                                document.documentElement.classList.remove('dark');
-                            }
-                        });
-                }
-            })();
+            // Ensure light mode is always active
+            document.documentElement.classList.remove('dark');
         </script>
 
         {{-- Inline fallback background color --}}
@@ -63,7 +41,7 @@
         {{-- Inertia & Vite --}}
         @routes
         @viteReactRefresh
-        @vite('resources/js/app.tsx')
+        @vite(['resources/css/app.css', 'resources/js/app.tsx'])
         @inertiaHead
     </head>
 

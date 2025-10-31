@@ -57,8 +57,8 @@ Route::get('/', function () {
         }
     }
 
-    // Render the home page
-    return Inertia::render('home');
+    // Render the welcome page (simpler, faster loading)
+    return Inertia::render('welcome');
 })->name('home');
 
 // Make sure this is outside the auth middleware group, before it

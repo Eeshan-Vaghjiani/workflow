@@ -83,7 +83,7 @@ Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
             return $newUser;
         }
     ));
-})->middleware(['guest'])->name('authenticate');
+})->middleware(['web'])->name('authenticate');
 
 Route::post('logout', function (AuthKitLogoutRequest $request) {
     return $request->logout();

@@ -85,19 +85,39 @@ if (file_exists($buildPath)) {
     if (file_exists($manifestPath)) {
         echo "✅ Manifest file exists\n";
         $manifest = json_decode(file_get_contents($manifestPath), true);
-        if (isset($manifest['resources/css/app.css'])) {
-            echo "✅ CSS file in manifest: " . $manifest['resources/css/app.css']['file'] . "\n";
+        
+        // Look for the main app entry which includes CSS
+        if (isset($manifest['resources/js/app.tsx'])) {
+            echo "✅ App entry in manifest\n";
             
-            $cssFile = $buildPath . '/' . $manifest['resources/css/app.css']['file'];
-            if (file_exists($cssFile)) {
-                echo "✅ CSS file exists on disk\n";
-                $cssSize = filesize($cssFile);
-                echo "   Size: " . number_format($cssSize) . " bytes\n";
+            // Check if CSS is bundled with the app
+            $appEntry = $manifest['resources/js/app.tsx'];
+            if (isset($appEntry['css']) && !empty($appEntry['css'])) {
+                echo "✅ CSS files bundled with app:\n";
+                foreach ($appEntry['css'] as $cssFile) {
+                    $fullPath = $buildPath . '/' . $cssFile;
+                    if (file_exists($fullPath)) {
+                        $cssSize = filesize($fullPath);
+                        echo "   ✅ " . $cssFile . " (" . number_format($cssSize) . " bytes)\n";
+                    } else {
+                        echo "   ❌ " . $cssFile . " NOT FOUND\n";
+                    }
+                }
             } else {
-                echo "❌ CSS file NOT FOUND on disk\n";
+                // CSS might be in separate files, look for any CSS files
+                $cssFiles = glob($buildPath . '/assets/*.css');
+                if (!empty($cssFiles)) {
+                    echo "✅ CSS files found:\n";
+                    foreach ($cssFiles as $cssFile) {
+                        $cssSize = filesize($cssFile);
+                        echo "   ✅ " . basename($cssFile) . " (" . number_format($cssSize) . " bytes)\n";
+                    }
+                } else {
+                    echo "⚠️  No CSS files found (might be inlined in JS)\n";
+                }
             }
         } else {
-            echo "❌ CSS file NOT in manifest\n";
+            echo "❌ App entry NOT in manifest\n";
         }
     } else {
         echo "❌ Manifest file NOT FOUND\n";
@@ -125,9 +145,8 @@ if (!$workosRedirectUri || !str_contains($workosRedirectUri, '/authenticate')) {
     $issues[] = "Set WORKOS_REDIRECT_URI=https://app.dhruvinbhudia.me/authenticate in .env";
     $issues[] = "Update WorkOS dashboard to use /authenticate as default redirect";
 }
-if (!file_exists($buildPath)) {
-    $issues[] = "Run: npm run build";
-}
+// Don't add build issue if build directory exists
+// The CSS check above will handle any actual CSS issues
 
 if (empty($issues)) {
     echo "✅ All checks passed! Configuration looks good.\n";

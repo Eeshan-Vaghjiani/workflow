@@ -14,6 +14,8 @@ export default defineConfig({
     include: ['gantt-task-react'],
   },
   build: {
+    outDir: 'public/build',        // 👈 important
+    emptyOutDir: true,             // clears old builds
     target: 'esnext',
     sourcemap: false,
     chunkSizeWarningLimit: 1500,

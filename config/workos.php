@@ -32,10 +32,10 @@ return [
     | users will be redirected after authenticating with WorkOS.
     |
     */
-    'redirect_uri' => env('WORKOS_REDIRECT_URI', 'http://127.0.0.1:8000/workos-callback'),
+    'redirect_uri' => env('WORKOS_REDIRECT_URI', 'https://app.dhruvinbhudia.me/workos-callback'),
 
-    // Disable SSL verification for local development only
+    // SSL verification (should be true in production)
     'api_options' => [
-        'verify_ssl' => env('WORKOS_VERIFY_SSL', false),
+        'verify_ssl' => env('WORKOS_VERIFY_SSL', true),
     ],
 ];

@@ -36,10 +36,18 @@
         {{-- Inline fallback background color --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #ffffff;
             }
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #0a0a0a;
+            }
+            body {
+                background-color: #ffffff;
+                color: #1b1b18;
+            }
+            html.dark body {
+                background-color: #0a0a0a;
+                color: #ededec;
             }
         </style>
 

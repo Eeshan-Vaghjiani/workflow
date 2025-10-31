@@ -1,0 +1,22 @@
+# Copy and paste these commands in order
+
+# 1. Check what will be committed
+git status
+
+# 2. Add all changes
+git add .
+
+# 3. Commit with descriptive message
+git commit -m "Prepare for Azure deployment with pre-built assets and vendor
+
+- Include compiled Vite build assets in public/build/
+- Include Composer vendor directory  
+- Update .gitignore to track build and vendor
+- Fix PSR-4 compliance: rename AIPrompt.php to AiPrompt.php
+- Add comprehensive Azure deployment documentation
+- Add deployment automation script"
+
+# 4. Push to repository
+git push origin main
+
+# Done! Now you can clone this on your Azure VM

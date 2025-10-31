@@ -1,0 +1,1 @@
+import{r as e}from"./app-Bpl7UGUW.js";function c(t){const r=e.useRef(t);return e.useEffect(()=>{r.current=t}),e.useMemo(()=>(...o)=>r.current?.(...o),[])}var n=e.createContext(void 0);function s(t){const r=e.useContext(n);return t||r||"ltr"}export{c as a,s as u};

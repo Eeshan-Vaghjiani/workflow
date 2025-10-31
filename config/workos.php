@@ -30,9 +30,10 @@ return [
     |
     | This value is the redirect URI for your WorkOS application. This is where
     | users will be redirected after authenticating with WorkOS.
+    | Note: Laravel WorkOS package uses the 'authenticate' route as callback
     |
     */
-    'redirect_uri' => env('WORKOS_REDIRECT_URI', 'https://app.dhruvinbhudia.me/workos-callback'),
+    'redirect_uri' => env('WORKOS_REDIRECT_URI', 'https://app.dhruvinbhudia.me/authenticate'),
 
     // SSL verification (should be true in production)
     'api_options' => [

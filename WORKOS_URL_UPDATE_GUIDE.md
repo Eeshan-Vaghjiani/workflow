@@ -58,16 +58,19 @@ APP_URL=https://app.dhruvinbhudia.me
 # WorkOS Configuration
 WORKOS_API_KEY=your_actual_api_key_here
 WORKOS_CLIENT_ID=your_actual_client_id_here
-WORKOS_REDIRECT_URI=https://app.dhruvinbhudia.me/workos-callback
+WORKOS_REDIRECT_URI=https://app.dhruvinbhudia.me/authenticate
 WORKOS_VERIFY_SSL=true
 ```
+
+**IMPORTANT:** The redirect URI must be `/authenticate` NOT `/workos-callback`. The Laravel WorkOS package uses the `authenticate` route as the callback endpoint.
 
 ### Update WorkOS Dashboard
 
 1. Log in to your WorkOS dashboard
-2. Navigate to your application settings
-3. Update the redirect URI to: `https://app.dhruvinbhudia.me/workos-callback`
-4. Save the changes
+2. Navigate to your application settings / Redirect URIs
+3. **CRITICAL:** Update the DEFAULT redirect URI to: `https://app.dhruvinbhudia.me/authenticate`
+4. You can keep the other redirect URIs (`/workos-callback`, etc.) but the default MUST be `/authenticate`
+5. Save the changes
 
 ### Clear Cache and Rebuild
 

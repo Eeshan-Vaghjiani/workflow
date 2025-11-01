@@ -51,11 +51,11 @@
             background: white;
             border-radius: 30px 30px 0 0;
             padding: 40px 30px 30px;
-            margin-top: 20px;
+            margin-top: -30px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 0px;
         }
 
         .form-label {
@@ -116,7 +116,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 20px 0;
+            margin: 10px 0;
         }
 
         .checkbox-group {
@@ -221,7 +221,7 @@
         .divider {
             display: flex;
             align-items: center;
-            margin: 30px 0;
+            margin: 0px 0;
         }
 
         .divider::before,
@@ -369,10 +369,10 @@
                         <form id="loginForm">
                             <div class="form-group">
                                 <label class="form-label" for="email">Email</label>
-                                <input 
-                                    type="email" 
-                                    id="email" 
-                                    class="form-input" 
+                                <input
+                                    type="email"
+                                    id="email"
+                                    class="form-input"
                                     placeholder="Enter your email"
                                     autocomplete="email"
                                     required
@@ -382,10 +382,10 @@
 
                             <div class="form-group">
                                 <label class="form-label" for="password">Password</label>
-                                <input 
-                                    type="password" 
-                                    id="password" 
-                                    class="form-input" 
+                                <input
+                                    type="password"
+                                    id="password"
+                                    class="form-input"
                                     placeholder="Enter your password"
                                     autocomplete="current-password"
                                     required
@@ -453,7 +453,7 @@
         function showError(fieldId, show = true) {
             const field = document.getElementById(fieldId);
             const error = document.getElementById(fieldId + 'Error');
-            
+
             if (show) {
                 field.classList.add('error');
                 error.style.display = 'block';
@@ -491,7 +491,7 @@
         function togglePassword() {
             const passwordField = document.getElementById('password');
             const toggleIcon = document.getElementById('passwordToggleIcon');
-            
+
             if (passwordField.type === 'password') {
                 passwordField.type = 'text';
                 toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
@@ -505,7 +505,7 @@
         function toggleCheckbox() {
             const checkbox = document.getElementById('rememberCheckbox');
             rememberMe = !rememberMe;
-            
+
             if (rememberMe) {
                 checkbox.classList.add('checked');
             } else {
@@ -516,7 +516,7 @@
         // Form submission
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             if (!validateForm()) {
                 return;
             }
@@ -524,7 +524,7 @@
             const loginBtn = document.getElementById('loginBtn');
             loginBtn.classList.add('loading');
             loginBtn.textContent = '';
-            
+
             // Simulate login process
             setTimeout(() => {
                 // Navigate to dashboard
@@ -539,17 +539,17 @@
                 github: 'GitHub',
                 microsoft: 'Microsoft'
             };
-            
+
             // Simulate social login
             const message = `Redirecting to ${providerNames[provider]} authentication...`;
-            
+
             // Show loading state
             const allSocialBtns = document.querySelectorAll('.social-btn');
             allSocialBtns.forEach(btn => {
                 btn.style.opacity = '0.5';
                 btn.style.pointerEvents = 'none';
             });
-            
+
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
             }, 1500);

@@ -11,16 +11,16 @@
         .chat-list-view {
             display: block;
         }
-        
+
         .chat-conversation-view {
             display: none;
         }
-        
+
         /* Hide bottom nav in conversation view */
         .chat-conversation-view .bottom-nav {
             display: none;
         }
-        
+
         .whatsapp-header {
             background: #007aff;
             color: white;
@@ -29,7 +29,7 @@
             align-items: center;
             gap: 12px;
         }
-        
+
         .chat-header {
             background: #007aff;
             color: white;
@@ -38,7 +38,7 @@
             align-items: center;
             gap: 12px;
         }
-        
+
         .chat-avatar {
             width: 40px;
             height: 40px;
@@ -52,25 +52,25 @@
             font-size: 16px;
             flex-shrink: 0;
         }
-        
+
         .chat-info h3 {
             margin: 0;
             font-size: 16px;
             font-weight: 600;
         }
-        
+
         .chat-status {
             font-size: 12px;
             opacity: 0.8;
             margin-top: 2px;
         }
-        
+
         .chat-actions {
             margin-left: auto;
             display: flex;
             gap: 16px;
         }
-        
+
         .chat-actions button {
             background: none;
             border: none;
@@ -81,11 +81,11 @@
             border-radius: 50%;
             transition: background 0.2s;
         }
-        
+
         .chat-actions button:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-        
+
         .message-list-item {
             display: flex;
             align-items: center;
@@ -95,15 +95,15 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        
+
         .message-list-item:hover {
             background: #f8f9fa;
         }
-        
+
         .message-list-item:last-child {
             border-bottom: none;
         }
-        
+
         .message-avatar {
             width: 50px;
             height: 50px;
@@ -118,7 +118,7 @@
             flex-shrink: 0;
             position: relative;
         }
-        
+
         .online-dot {
             width: 12px;
             height: 12px;
@@ -129,30 +129,30 @@
             bottom: 0;
             right: 0;
         }
-        
+
         .message-preview {
             flex: 1;
             min-width: 0;
         }
-        
+
         .message-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 4px;
         }
-        
+
         .sender-name {
             font-weight: 600;
             font-size: 16px;
             color: #1d1d1f;
         }
-        
+
         .message-time {
             font-size: 12px;
             color: #8e8e93;
         }
-        
+
         .message-text {
             font-size: 14px;
             color: #8e8e93;
@@ -163,7 +163,7 @@
             align-items: center;
             gap: 4px;
         }
-        
+
         .unread-count {
             background: #25d366;
             color: white;
@@ -175,23 +175,23 @@
             text-align: center;
             margin-left: 8px;
         }
-        
+
         .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: 16px;
-            padding-bottom: 80px;
+            padding-bottom: 250px;
             background: #e5ddd5;
             background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="1" fill="%23ffffff" opacity="0.1"/></svg>');
-            height: calc(100% - 64px - 60px);
+            height: 100%
         }
-        
+
         .message-bubble {
             max-width: 80%;
             margin-bottom: 8px;
             word-wrap: break-word;
         }
-        
+
         .message-bubble.sent {
             background: #dcf8c6;
             margin-left: auto;
@@ -199,7 +199,7 @@
             padding: 8px 12px;
             position: relative;
         }
-        
+
         .message-bubble.received {
             background: white;
             margin-right: auto;
@@ -207,13 +207,13 @@
             padding: 8px 12px;
             box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
         }
-        
+
         .message-content {
             font-size: 14px;
             line-height: 1.4;
             margin-bottom: 4px;
         }
-        
+
         .message-meta {
             display: flex;
             justify-content: flex-end;
@@ -222,11 +222,11 @@
             font-size: 11px;
             color: #8e8e93;
         }
-        
+
         .message-status {
             color: #34c759;
         }
-        
+
         .chat-input-container {
             background: #f2f2f7;
             padding: 8px 16px;
@@ -240,13 +240,13 @@
             z-index: 1000;
             border-top: 1px solid rgba(0, 0, 0, 0.1);
         }
-        
+
         .input-actions {
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        
+
         .input-btn {
             background: none;
             border: none;
@@ -257,12 +257,12 @@
             border-radius: 50%;
             transition: all 0.2s;
         }
-        
+
         .input-btn:hover {
             background: #e5e5ea;
             color: #007aff;
         }
-        
+
         .message-input {
             flex: 1;
             background: white;
@@ -274,11 +274,11 @@
             resize: none;
             max-height: 100px;
         }
-        
+
         .message-input:focus {
             border-color: #007aff;
         }
-        
+
         .send-btn {
             background: #007aff;
             border: none;
@@ -294,16 +294,16 @@
             justify-content: center;
             transition: background 0.2s;
         }
-        
+
         .send-btn:hover {
             background: #0056cc;
         }
-        
+
         .send-btn:disabled {
             background: #8e8e93;
             cursor: not-allowed;
         }
-        
+
         .typing-indicator {
             display: none;
             padding: 8px 16px;
@@ -315,12 +315,12 @@
             left: 0;
             right: 0;
         }
-        
+
         .typing-dots {
             display: inline-flex;
             gap: 2px;
         }
-        
+
         .typing-dot {
             width: 4px;
             height: 4px;
@@ -328,15 +328,15 @@
             border-radius: 50%;
             animation: typingAnimation 1.4s infinite;
         }
-        
+
         .typing-dot:nth-child(2) {
             animation-delay: 0.2s;
         }
-        
+
         .typing-dot:nth-child(3) {
             animation-delay: 0.4s;
         }
-        
+
         @keyframes typingAnimation {
             0%, 60%, 100% {
                 transform: translateY(0);
@@ -345,12 +345,12 @@
                 transform: translateY(-8px);
             }
         }
-        
+
         .emoji-picker {
             display: none;
             position: absolute;
             bottom: 60px;
-            right: 16px;
+            right: 10px;
             background: white;
             border-radius: 12px;
             padding: 16px;
@@ -358,13 +358,13 @@
             z-index: 100;
             max-width: 280px;
         }
-        
+
         .emoji-grid {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
-            gap: 8px;
+            gap: 4px;
         }
-        
+
         .emoji-btn {
             background: none;
             border: none;
@@ -374,55 +374,55 @@
             border-radius: 4px;
             transition: background 0.2s;
         }
-        
+
         .emoji-btn:hover {
             background: #f2f2f7;
         }
-        
+
         /* Dark mode styles */
         [data-theme="dark"] .whatsapp-header {
             background: #2a2f32;
         }
-        
+
         [data-theme="dark"] .chat-header {
             background: #2a2f32;
         }
-        
+
         [data-theme="dark"] .message-list-item {
             border-bottom-color: #38383a;
         }
-        
+
         [data-theme="dark"] .message-list-item:hover {
             background: #3a3a3c;
         }
-        
+
         [data-theme="dark"] .sender-name {
             color: #fff;
         }
-        
+
         [data-theme="dark"] .chat-messages {
             background: #0b141a;
         }
-        
+
         [data-theme="dark"] .message-bubble.received {
             background: #2a2f32;
             color: #fff;
         }
-        
+
         [data-theme="dark"] .chat-input-container {
             background: #2a2f32;
         }
-        
+
         [data-theme="dark"] .message-input {
             background: #3a3a3c;
             border-color: #38383a;
             color: #fff;
         }
-        
+
         [data-theme="dark"] .emoji-picker {
             background: #2c2c2e;
         }
-        
+
         [data-theme="dark"] .typing-indicator {
             background: #2a2f32;
             border-top-color: #38383a;
@@ -432,7 +432,7 @@
 <body>
     <div class="app-container">
 
-        
+
         <div class="phone-frame">
             <div class="phone-screen">
                 <!-- Status Bar -->
@@ -583,7 +583,7 @@
                             <div class="message-content">Hey! How's the math assignment going?</div>
                             <div class="message-meta">2:25 PM</div>
                         </div>
-                        
+
                         <div class="message-bubble sent">
                             <div class="message-content">Pretty good! Just finished problem 3. You?</div>
                             <div class="message-meta">
@@ -591,12 +591,12 @@
                                 <i class="fas fa-check-double message-status"></i>
                             </div>
                         </div>
-                        
+
                         <div class="message-bubble received">
                             <div class="message-content">Still working on it 😅. Can you help me with question 5?</div>
                             <div class="message-meta">2:28 PM</div>
                         </div>
-                        
+
                         <div class="message-bubble sent">
                             <div class="message-content">Sure! Let me send you a photo of my solution 📸</div>
                             <div class="message-meta">
@@ -604,7 +604,7 @@
                                 <i class="fas fa-check-double message-status"></i>
                             </div>
                         </div>
-                        
+
                         <div class="message-bubble received">
                             <div class="message-content">Thanks so much! You're a lifesaver! 🙏</div>
                             <div class="message-meta">2:30 PM</div>
@@ -634,10 +634,10 @@
                                 <i class="fas fa-camera"></i>
                             </button>
                         </div>
-                        <textarea 
-                            class="message-input" 
+                        <textarea
+                            class="message-input"
                             id="messageInput"
-                            placeholder="Type a message..."
+                            placeholder=""
                             rows="1"
                             onkeypress="handleKeyPress(event)"
                             oninput="handleInputChange()"
@@ -671,7 +671,7 @@
                 </div>
 
                 <!-- Bottom Navigation -->
-                <div class="bottom-nav">
+                <!-- <div class="bottom-nav">
                     <a href="dashboard.html" class="nav-item">
                         <i class="fas fa-home"></i>
                         <span>Home</span>
@@ -692,7 +692,7 @@
                         <i class="fas fa-comments"></i>
                         <span>Chat</span>
                     </a>
-                </div>
+                </div> -->
             </div>
         </div>
 
@@ -700,7 +700,7 @@
         // WhatsApp-like Chat Functionality
         let currentChat = null;
         let isEmojiPickerOpen = false;
-        
+
         // Chat data
         const chatData = {
             'sarah': {
@@ -737,25 +737,25 @@
                 ]
             }
         };
-        
+
         function openChat(chatId) {
             const listView = document.querySelector('.chat-list-view');
             const conversationView = document.querySelector('.chat-conversation-view');
             const chat = chatData[chatId];
-            
+
             if (!chat) return;
-            
+
             currentChat = chatId;
-            
+
             // Update chat header
             document.getElementById('chatAvatar').textContent = chat.avatar;
             document.getElementById('chatName').textContent = chat.name;
             document.getElementById('chatStatus').textContent = chat.status;
-            
+
             // Update messages
             const messagesContainer = document.getElementById('chatMessages');
             messagesContainer.innerHTML = '';
-            
+
             chat.messages.forEach(message => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message-bubble ${message.type}`;
@@ -768,37 +768,37 @@
                 `;
                 messagesContainer.appendChild(messageDiv);
             });
-            
+
             // Scroll to bottom
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
+
             // Switch views
             listView.style.display = 'none';
             conversationView.style.display = 'block';
-            
+
             // Simulate typing indicator occasionally
             if (Math.random() > 0.7) {
                 setTimeout(showTypingIndicator, 1000);
             }
         }
-        
+
         function goBackToList() {
             const listView = document.querySelector('.chat-list-view');
             const conversationView = document.querySelector('.chat-conversation-view');
-            
+
             listView.style.display = 'block';
             conversationView.style.display = 'none';
-            
+
             hideTypingIndicator();
             hideEmojiPicker();
         }
-        
+
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
-            
+
             if (!message || !currentChat) return;
-            
+
             const messagesContainer = document.getElementById('chatMessages');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message-bubble sent';
@@ -809,36 +809,36 @@
                     <i class="fas fa-check-double message-status"></i>
                 </div>
             `;
-            
+
             messagesContainer.appendChild(messageDiv);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
+
             // Add to chat data
             chatData[currentChat].messages.push({
                 type: 'sent',
                 content: message,
                 time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
             });
-            
+
             // Clear input
             input.value = '';
             updateSendButton();
-            
+
             // Auto-resize textarea
             input.style.height = 'auto';
-            
+
             // Simulate response
             setTimeout(simulateResponse, 1500);
         }
-        
+
         function simulateResponse() {
             if (!currentChat) return;
-            
+
             showTypingIndicator();
-            
+
             setTimeout(() => {
                 hideTypingIndicator();
-                
+
                 const responses = [
                     'Got it! Thanks! 👍',
                     'That makes sense! 😊',
@@ -846,7 +846,7 @@
                     'Thanks for the help! 🙏',
                     'Great point! 💡'
                 ];
-                
+
                 const response = responses[Math.floor(Math.random() * responses.length)];
                 const messagesContainer = document.getElementById('chatMessages');
                 const messageDiv = document.createElement('div');
@@ -855,34 +855,34 @@
                     <div class="message-content">${response}</div>
                     <div class="message-meta">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                 `;
-                
+
                 messagesContainer.appendChild(messageDiv);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }, 2000);
         }
-        
+
         function showTypingIndicator() {
             const indicator = document.getElementById('typingIndicator');
             indicator.style.display = 'block';
         }
-        
+
         function hideTypingIndicator() {
             const indicator = document.getElementById('typingIndicator');
             indicator.style.display = 'none';
         }
-        
+
         function toggleEmojiPicker() {
             const picker = document.getElementById('emojiPicker');
             isEmojiPickerOpen = !isEmojiPickerOpen;
             picker.style.display = isEmojiPickerOpen ? 'block' : 'none';
         }
-        
+
         function hideEmojiPicker() {
             const picker = document.getElementById('emojiPicker');
             picker.style.display = 'none';
             isEmojiPickerOpen = false;
         }
-        
+
         function insertEmoji(emoji) {
             const input = document.getElementById('messageInput');
             input.value += emoji;
@@ -890,60 +890,60 @@
             input.focus();
             hideEmojiPicker();
         }
-        
+
         function handleKeyPress(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 sendMessage();
             }
         }
-        
+
         function handleInputChange() {
             updateSendButton();
             autoResize();
         }
-        
+
         function updateSendButton() {
             const input = document.getElementById('messageInput');
             const sendBtn = document.getElementById('sendBtn');
             sendBtn.disabled = !input.value.trim();
         }
-        
+
         function autoResize() {
             const input = document.getElementById('messageInput');
             input.style.height = 'auto';
             input.style.height = Math.min(input.scrollHeight, 100) + 'px';
         }
-        
+
         function attachFile() {
             alert('📎 File attachment feature coming soon!');
         }
-        
+
         function openCamera() {
             alert('📷 Camera feature coming soon!');
         }
-        
+
         function makeCall() {
             alert('📞 Voice call feature coming soon!');
         }
-        
+
         function showSearch() {
             alert('🔍 Search feature coming soon!');
         }
-        
+
         function showMenu() {
             alert('⚙️ Menu options coming soon!');
         }
-        
+
         function showChatMenu() {
             alert('⚙️ Chat options coming soon!');
         }
-        
+
         // Close emoji picker when clicking outside
         document.addEventListener('click', (e) => {
             const picker = document.getElementById('emojiPicker');
             const emojiBtn = e.target.closest('[onclick*="toggleEmojiPicker"]');
-            
+
             if (!picker.contains(e.target) && !emojiBtn && isEmojiPickerOpen) {
                 hideEmojiPicker();
             }

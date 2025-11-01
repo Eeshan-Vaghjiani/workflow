@@ -29,6 +29,11 @@ Route::get('login', function (AuthKitLoginRequest $request) {
 })->middleware(['guest'])->name('login');
 
 Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
+    // Add CORS headers for WorkOS callback
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    
     // Get the stored redirect URL from the session
     $redirect = session('auth_redirect');
 
@@ -83,7 +88,7 @@ Route::get('authenticate', function (AuthKitAuthenticationRequest $request) {
             return $newUser;
         }
     ));
-})->middleware(['guest'])->name('authenticate');
+})->middleware(['web'])->name('authenticate');
 
 Route::post('logout', function (AuthKitLogoutRequest $request) {
     return $request->logout();

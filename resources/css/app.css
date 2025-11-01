@@ -89,8 +89,8 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --background: #ffffff;
+    --foreground: #1b1b18;
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
@@ -125,8 +125,8 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
+    --background: #0a0a0a;
+    --foreground: #ededec;
     --card: oklch(0.145 0 0);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.145 0 0);
@@ -164,8 +164,13 @@
         @apply border-border;
     }
 
+    html {
+        @apply bg-background;
+    }
+
     body {
         @apply bg-background text-foreground;
+        min-height: 100vh;
     }
 }
 
@@ -496,102 +501,121 @@
 
 /* Enhanced animations for the UI transformation */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 @keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 @keyframes hover-subtle {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.01); }
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.01);
+    }
 }
 
 .animate-float {
-  animation: float 6s ease-in-out infinite;
+    animation: float 6s ease-in-out infinite;
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .animate-hover-subtle {
-  animation: hover-subtle 0.2s ease-out forwards;
+    animation: hover-subtle 0.2s ease-out forwards;
 }
 
 /* Glass morphism utility classes */
 .glass-morphism-light {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
 .glass-morphism-dark {
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 }
 
 /* Theme transition utility */
 html:root {
-  --theme-transition: none;
+    --theme-transition: none;
 }
 
 html.theme-transition * {
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease !important;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 /* Subtle hover effects */
 .hover-element {
-  transition: transform 0.2s ease-out, background-color 0.2s ease-out;
+    transition: transform 0.2s ease-out, background-color 0.2s ease-out;
 }
 
 .hover-element:hover {
-  transform: scale(1.01);
-  background-color: rgba(0, 0, 0, 0.03);
+    transform: scale(1.01);
+    background-color: rgba(0, 0, 0, 0.03);
 }
 
 /* Enhanced focus styles */
 .focus-glow:focus-visible {
-  box-shadow: 0 0 0 2px rgba(0, 136, 122, 0.2), 0 0 10px 2px rgba(0, 136, 122, 0.1);
-  outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 136, 122, 0.2), 0 0 10px 2px rgba(0, 136, 122, 0.1);
+    outline: none;
 }
 
 .dark .focus-glow:focus-visible {
-  box-shadow: 0 0 0 2px rgba(0, 201, 167, 0.4), 0 0 15px 2px rgba(0, 201, 167, 0.2);
-  outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 201, 167, 0.4), 0 0 15px 2px rgba(0, 201, 167, 0.2);
+    outline: none;
 }
 
 /* Enhanced scrollbar for the futuristic UI */
 .futuristic-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+    width: 6px;
+    height: 6px;
 }
 
 .futuristic-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
 
 .futuristic-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 136, 122, 0.3);
-  border-radius: 10px;
+    background: rgba(0, 136, 122, 0.3);
+    border-radius: 10px;
 }
 
 .dark .futuristic-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 201, 167, 0.3);
+    background: rgba(0, 201, 167, 0.3);
 }
 
 .futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 136, 122, 0.5);
+    background: rgba(0, 136, 122, 0.5);
 }
 
 .dark .futuristic-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 201, 167, 0.5);
+    background: rgba(0, 201, 167, 0.5);
 }
 
 /* FullCalendar Dark Mode Support */

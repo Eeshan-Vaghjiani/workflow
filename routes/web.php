@@ -57,8 +57,8 @@ Route::get('/', function () {
         }
     }
 
-    // Render the home page
-    return Inertia::render('home');
+    // Render the welcome page (simpler, faster loading)
+    return Inertia::render('welcome');
 })->name('home');
 
 // Make sure this is outside the auth middleware group, before it
@@ -109,6 +109,35 @@ Route::get('/auth-success', function (Request $request) {
 Route::get('/auth-debug', function () {
     return Inertia::render('AuthDebug');
 })->name('auth.debug');
+
+// Debug route to check auth status after login
+Route::get('/debug-user', function () {
+    $user = Auth::user();
+    
+    if (!$user) {
+        return response()->json([
+            'authenticated' => false,
+            'message' => 'Not authenticated'
+        ]);
+    }
+    
+    return response()->json([
+        'authenticated' => true,
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'is_admin' => $user->is_admin,
+            'workos_id' => $user->workos_id,
+        ],
+        'session' => [
+            'two_factor_authenticated' => session('two_factor_authenticated'),
+            'session_id' => session()->getId(),
+        ],
+        'groups_count' => $user->groups()->count(),
+        'can_access_dashboard' => true,
+    ]);
+})->middleware(['web'])->name('debug.user');
 
 Route::middleware([
     'auth',
@@ -173,16 +202,17 @@ Route::middleware([
     Route::put('/groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'update'])->name('group-assignments.update');
     Route::delete('/groups/{group}/assignments/{assignment}', [GroupAssignmentController::class, 'destroy'])->name('group-assignments.destroy');
 
-    // AI Task Assignment
-    Route::get('/groups/{group}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'index'])->name('ai-tasks.index');
-    Route::get('/groups/{group}/assignments/{assignment}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'forAssignment'])->name('ai-tasks.for-assignment');
+// AI Task Assignment (per group)
+Route::get('/groups/{group}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'index'])
+    ->name('ai-tasks.group');
 
-    // AI Tasks Dashboard - shows all AI generated tasks across groups
-    Route::get('/ai-tasks/dashboard', [App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
+// AI Tasks per assignment
+Route::get('/groups/{group}/assignments/{assignment}/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'assignmentTasks'])
+    ->name('ai-tasks.assignment');
 
-    // AI Assignment Edit
-    Route::get('/groups/{group}/assignments/{assignment}/ai-edit', [App\Http\Controllers\API\AITaskController::class, 'editAssignment'])->name('ai-tasks.edit');
-    Route::post('/groups/{group}/assignments/{assignment}/ai-update', [App\Http\Controllers\API\AITaskController::class, 'updateAssignment'])->name('ai-tasks.update');
+// AI Tasks Dashboard - shows all AI generated tasks across groups
+Route::get('/ai-tasks/dashboard', [App\Http\Controllers\API\AITaskController::class, 'dashboard'])
+    ->name('ai-tasks.dashboard');
 
     // AI Task API endpoints with web middleware to ensure proper session handling
     Route::post('/groups/{group}/ai-tasks/generate', [App\Http\Controllers\API\AITaskController::class, 'generateTasks'])->name('ai-tasks.generate');
@@ -195,7 +225,7 @@ Route::middleware([
     Route::get('/tasks/kanban', [GroupTaskController::class, 'kanbanView'])->name('group-tasks.kanban');
     Route::post('/tasks/{task}/complete', [GroupTaskController::class, 'completeSimple'])->name('group-tasks.complete-simple');
     Route::get('/tasks/create', [GroupTaskController::class, 'create'])->name('group-tasks.create');
-    Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-simple');
+    Route::get('/tasks/{task}/edit', [GroupTaskController::class, 'edit'])->name('group-tasks.edit-alt');
     Route::put('/tasks/{task}', [GroupTaskController::class, 'update'])->name('group-tasks.update-simple');
 
     Route::get('/groups/{group}/assignments/{assignment}/tasks', [GroupTaskController::class, 'index'])->name('group-tasks.index-nested');
@@ -243,7 +273,7 @@ Route::middleware([
     // Calendar, Pomodoro, and Study Planner
     Route::get('/study-planner', [\App\Http\Controllers\StudyPlannerController::class, 'index'])->name('study-planner.index');
     Route::get('/pomodoro', [\App\Http\Controllers\PomodoroController::class, 'index'])->name('pomodoro.index');
-    Route::get('/ai-tasks', [\App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
+    
 
     // Pomodoro routes with web middleware
     Route::post('/pomodoro/sessions', [App\Http\Controllers\PomodoroController::class, 'recordSession']);
@@ -722,9 +752,6 @@ Route::get('/groups/{group}/assignments/{assignment}/task-assignments', [App\Htt
 Route::get('group-tasks/{task}/edit', [App\Http\Controllers\GroupTaskController::class, 'edit'])
     ->name('group-tasks.edit-simple');
 
-Route::put('group-tasks/{task}', [App\Http\Controllers\GroupTaskController::class, 'updateSimple'])
-    ->name('group-tasks.update-simple');
-
 // Add a simple auth status endpoint
 Route::get('/auth/status', function () {
     try {
@@ -815,7 +842,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/study-planner', [App\Http\Controllers\StudyPlannerController::class, 'index'])->name('study-planner.index');
     Route::get('/pomodoro', [App\Http\Controllers\PomodoroController::class, 'index'])->name('pomodoro.index');
-    Route::get('/ai-tasks', [App\Http\Controllers\API\AITaskController::class, 'dashboard'])->name('ai-tasks.dashboard');
+    
 
     // Direct Study Planner web routes to ensure proper session handling
     Route::get('/study-sessions', [App\Http\Controllers\StudyPlannerController::class, 'getSessions'])->name('study-sessions.index');

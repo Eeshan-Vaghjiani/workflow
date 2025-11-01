@@ -7,7 +7,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #376cbd 0%, #000157 100%);
     min-height: 100vh;
     overflow-x: hidden;
     display: flex;
@@ -623,56 +623,56 @@ body {
     .phone-screen {
         background: #000;
     }
-    
+
     .app-header {
         background: #1c1c1e;
         border-bottom-color: #38383a;
     }
-    
+
     .app-header h1 {
         color: #fff;
     }
-    
+
     .content {
         background: #1c1c1e;
     }
-    
+
     .card {
         background: #2c2c2e;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
-    
+
     .card-title {
         color: #fff;
     }
-    
+
     .list {
         background: #2c2c2e;
     }
-    
+
     .list-item {
         border-bottom-color: #38383a;
     }
-    
+
     .list-item:hover {
         background: #3a3a3c;
     }
-    
+
     .list-item-title {
         color: #fff;
     }
-    
+
     .form-input {
         background: #2c2c2e;
         border-color: #38383a;
         color: #fff;
     }
-    
+
     .btn-secondary {
         background: #38383a;
         color: #0a84ff;
     }
-    
+
     .btn-secondary:hover {
         background: #48484a;
     }
@@ -842,10 +842,13 @@ body {
         margin: 0;
         padding: 0;
     }
-    
+
     .phone-screen {
         border-radius: 0;
     }
+<<<<<<< HEAD
+}
+=======
     
     .app-container {
         flex-direction: column;
@@ -862,3 +865,4 @@ body {
         height: 80%;
     }
 }
+>>>>>>> e97d4219e8caf0c8991c8b7b112d5ef0432c6a22
